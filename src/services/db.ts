@@ -784,7 +784,7 @@ export class SupabaseOrderHistoryRepository implements IOrderHistoryRepository {
       orderId: h.order_id,
       staffId: h.staff_id || undefined,
       staffName: h.staff_name,
-      actionType: h.action_type,
+      actionType: h.action || h.action_type || "status_changed",
       templateName: h.template_name || undefined,
       details: h.details,
       createdAt: new Date(h.created_at).getTime()
@@ -792,12 +792,25 @@ export class SupabaseOrderHistoryRepository implements IOrderHistoryRepository {
   }
 
   async addHistoryEntry(entry: Omit<OrderHistory, "id" | "createdAt">): Promise<OrderHistory> {
+    const dbAction = (actionType: string): string => {
+      const map: Record<string, string> = {
+        status_changed: "status_changed",
+        contacted: "contact_customer",
+        assigned: "staff_assigned",
+        created: "request_created",
+        payment_received: "payment_received",
+        request_completed: "request_completed"
+      };
+      return map[actionType] || actionType;
+    };
+
     const { data, error } = await supabase
       .from("order_history")
       .insert({
         order_id: entry.orderId,
         staff_id: entry.staffId || null,
         staff_name: entry.staffName,
+        action: dbAction(entry.actionType),
         action_type: entry.actionType,
         template_name: entry.templateName || null,
         details: entry.details
@@ -819,7 +832,7 @@ export class SupabaseOrderHistoryRepository implements IOrderHistoryRepository {
       orderId: data.order_id,
       staffId: data.staff_id || undefined,
       staffName: data.staff_name,
-      actionType: data.action_type,
+      actionType: data.action || data.action_type || "status_changed",
       templateName: data.template_name || undefined,
       details: data.details,
       createdAt: new Date(data.created_at).getTime()
