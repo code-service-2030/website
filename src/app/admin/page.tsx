@@ -3105,7 +3105,12 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <span className="text-gray-400 font-bold block">{locale === "ar" ? "الجوال" : "Phone"}:</span>
-                      <a href={`tel:${selectedRequest.customerPhone}`} className="text-primary dark:text-primary-light hover:underline font-mono text-sm block mt-0.5">{selectedRequest.customerPhone}</a>
+                      <a 
+                        href={`tel:${(selectedRequest.customerCountryCode || "+966") + selectedRequest.customerPhone}`} 
+                        className="text-primary dark:text-primary-light hover:underline font-mono text-sm block mt-0.5 select-all"
+                      >
+                        {(selectedRequest.customerCountryCode || "+966") + " " + selectedRequest.customerPhone}
+                      </a>
                     </div>
                     <div>
                       <span className="text-gray-400 font-bold block">{locale === "ar" ? "البريد الإلكتروني" : "Email"}:</span>
@@ -3172,16 +3177,65 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* Request History Timeline */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                    <History size={13} />
+                    <span>{locale === "ar" ? "سجل الإجراءات" : "Request History"}</span>
+                  </h4>
+                  
+                  <div className="p-4 rounded-2xl bg-gray-50/50 dark:bg-medium-gray/10 border border-gray-100 dark:border-border-dark space-y-4 max-h-60 overflow-y-auto">
+                    {requestHistory.length === 0 ? (
+                      <div className="text-center py-4 text-xxs font-bold text-gray-400">
+                        {locale === "ar" ? "لا يوجد سجل إجراءات لهذا الطلب بعد." : "No actions logged for this request yet."}
+                      </div>
+                    ) : (
+                      <div className="relative border-s border-gray-205 dark:border-white/10 ms-2 space-y-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                        {requestHistory.map((h) => {
+                          const actionLabels: any = {
+                            created: locale === "ar" ? "تم إنشاء الطلب" : "Request Created",
+                            status_changed: locale === "ar" ? "تغيير الحالة" : "Status Changed",
+                            assigned: locale === "ar" ? "تعيين الموظف" : "Staff Assigned",
+                            contacted: locale === "ar" ? "تم التواصل" : "Customer Contacted",
+                            updated: locale === "ar" ? "تحديث" : "Updated"
+                          };
+                          
+                          return (
+                            <div key={h.id} className="ms-4 relative">
+                              <span className="absolute -start-[21px] top-1 flex h-2 w-2 items-center justify-center rounded-full bg-primary ring-4 ring-white dark:ring-dark-gray" />
+                              
+                              <div className="flex justify-between items-center text-xxs mb-0.5">
+                                <span className="font-black text-gray-900 dark:text-white uppercase">
+                                  {actionLabels[h.actionType] || h.actionType}
+                                </span>
+                                <span className="font-mono text-gray-400">
+                                  {new Date(h.createdAt).toLocaleString("en-US", { hour12: true })}
+                                </span>
+                              </div>
+                              <p className="text-xxs text-gray-500 dark:text-gray-400 font-bold">
+                                {locale === "ar" ? "بواسطة: " : "By: "} {h.staffName}
+                              </p>
+                              <p className="mt-1 text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed text-xxs font-medium">
+                                {h.details}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Status update & Call-to-actions */}
-                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-medium-gray/40 border border-gray-100 dark:border-border-dark flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="w-full sm:w-auto font-sans">
+                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-medium-gray/40 border border-gray-100 dark:border-border-dark grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="font-sans">
                     <span className="text-xxs font-black text-gray-400 block mb-1">
                       {locale === "ar" ? "تعديل حالة الطلب" : "Update Request Status"}
                     </span>
                     <select
                       value={selectedRequest.status}
                       onChange={(e) => updateRequestStatus(selectedRequest.id, e.target.value as any)}
-                      className="py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary"
+                      className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary"
                     >
                       <option value="pending">{locale === "ar" ? "معلق (Pending)" : "Pending"}</option>
                       <option value="in_progress">{locale === "ar" ? "قيد الإنجاز (In Progress)" : "In Progress"}</option>
@@ -3190,26 +3244,464 @@ export default function AdminDashboard() {
                     </select>
                   </div>
 
-                  <div className="flex gap-2 w-full sm:w-auto sm:mt-auto">
-                    <a
-                      href={`https://wa.me/${selectedRequest.customerPhone.replace(/[\s+]/g, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 cursor-pointer"
+                  <div className="font-sans">
+                    <span className="text-xxs font-black text-gray-400 block mb-1">
+                      {locale === "ar" ? "تعيين الموظف المسؤول" : "Assign Staff"}
+                    </span>
+                    <select
+                      value={selectedRequest.assignedStaffId || ""}
+                      onChange={(e) => handleAssignStaff(selectedRequest.id, e.target.value)}
+                      className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary"
                     >
-                      <MessageSquare size={14} fill="currentColor" />
-                      <span>{locale === "ar" ? "مراسلة العميل" : "Chat client"}</span>
-                    </a>
-                    
-                    <button
-                      onClick={() => deleteRequest(selectedRequest.id)}
-                      className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-600 transition-colors text-xs font-black cursor-pointer"
-                    >
-                      {locale === "ar" ? "حذف الطلب" : "Delete Request"}
-                    </button>
+                      <option value="">{locale === "ar" ? "غير معين" : "Unassigned"}</option>
+                      {staffMembers.filter(s => s.active).map(s => (
+                        <option key={s.id} value={s.id}>{s.fullName}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
+                <div className="flex gap-2 w-full mt-2">
+                  <button
+                    onClick={() => openWhatsAppDialog(selectedRequest)}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 cursor-pointer"
+                  >
+                    <MessageSquare size={14} fill="currentColor" />
+                    <span>{locale === "ar" ? "مراسلة العميل" : "Chat client"}</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => deleteRequest(selectedRequest.id)}
+                    className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-600 transition-colors text-xs font-black cursor-pointer"
+                  >
+                    {locale === "ar" ? "حذف الطلب" : "Delete Request"}
+                  </button>
+                </div>
+
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 7: ADD STAFF */}
+      <AnimatePresence>
+        {showAddStaffModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-dark-gray max-w-md w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-primary/10 text-start overflow-y-auto max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-6">
+                <h3 className="text-lg font-black">{locale === "ar" ? "إضافة موظف جديد" : "Add Staff Member"}</h3>
+                <button onClick={() => setShowAddStaffModal(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddStaff} className="space-y-4">
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "الاسم الكامل *" : "Full Name *"}</label>
+                  <input
+                    type="text"
+                    required
+                    value={newStaff.fullName}
+                    onChange={(e) => setNewStaff({ ...newStaff, fullName: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "المسمى الوظيفي *" : "Job Title *"}</label>
+                  <input
+                    type="text"
+                    required
+                    value={newStaff.jobTitle}
+                    onChange={(e) => setNewStaff({ ...newStaff, jobTitle: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "رقم الهاتف" : "Phone Number"}</label>
+                  <input
+                    type="text"
+                    value={newStaff.phone}
+                    onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "رقم الواتساب" : "WhatsApp Number"}</label>
+                  <input
+                    type="text"
+                    value={newStaff.whatsapp}
+                    onChange={(e) => setNewStaff({ ...newStaff, whatsapp: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "البريد الإلكتروني" : "Email Address"}</label>
+                  <input
+                    type="email"
+                    value={newStaff.email || ''}
+                    onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "رابط الصورة الشخصية" : "Profile Photo URL"}</label>
+                  <input
+                    type="text"
+                    value={newStaff.photoUrl || ''}
+                    onChange={(e) => setNewStaff({ ...newStaff, photoUrl: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "التوقيع الخاص" : "Custom Signature"}</label>
+                  <textarea
+                    rows={3}
+                    value={newStaff.signature || ''}
+                    onChange={(e) => setNewStaff({ ...newStaff, signature: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold resize-none"
+                    placeholder={locale === "ar" ? "تحياتي،\nالاسم\nالقسم" : "Regards,\nName\nDepartment"}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 select-none">
+                  <input
+                    type="checkbox"
+                    checked={newStaff.active}
+                    onChange={(e) => setNewStaff({ ...newStaff, active: e.target.checked })}
+                    className="w-4 h-4 cursor-pointer accent-primary"
+                  />
+                  <span className="text-xxs font-bold text-gray-600 dark:text-gray-300">{locale === "ar" ? "الحالة نشط" : "Active Status"}</span>
+                </div>
+
+                <button type="submit" className="w-full py-3 rounded-xl bg-primary text-white font-bold text-xs shadow-md transition-colors cursor-pointer select-none">
+                  {locale === "ar" ? "إضافة موظف" : "Add Staff"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 8: EDIT STAFF */}
+      <AnimatePresence>
+        {editingStaff && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-dark-gray max-w-md w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-primary/10 text-start overflow-y-auto max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-6">
+                <h3 className="text-lg font-black">{locale === "ar" ? "تعديل الموظف" : "Edit Staff Member"}</h3>
+                <button onClick={() => setEditingStaff(null)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditStaff} className="space-y-4">
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "الاسم الكامل *" : "Full Name *"}</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStaff.fullName}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, fullName: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "المسمى الوظيفي *" : "Job Title *"}</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStaff.jobTitle}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, jobTitle: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "رقم الهاتف" : "Phone Number"}</label>
+                  <input
+                    type="text"
+                    value={editingStaff.phone}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, phone: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "رقم الواتساب" : "WhatsApp Number"}</label>
+                  <input
+                    type="text"
+                    value={editingStaff.whatsapp}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, whatsapp: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "البريد الإلكتروني" : "Email Address"}</label>
+                  <input
+                    type="email"
+                    value={editingStaff.email || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, email: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "رابط الصورة الشخصية" : "Profile Photo URL"}</label>
+                  <input
+                    type="text"
+                    value={editingStaff.photoUrl || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, photoUrl: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "التوقيع الخاص" : "Custom Signature"}</label>
+                  <textarea
+                    rows={3}
+                    value={editingStaff.signature || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, signature: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 select-none">
+                  <input
+                    type="checkbox"
+                    checked={editingStaff.active}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, active: e.target.checked })}
+                    className="w-4 h-4 cursor-pointer accent-primary"
+                  />
+                  <span className="text-xxs font-bold text-gray-600 dark:text-gray-300">{locale === "ar" ? "الحالة نشط" : "Active Status"}</span>
+                </div>
+
+                <button type="submit" className="w-full py-3 rounded-xl bg-primary text-white font-bold text-xs shadow-md transition-colors cursor-pointer select-none">
+                  {locale === "ar" ? "حفظ التغييرات" : "Save Changes"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 9: ADD MESSAGE TEMPLATE */}
+      <AnimatePresence>
+        {showAddTemplateModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-dark-gray max-w-md w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-primary/10 text-start"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-6">
+                <h3 className="text-lg font-black">{locale === "ar" ? "إضافة قالب رسالة جديد" : "Add Message Template"}</h3>
+                <button onClick={() => setShowAddTemplateModal(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddTemplate} className="space-y-4">
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "معرّف القالب (بالانجليزية) *" : "Template ID (English) *"}</label>
+                  <input
+                    type="text"
+                    required
+                    value={newTemplate.id}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, id: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                    placeholder="e.g. welcome_message"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "اسم القالب *" : "Template Name *"}</label>
+                  <input
+                    type="text"
+                    required
+                    value={newTemplate.name}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "محتوى الرسالة *" : "Message Body *"}</label>
+                  <textarea
+                    rows={8}
+                    required
+                    value={newTemplate.body}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, body: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold font-mono leading-relaxed"
+                    placeholder={locale === "ar" ? "استخدم:\n{Customer Name}\n{Staff Name}\n{Request ID}\n{Requested Services}\n{Current Status}\n{Staff Signature}" : "Use:\n{Customer Name}\n{Staff Name}\n{Request ID}\n{Requested Services}\n{Current Status}\n{Staff Signature}"}
+                  />
+                </div>
+
+                <button type="submit" className="w-full py-3 rounded-xl bg-primary text-white font-bold text-xs shadow-md transition-colors cursor-pointer select-none">
+                  {locale === "ar" ? "إضافة القالب" : "Add Template"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 10: EDIT MESSAGE TEMPLATE */}
+      <AnimatePresence>
+        {editingTemplate && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-dark-gray max-w-md w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-primary/10 text-start"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-6">
+                <h3 className="text-lg font-black">{locale === "ar" ? "تعديل قالب الرسالة" : "Edit Message Template"}</h3>
+                <button onClick={() => setEditingTemplate(null)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditTemplate} className="space-y-4">
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "اسم القالب *" : "Template Name *"}</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingTemplate.name}
+                    onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "محتوى الرسالة *" : "Message Body *"}</label>
+                  <textarea
+                    rows={8}
+                    required
+                    value={editingTemplate.body}
+                    onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold font-mono leading-relaxed"
+                  />
+                </div>
+
+                <button type="submit" className="w-full py-3 rounded-xl bg-primary text-white font-bold text-xs shadow-md transition-colors cursor-pointer select-none">
+                  {locale === "ar" ? "حفظ التغييرات" : "Save Changes"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 11: WHATSAPP CONTACT DIALOG */}
+      <AnimatePresence>
+        {showWhatsAppDialog && whatsAppRequest && (
+          <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-dark-gray max-w-lg w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-primary/15 text-start flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-4">
+                <h3 className="text-lg font-black">{locale === "ar" ? "مراسلة العميل" : "Contact Customer"}</h3>
+                <button onClick={() => setShowWhatsAppDialog(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4 overflow-y-auto pr-1 flex-grow">
+                {/* Step 1: Select Staff Member */}
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "اختر الموظف المسؤول" : "Select Staff Member"}</label>
+                  <select
+                    value={selectedStaffForMessage}
+                    onChange={(e) => setSelectedStaffForMessage(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold cursor-pointer"
+                  >
+                    <option value="">{locale === "ar" ? "اختر موظف..." : "Choose staff..."}</option>
+                    {staffMembers.filter(s => s.active).map(s => (
+                      <option key={s.id} value={s.id}>{s.fullName} ({s.jobTitle})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Step 2: Select Template */}
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "اختر قالب الرسالة" : "Select Message Template"}</label>
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold cursor-pointer"
+                  >
+                    {templates.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Step 3: Message Preview */}
+                <div>
+                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "معاينة الرسالة" : "Message Preview"}</label>
+                  <div className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-medium whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto select-text font-sans">
+                    {whatsAppPreview || (locale === "ar" ? "الرجاء اختيار الموظف لمعاينة الرسالة." : "Please select a staff member to preview the message.")}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-gray-150 dark:border-white/5 mt-4 flex gap-3">
+                <button
+                  onClick={() => setShowWhatsAppDialog(false)}
+                  className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300 font-bold text-xs cursor-pointer text-center"
+                >
+                  {locale === "ar" ? "إلغاء" : "Cancel"}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!selectedStaffForMessage) {
+                      alert(locale === "ar" ? "الرجاء اختيار الموظف أولاً" : "Please select a staff member first");
+                      return;
+                    }
+                    const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
+                    const template = templates.find(t => t.id === selectedTemplateId);
+                    
+                    // Log the contact action in order history
+                    try {
+                      await db.history.addHistoryEntry({
+                        orderId: whatsAppRequest.id,
+                        staffId: staff.id,
+                        staffName: staff.fullName,
+                        actionType: "contacted",
+                        templateName: template?.name || "Custom",
+                        details: `Contacted customer via WhatsApp template: ${template?.name || "Custom"}`
+                      });
+                      
+                      // Refresh the local history timeline
+                      const history = await db.history.getHistory(whatsAppRequest.id);
+                      setRequestHistory(history);
+                    } catch (e) {
+                      console.error("Failed to log order history:", e);
+                    }
+
+                    // Format number correctly with country code
+                    const phoneWithCode = (whatsAppRequest.customerCountryCode || "+966") + whatsAppRequest.customerPhone;
+                    const cleanPhone = phoneWithCode.replace(/[\s+]/g, "");
+                    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsAppPreview)}`;
+                    
+                    window.open(waUrl, "_blank");
+                    setShowWhatsAppDialog(false);
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs cursor-pointer shadow-md shadow-emerald-500/10 text-center"
+                >
+                  {locale === "ar" ? "فتح واتساب" : "Open WhatsApp"}
+                </button>
               </div>
             </motion.div>
           </div>
