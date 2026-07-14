@@ -5,6 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Phone, MessageSquare, Clock, MapPin, Send, CheckCircle, Calendar, Map, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { db } from "@/services/db";
+import { CountryPhoneInput } from "./CountryPhoneInput";
 
 export const Contact: React.FC = () => {
   const { t, locale } = useLanguage();
@@ -13,11 +14,14 @@ export const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
+    phone: "", // Full number, e.g. "+966501234567"
     service: "",
     message: "",
     appointmentDate: "",
     appointmentTime: "",
+    country: "Saudi Arabia",
+    countryCode: "+966",
+    localPhone: ""
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,9 +66,20 @@ export const Contact: React.FC = () => {
     setError(false);
   };
 
+  const handlePhoneChange = (fullNum: string, countryName: string, code: string, local: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      phone: fullNum,
+      country: countryName,
+      countryCode: code,
+      localPhone: local
+    }));
+    setError(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.phone || !formData.message) {
+    if (!formData.name || !formData.localPhone || !formData.message) {
       setError(true);
       return;
     }
@@ -76,12 +91,14 @@ export const Contact: React.FC = () => {
       await db.inquiries.createInquiry({
         name: formData.name,
         email: formData.email || "",
-        phone: formData.phone,
+        phone: formData.localPhone, // Store local number in phone field
         service: formData.service || "General",
         message: formData.message,
         appointmentDate: formData.appointmentDate || "",
         appointmentTime: formData.appointmentTime || "",
-        status: "pending"
+        status: "pending",
+        country: formData.country,
+        countryCode: formData.countryCode
       });
 
       // Show success and reset form
@@ -95,6 +112,9 @@ export const Contact: React.FC = () => {
         message: "",
         appointmentDate: "",
         appointmentTime: "",
+        country: "Saudi Arabia",
+        countryCode: "+966",
+        localPhone: ""
       });
       
       // Clear success banner after 5s
@@ -303,14 +323,11 @@ export const Contact: React.FC = () => {
                     <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase">
                       {t("contactFormPhone")} <span className="text-primary">*</span>
                     </label>
-                    <input
-                      type="tel"
-                      name="phone"
+                    <CountryPhoneInput
                       value={formData.phone}
-                      onChange={handleChange}
+                      onChange={handlePhoneChange}
                       required
-                      placeholder="05xxxxxxx"
-                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm"
+                      placeholder="5xxxxxxxx"
                     />
                   </div>
                 </div>

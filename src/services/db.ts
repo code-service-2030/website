@@ -39,6 +39,10 @@ export interface Order {
   date: string;
   timestamp: number;
   services: OrderItem[];
+  assignedStaffId?: string;
+  customerCountry?: string;
+  customerCountryCode?: string;
+  paymentStatus?: "paid" | "unpaid";
 }
 
 export interface Inquiry {
@@ -52,6 +56,43 @@ export interface Inquiry {
   appointmentTime?: string;
   date: string;
   status: "pending" | "completed";
+  assignedStaffId?: string;
+  country?: string;
+  countryCode?: string;
+}
+
+export interface Staff {
+  id: string;
+  fullName: string;
+  jobTitle: string;
+  phone: string;
+  whatsapp: string;
+  email?: string;
+  photoUrl?: string;
+  active: boolean;
+  signature?: string;
+  role?: string;
+  department?: string;
+  permissions?: string[];
+  createdAt?: number;
+}
+
+export interface MessageTemplate {
+  id: string;
+  name: string;
+  body: string;
+  createdAt?: number;
+}
+
+export interface OrderHistory {
+  id: string;
+  orderId: string;
+  staffId?: string;
+  staffName: string;
+  actionType: "status_changed" | "contacted" | "assigned" | "created" | "updated";
+  templateName?: string;
+  details: string;
+  createdAt: number;
 }
 
 export interface StatsConfig {
@@ -66,6 +107,8 @@ export interface IOrderRepository {
   createOrder(order: Omit<Order, "id" | "timestamp" | "date">): Promise<Order>;
   getOrders(): Promise<Order[]>;
   updateOrderStatus(orderId: string, status: Order["status"]): Promise<Order | null>;
+  assignStaff(orderId: string, staffId: string | null): Promise<boolean>;
+  updatePaymentStatus(orderId: string, status: Order["paymentStatus"]): Promise<boolean>;
   deleteOrder(orderId: string): Promise<boolean>;
 }
 
@@ -73,7 +116,27 @@ export interface IInquiryRepository {
   createInquiry(inquiry: Omit<Inquiry, "id" | "date">): Promise<Inquiry>;
   getInquiries(): Promise<Inquiry[]>;
   updateInquiryStatus(inquiryId: string, status: Inquiry["status"]): Promise<Inquiry | null>;
+  assignStaff(inquiryId: string, staffId: string | null): Promise<boolean>;
   deleteInquiry(inquiryId: string): Promise<boolean>;
+}
+
+export interface IStaffRepository {
+  getStaff(): Promise<Staff[]>;
+  createStaffMember(staff: Omit<Staff, "id" | "createdAt">): Promise<Staff>;
+  updateStaffMember(id: string, staff: Partial<Staff>): Promise<Staff | null>;
+  deleteStaffMember(id: string): Promise<boolean>;
+}
+
+export interface IMessageTemplateRepository {
+  getTemplates(): Promise<MessageTemplate[]>;
+  createTemplate(template: Omit<MessageTemplate, "createdAt">): Promise<MessageTemplate>;
+  updateTemplate(id: string, name: string, body: string): Promise<MessageTemplate | null>;
+  deleteTemplate(id: string): Promise<boolean>;
+}
+
+export interface IOrderHistoryRepository {
+  getHistory(orderId: string): Promise<OrderHistory[]>;
+  addHistoryEntry(entry: Omit<OrderHistory, "id" | "createdAt">): Promise<OrderHistory>;
 }
 
 export interface ICategoryRepository {
@@ -96,7 +159,10 @@ export interface IAnnouncementRepository {
   saveAnnouncement(announcement: Announcement): Promise<void>;
 }
 
-// Supabase implementation of Order repository
+// ----------------------------------------------------
+// SUPABASE IMPLEMENTATION
+// ----------------------------------------------------
+
 export class SupabaseOrderRepository implements IOrderRepository {
   async createOrder(orderData: Omit<Order, "id" | "timestamp" | "date">): Promise<Order> {
     const id = generateRequestId();
@@ -110,7 +176,11 @@ export class SupabaseOrderRepository implements IOrderRepository {
       contact_method: orderData.contactMethod,
       preferred_time: orderData.preferredTime,
       general_notes: orderData.generalNotes,
-      status: "pending"
+      status: "pending",
+      assigned_staff_id: orderData.assignedStaffId || null,
+      customer_country: orderData.customerCountry || "Saudi Arabia",
+      customer_country_code: orderData.customerCountryCode || "+966",
+      payment_status: orderData.paymentStatus || "unpaid"
     });
 
     if (orderError) {
@@ -140,8 +210,19 @@ export class SupabaseOrderRepository implements IOrderRepository {
       id,
       timestamp: Date.now(),
       date: new Date().toLocaleString("en-US"),
-      status: "pending"
+      status: "pending",
+      paymentStatus: orderData.paymentStatus || "unpaid",
+      customerCountry: orderData.customerCountry || "Saudi Arabia",
+      customerCountryCode: orderData.customerCountryCode || "+966"
     };
+
+    // Log Request Creation to History
+    await db.history.addHistoryEntry({
+      orderId: id,
+      staffName: "System",
+      actionType: "created",
+      details: "Request submitted successfully by customer."
+    }).catch(console.error);
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("requests_updated"));
@@ -175,6 +256,10 @@ export class SupabaseOrderRepository implements IOrderRepository {
       status: o.status,
       date: new Date(o.created_at).toLocaleString("en-US"),
       timestamp: new Date(o.created_at).getTime(),
+      assignedStaffId: o.assigned_staff_id || undefined,
+      customerCountry: o.customer_country || "Saudi Arabia",
+      customerCountryCode: o.customer_country_code || "+966",
+      paymentStatus: o.payment_status || "unpaid",
       services: (o.services || []).map((item: any) => ({
         id: item.id,
         serviceId: item.service_id,
@@ -196,12 +281,78 @@ export class SupabaseOrderRepository implements IOrderRepository {
       .single();
 
     if (error) throw error;
+
+    // Log status change
+    await db.history.addHistoryEntry({
+      orderId,
+      staffName: "Admin",
+      actionType: "status_changed",
+      details: `Status updated to ${status}`
+    }).catch(console.error);
     
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("requests_updated"));
     }
     
     return data;
+  }
+
+  async assignStaff(orderId: string, staffId: string | null): Promise<boolean> {
+    const { error } = await supabase
+      .from("orders")
+      .update({ assigned_staff_id: staffId })
+      .eq("id", orderId);
+
+    if (error) {
+      console.error("Failed to assign staff in Supabase:", error);
+      return false;
+    }
+
+    let staffName = "Unassigned";
+    if (staffId) {
+      const staffList = await db.staff.getStaff();
+      const member = staffList.find(s => s.id === staffId);
+      if (member) staffName = member.fullName;
+    }
+
+    await db.history.addHistoryEntry({
+      orderId,
+      staffId: staffId || undefined,
+      staffName: "Admin",
+      actionType: "assigned",
+      details: staffId ? `Assigned request to employee: ${staffName}` : "Removed assigned employee from request"
+    }).catch(console.error);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("requests_updated"));
+    }
+
+    return true;
+  }
+
+  async updatePaymentStatus(orderId: string, status: Order["paymentStatus"]): Promise<boolean> {
+    const { error } = await supabase
+      .from("orders")
+      .update({ payment_status: status })
+      .eq("id", orderId);
+
+    if (error) {
+      console.error("Failed to update payment status in Supabase:", error);
+      return false;
+    }
+
+    await db.history.addHistoryEntry({
+      orderId,
+      staffName: "Admin",
+      actionType: "updated",
+      details: `Payment status marked as ${status}`
+    }).catch(console.error);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("requests_updated"));
+    }
+
+    return true;
   }
 
   async deleteOrder(orderId: string): Promise<boolean> {
@@ -216,7 +367,6 @@ export class SupabaseOrderRepository implements IOrderRepository {
   }
 }
 
-// Supabase implementation of Inquiry repository
 export class SupabaseInquiryRepository implements IInquiryRepository {
   async createInquiry(inquiryData: Omit<Inquiry, "id" | "date">): Promise<Inquiry> {
     const id = generateRequestId();
@@ -230,7 +380,10 @@ export class SupabaseInquiryRepository implements IInquiryRepository {
       message: inquiryData.message,
       appointment_date: inquiryData.appointmentDate,
       appointment_time: inquiryData.appointmentTime,
-      status: "pending"
+      status: "pending",
+      assigned_staff_id: inquiryData.assignedStaffId || null,
+      country: inquiryData.country || "Saudi Arabia",
+      country_code: inquiryData.countryCode || "+966"
     });
 
     if (error) {
@@ -242,8 +395,18 @@ export class SupabaseInquiryRepository implements IInquiryRepository {
       ...inquiryData,
       id,
       date: new Date().toLocaleString("en-US"),
-      status: "pending"
+      status: "pending",
+      country: inquiryData.country || "Saudi Arabia",
+      countryCode: inquiryData.countryCode || "+966"
     };
+
+    // Log Inquiry Creation
+    await db.history.addHistoryEntry({
+      orderId: id,
+      staffName: "System",
+      actionType: "created",
+      details: "Contact inquiry/booking submitted successfully."
+    }).catch(console.error);
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("inquiries_updated"));
@@ -273,7 +436,10 @@ export class SupabaseInquiryRepository implements IInquiryRepository {
       appointmentDate: i.appointment_date || "",
       appointmentTime: i.appointment_time || "",
       date: new Date(i.created_at).toLocaleString("en-US"),
-      status: i.status
+      status: i.status,
+      assignedStaffId: i.assigned_staff_id || undefined,
+      country: i.country || "Saudi Arabia",
+      countryCode: i.country_code || "+966"
     }));
   }
 
@@ -286,12 +452,52 @@ export class SupabaseInquiryRepository implements IInquiryRepository {
       .single();
 
     if (error) throw error;
+
+    await db.history.addHistoryEntry({
+      orderId: inquiryId,
+      staffName: "Admin",
+      actionType: "status_changed",
+      details: `Status updated to ${status}`
+    }).catch(console.error);
     
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("inquiries_updated"));
     }
     
     return data;
+  }
+
+  async assignStaff(inquiryId: string, staffId: string | null): Promise<boolean> {
+    const { error } = await supabase
+      .from("inquiries")
+      .update({ assigned_staff_id: staffId })
+      .eq("id", inquiryId);
+
+    if (error) {
+      console.error("Failed to assign staff to inquiry in Supabase:", error);
+      return false;
+    }
+
+    let staffName = "Unassigned";
+    if (staffId) {
+      const staffList = await db.staff.getStaff();
+      const member = staffList.find(s => s.id === staffId);
+      if (member) staffName = member.fullName;
+    }
+
+    await db.history.addHistoryEntry({
+      orderId: inquiryId,
+      staffId: staffId || undefined,
+      staffName: "Admin",
+      actionType: "assigned",
+      details: staffId ? `Assigned message to employee: ${staffName}` : "Removed assigned employee from message"
+    }).catch(console.error);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("inquiries_updated"));
+    }
+
+    return true;
   }
 
   async deleteInquiry(inquiryId: string): Promise<boolean> {
@@ -306,7 +512,280 @@ export class SupabaseInquiryRepository implements IInquiryRepository {
   }
 }
 
-// Supabase implementation of Category repository
+export class SupabaseStaffRepository implements IStaffRepository {
+  async getStaff(): Promise<Staff[]> {
+    const { data, error } = await supabase
+      .from("staff")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching staff from Supabase:", error);
+      return [];
+    }
+
+    return (data || []).map((s: any) => ({
+      id: s.id,
+      fullName: s.full_name,
+      jobTitle: s.job_title,
+      phone: s.phone,
+      whatsapp: s.whatsapp,
+      email: s.email || "",
+      photoUrl: s.photo_url || "",
+      active: s.active,
+      signature: s.signature || "",
+      role: s.role || "staff",
+      department: s.department || "services",
+      permissions: s.permissions || [],
+      createdAt: new Date(s.created_at).getTime()
+    }));
+  }
+
+  async createStaffMember(staff: Omit<Staff, "id" | "createdAt">): Promise<Staff> {
+    const { data, error } = await supabase
+      .from("staff")
+      .insert({
+        full_name: staff.fullName,
+        job_title: staff.jobTitle,
+        phone: staff.phone,
+        whatsapp: staff.whatsapp,
+        email: staff.email,
+        photo_url: staff.photoUrl,
+        active: staff.active,
+        signature: staff.signature,
+        role: staff.role || "staff",
+        department: staff.department || "services",
+        permissions: staff.permissions || []
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating staff in Supabase:", error);
+      throw error;
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("staff_updated"));
+    }
+
+    return {
+      id: data.id,
+      fullName: data.full_name,
+      jobTitle: data.job_title,
+      phone: data.phone,
+      whatsapp: data.whatsapp,
+      email: data.email,
+      photoUrl: data.photo_url,
+      active: data.active,
+      signature: data.signature,
+      role: data.role,
+      department: data.department,
+      permissions: data.permissions
+    };
+  }
+
+  async updateStaffMember(id: string, staff: Partial<Staff>): Promise<Staff | null> {
+    const payload: any = {};
+    if (staff.fullName !== undefined) payload.full_name = staff.fullName;
+    if (staff.jobTitle !== undefined) payload.job_title = staff.jobTitle;
+    if (staff.phone !== undefined) payload.phone = staff.phone;
+    if (staff.whatsapp !== undefined) payload.whatsapp = staff.whatsapp;
+    if (staff.email !== undefined) payload.email = staff.email;
+    if (staff.photoUrl !== undefined) payload.photo_url = staff.photoUrl;
+    if (staff.active !== undefined) payload.active = staff.active;
+    if (staff.signature !== undefined) payload.signature = staff.signature;
+    if (staff.role !== undefined) payload.role = staff.role;
+    if (staff.department !== undefined) payload.department = staff.department;
+    if (staff.permissions !== undefined) payload.permissions = staff.permissions;
+
+    const { data, error } = await supabase
+      .from("staff")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating staff in Supabase:", error);
+      throw error;
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("staff_updated"));
+      window.dispatchEvent(new Event("requests_updated"));
+      window.dispatchEvent(new Event("inquiries_updated"));
+    }
+
+    return {
+      id: data.id,
+      fullName: data.full_name,
+      jobTitle: data.job_title,
+      phone: data.phone,
+      whatsapp: data.whatsapp,
+      email: data.email,
+      photoUrl: data.photo_url,
+      active: data.active,
+      signature: data.signature,
+      role: data.role,
+      department: data.department,
+      permissions: data.permissions
+    };
+  }
+
+  async deleteStaffMember(id: string): Promise<boolean> {
+    const { error } = await supabase.from("staff").delete().eq("id", id);
+    if (error) {
+      console.error("Error deleting staff in Supabase:", error);
+      return false;
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("staff_updated"));
+    }
+
+    return true;
+  }
+}
+
+export class SupabaseMessageTemplateRepository implements IMessageTemplateRepository {
+  async getTemplates(): Promise<MessageTemplate[]> {
+    const { data, error } = await supabase
+      .from("message_templates")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching templates from Supabase:", error);
+      return [];
+    }
+
+    return (data || []).map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      body: t.body,
+      createdAt: new Date(t.created_at).getTime()
+    }));
+  }
+
+  async createTemplate(template: Omit<MessageTemplate, "createdAt">): Promise<MessageTemplate> {
+    const { data, error } = await supabase
+      .from("message_templates")
+      .insert({
+        id: template.id,
+        name: template.name,
+        body: template.body
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("templates_updated"));
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      body: data.body
+    };
+  }
+
+  async updateTemplate(id: string, name: string, body: string): Promise<MessageTemplate | null> {
+    const { data, error } = await supabase
+      .from("message_templates")
+      .update({ name, body })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("templates_updated"));
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      body: data.body
+    };
+  }
+
+  async deleteTemplate(id: string): Promise<boolean> {
+    const { error } = await supabase.from("message_templates").delete().eq("id", id);
+    if (error) return false;
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("templates_updated"));
+    }
+
+    return true;
+  }
+}
+
+export class SupabaseOrderHistoryRepository implements IOrderHistoryRepository {
+  async getHistory(orderId: string): Promise<OrderHistory[]> {
+    const { data, error } = await supabase
+      .from("order_history")
+      .select("*")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error loading order history from Supabase:", error);
+      return [];
+    }
+
+    return (data || []).map((h: any) => ({
+      id: h.id,
+      orderId: h.order_id,
+      staffId: h.staff_id || undefined,
+      staffName: h.staff_name,
+      actionType: h.action_type,
+      templateName: h.template_name || undefined,
+      details: h.details,
+      createdAt: new Date(h.created_at).getTime()
+    }));
+  }
+
+  async addHistoryEntry(entry: Omit<OrderHistory, "id" | "createdAt">): Promise<OrderHistory> {
+    const { data, error } = await supabase
+      .from("order_history")
+      .insert({
+        order_id: entry.orderId,
+        staff_id: entry.staffId || null,
+        staff_name: entry.staffName,
+        action_type: entry.actionType,
+        template_name: entry.templateName || null,
+        details: entry.details
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error writing history entry to Supabase:", error);
+      throw error;
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("history_updated"));
+    }
+
+    return {
+      id: data.id,
+      orderId: data.order_id,
+      staffId: data.staff_id || undefined,
+      staffName: data.staff_name,
+      actionType: data.action_type,
+      templateName: data.template_name || undefined,
+      details: data.details,
+      createdAt: new Date(data.created_at).getTime()
+    };
+  }
+}
+
 export class SupabaseCategoryRepository implements ICategoryRepository {
   async getCategories(): Promise<Category[]> {
     const { data, error } = await supabase
@@ -441,10 +920,10 @@ export class SupabaseFaqRepository implements IFaqRepository {
   async saveFaqs(faqs: FAQItem[]): Promise<void> {
     const payloads = faqs.map(f => ({
       id: f.id,
-      q_ar: f.qAr,
-      q_en: f.qEn,
-      a_ar: f.aAr,
-      a_en: f.aEn,
+      q_ar: f.q_ar,
+      q_en: f.q_en,
+      a_ar: f.a_ar,
+      a_en: f.a_en,
       visible: f.visible,
       order: f.order
     }));
@@ -502,7 +981,10 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
   }
 }
 
-// LocalStorage implementations of repositories as development fallback
+// ----------------------------------------------------
+// LOCALSTORAGE FALLBACK IMPLEMENTATION
+// ----------------------------------------------------
+
 export class LocalOrderRepository implements IOrderRepository {
   async createOrder(orderData: Omit<Order, "id" | "timestamp" | "date">): Promise<Order> {
     const id = generateRequestId();
@@ -512,6 +994,9 @@ export class LocalOrderRepository implements IOrderRepository {
       timestamp: Date.now(),
       date: new Date().toLocaleString("en-US"),
       status: "pending",
+      paymentStatus: orderData.paymentStatus || "unpaid",
+      customerCountry: orderData.customerCountry || "Saudi Arabia",
+      customerCountryCode: orderData.customerCountryCode || "+966"
     };
 
     if (typeof window !== "undefined") {
@@ -521,6 +1006,14 @@ export class LocalOrderRepository implements IOrderRepository {
       localStorage.setItem("code_services_requests", JSON.stringify(list));
       window.dispatchEvent(new Event("requests_updated"));
     }
+
+    await db.history.addHistoryEntry({
+      orderId: id,
+      staffName: "System",
+      actionType: "created",
+      details: "Request submitted successfully by customer."
+    }).catch(console.error);
+
     return order;
   }
 
@@ -539,9 +1032,69 @@ export class LocalOrderRepository implements IOrderRepository {
       list[idx].status = status;
       localStorage.setItem("code_services_requests", JSON.stringify(list));
       window.dispatchEvent(new Event("requests_updated"));
+
+      await db.history.addHistoryEntry({
+        orderId,
+        staffName: "Admin",
+        actionType: "status_changed",
+        details: `Status updated to ${status}`
+      }).catch(console.error);
+
       return list[idx];
     }
     return null;
+  }
+
+  async assignStaff(orderId: string, staffId: string | null): Promise<boolean> {
+    if (typeof window === "undefined") return false;
+    const existing = localStorage.getItem("code_services_requests");
+    const list: Order[] = existing ? JSON.parse(existing) : [];
+    const idx = list.findIndex(o => o.id === orderId);
+    if (idx > -1) {
+      list[idx].assignedStaffId = staffId || undefined;
+      localStorage.setItem("code_services_requests", JSON.stringify(list));
+      window.dispatchEvent(new Event("requests_updated"));
+
+      let staffName = "Unassigned";
+      if (staffId) {
+        const staffList = await db.staff.getStaff();
+        const member = staffList.find(s => s.id === staffId);
+        if (member) staffName = member.fullName;
+      }
+
+      await db.history.addHistoryEntry({
+        orderId,
+        staffId: staffId || undefined,
+        staffName: "Admin",
+        actionType: "assigned",
+        details: staffId ? `Assigned request to employee: ${staffName}` : "Removed assigned employee from request"
+      }).catch(console.error);
+
+      return true;
+    }
+    return false;
+  }
+
+  async updatePaymentStatus(orderId: string, status: Order["paymentStatus"]): Promise<boolean> {
+    if (typeof window === "undefined") return false;
+    const existing = localStorage.getItem("code_services_requests");
+    const list: Order[] = existing ? JSON.parse(existing) : [];
+    const idx = list.findIndex(o => o.id === orderId);
+    if (idx > -1) {
+      list[idx].paymentStatus = status;
+      localStorage.setItem("code_services_requests", JSON.stringify(list));
+      window.dispatchEvent(new Event("requests_updated"));
+
+      await db.history.addHistoryEntry({
+        orderId,
+        staffName: "Admin",
+        actionType: "updated",
+        details: `Payment status marked as ${status}`
+      }).catch(console.error);
+
+      return true;
+    }
+    return false;
   }
 
   async deleteOrder(orderId: string): Promise<boolean> {
@@ -565,7 +1118,9 @@ export class LocalInquiryRepository implements IInquiryRepository {
       ...inquiryData,
       id,
       date: new Date().toLocaleString("en-US"),
-      status: "pending"
+      status: "pending",
+      country: inquiryData.country || "Saudi Arabia",
+      countryCode: inquiryData.countryCode || "+966"
     };
 
     if (typeof window !== "undefined") {
@@ -575,6 +1130,14 @@ export class LocalInquiryRepository implements IInquiryRepository {
       localStorage.setItem("code_services_inquiries", JSON.stringify(list));
       window.dispatchEvent(new Event("inquiries_updated"));
     }
+
+    await db.history.addHistoryEntry({
+      orderId: id,
+      staffName: "System",
+      actionType: "created",
+      details: "Contact inquiry/booking submitted successfully."
+    }).catch(console.error);
+
     return inquiry;
   }
 
@@ -593,9 +1156,47 @@ export class LocalInquiryRepository implements IInquiryRepository {
       list[idx].status = status;
       localStorage.setItem("code_services_inquiries", JSON.stringify(list));
       window.dispatchEvent(new Event("inquiries_updated"));
+
+      await db.history.addHistoryEntry({
+        orderId: inquiryId,
+        staffName: "Admin",
+        actionType: "status_changed",
+        details: `Status updated to ${status}`
+      }).catch(console.error);
+
       return list[idx];
     }
     return null;
+  }
+
+  async assignStaff(inquiryId: string, staffId: string | null): Promise<boolean> {
+    if (typeof window === "undefined") return false;
+    const existing = localStorage.getItem("code_services_inquiries");
+    const list: Inquiry[] = existing ? JSON.parse(existing) : [];
+    const idx = list.findIndex(i => i.id === inquiryId);
+    if (idx > -1) {
+      list[idx].assignedStaffId = staffId || undefined;
+      localStorage.setItem("code_services_inquiries", JSON.stringify(list));
+      window.dispatchEvent(new Event("inquiries_updated"));
+
+      let staffName = "Unassigned";
+      if (staffId) {
+        const staffList = await db.staff.getStaff();
+        const member = staffList.find(s => s.id === staffId);
+        if (member) staffName = member.fullName;
+      }
+
+      await db.history.addHistoryEntry({
+        orderId: inquiryId,
+        staffId: staffId || undefined,
+        staffName: "Admin",
+        actionType: "assigned",
+        details: staffId ? `Assigned message to employee: ${staffName}` : "Removed assigned employee from message"
+      }).catch(console.error);
+
+      return true;
+    }
+    return false;
   }
 
   async deleteInquiry(inquiryId: string): Promise<boolean> {
@@ -609,6 +1210,166 @@ export class LocalInquiryRepository implements IInquiryRepository {
       return true;
     }
     return false;
+  }
+}
+
+export class LocalStaffRepository implements IStaffRepository {
+  async getStaff(): Promise<Staff[]> {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem("code_services_staff");
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  async createStaffMember(staff: Omit<Staff, "id" | "createdAt">): Promise<Staff> {
+    const id = "staff-" + Date.now().toString();
+    const created: Staff = {
+      ...staff,
+      id,
+      createdAt: Date.now()
+    };
+
+    if (typeof window !== "undefined") {
+      const list = await this.getStaff();
+      list.push(created);
+      localStorage.setItem("code_services_staff", JSON.stringify(list));
+      window.dispatchEvent(new Event("staff_updated"));
+    }
+    return created;
+  }
+
+  async updateStaffMember(id: string, staff: Partial<Staff>): Promise<Staff | null> {
+    if (typeof window === "undefined") return null;
+    const list = await this.getStaff();
+    const idx = list.findIndex(s => s.id === id);
+    if (idx > -1) {
+      const updated = { ...list[idx], ...staff };
+      list[idx] = updated;
+      localStorage.setItem("code_services_staff", JSON.stringify(list));
+      window.dispatchEvent(new Event("staff_updated"));
+      window.dispatchEvent(new Event("requests_updated"));
+      window.dispatchEvent(new Event("inquiries_updated"));
+      return updated;
+    }
+    return null;
+  }
+
+  async deleteStaffMember(id: string): Promise<boolean> {
+    if (typeof window === "undefined") return false;
+    const list = await this.getStaff();
+    const filtered = list.filter(s => s.id !== id);
+    if (filtered.length !== list.length) {
+      localStorage.setItem("code_services_staff", JSON.stringify(filtered));
+      window.dispatchEvent(new Event("staff_updated"));
+      return true;
+    }
+    return false;
+  }
+}
+
+export class LocalMessageTemplateRepository implements IMessageTemplateRepository {
+  private defaultTemplates: MessageTemplate[] = [
+    {
+      id: "welcome",
+      name: "Welcome Message",
+      body: "السلام عليكم أستاذ/ة {Customer Name}\n\nنرحب بك في كود خدمات.\n\nأنا {Staff Name} وسأكون المسؤول عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n{Request ID}\n\nالخدمة المطلوبة:\n{Requested Services}\n\nإذا احتجتم أي استفسار فأنا في خدمتكم.\n\nشكراً لاختياركم كود خدمات."
+    },
+    {
+      id: "received",
+      name: "Request Received",
+      body: "السلام عليكم أستاذ/ة {Customer Name}\n\nنسعد بإبلاغكم بأن طلبكم رقم {Request ID} قد تم استلامه وهو قيد المراجعة حالياً.\n\nالخدمات:\n{Requested Services}\n\nالمسؤول عن طلبكم: {Staff Name}.\n\nشكراً لثقتكم بنا."
+    },
+    {
+      id: "missing_docs",
+      name: "Missing Documents",
+      body: "السلام عليكم أستاذ/ة {Customer Name}\n\nبخصوص طلبكم رقم {Request ID}، نرجو منكم تزويدنا بالمستندات التالية لإكمال المعاملة:\n\n[اكتب المستندات المطلوبة هنا]\n\nشاكرين ومقدرين تعاونكم."
+    },
+    {
+      id: "payment_reminder",
+      name: "Payment Reminder",
+      body: "السلام عليكم أستاذ/ة {Customer Name}\n\nنود تذكيركم بصدور الفاتورة الخاصة بطلبكم رقم {Request ID} للخدمات التالية:\n{Requested Services}\n\nالرجاء إتمام عملية السداد للمتابعة.\n\nشكراً لكم."
+    },
+    {
+      id: "completed",
+      name: "Request Completed",
+      body: "السلام عليكم أستاذ/ة {Customer Name}\n\nنسعد بإبلاغكم بإنجاز طلبكم رقم {Request ID} بنجاح!\n\nيمكنكم تحميل المستندات أو استلامها الآن.\n\nيسعدنا تقييمكم لخدمتنا.\n\nشكراً لاختياركم كود خدمات."
+    }
+  ];
+
+  async getTemplates(): Promise<MessageTemplate[]> {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem("code_services_templates");
+    if (!saved) {
+      localStorage.setItem("code_services_templates", JSON.stringify(this.defaultTemplates));
+      return this.defaultTemplates;
+    }
+    return JSON.parse(saved);
+  }
+
+  async createTemplate(template: Omit<MessageTemplate, "createdAt">): Promise<MessageTemplate> {
+    const created: MessageTemplate = {
+      ...template,
+      createdAt: Date.now()
+    };
+    if (typeof window !== "undefined") {
+      const list = await this.getTemplates();
+      list.push(created);
+      localStorage.setItem("code_services_templates", JSON.stringify(list));
+      window.dispatchEvent(new Event("templates_updated"));
+    }
+    return created;
+  }
+
+  async updateTemplate(id: string, name: string, body: string): Promise<MessageTemplate | null> {
+    if (typeof window === "undefined") return null;
+    const list = await this.getTemplates();
+    const idx = list.findIndex(t => t.id === id);
+    if (idx > -1) {
+      list[idx].name = name;
+      list[idx].body = body;
+      localStorage.setItem("code_services_templates", JSON.stringify(list));
+      window.dispatchEvent(new Event("templates_updated"));
+      return list[idx];
+    }
+    return null;
+  }
+
+  async deleteTemplate(id: string): Promise<boolean> {
+    if (typeof window === "undefined") return false;
+    const list = await this.getTemplates();
+    const filtered = list.filter(t => t.id !== id);
+    if (filtered.length !== list.length) {
+      localStorage.setItem("code_services_templates", JSON.stringify(filtered));
+      window.dispatchEvent(new Event("templates_updated"));
+      return true;
+    }
+    return false;
+  }
+}
+
+export class LocalOrderHistoryRepository implements IOrderHistoryRepository {
+  async getHistory(orderId: string): Promise<OrderHistory[]> {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem("code_services_history");
+    const list: OrderHistory[] = saved ? JSON.parse(saved) : [];
+    return list.filter(h => h.orderId === orderId);
+  }
+
+  async addHistoryEntry(entry: Omit<OrderHistory, "id" | "createdAt">): Promise<OrderHistory> {
+    const id = "hist-" + Date.now().toString() + "-" + Math.random().toString().substring(2, 6);
+    const created: OrderHistory = {
+      ...entry,
+      id,
+      createdAt: Date.now()
+    };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("code_services_history");
+      const list = saved ? JSON.parse(saved) : [];
+      list.unshift(created);
+      localStorage.setItem("code_services_history", JSON.stringify(list));
+      window.dispatchEvent(new Event("history_updated"));
+    }
+    return created;
   }
 }
 
@@ -672,12 +1433,18 @@ export class LocalAnnouncementRepository implements IAnnouncementRepository {
   }
 }
 
-// Database Service Layer Abstraction class
+// ----------------------------------------------------
+// DATABASE SERVICE LAYER ABSTRACTION
+// ----------------------------------------------------
+
 export class DatabaseService {
   private static instance: DatabaseService;
   
   public orders: IOrderRepository;
   public inquiries: IInquiryRepository;
+  public staff: IStaffRepository;
+  public templates: IMessageTemplateRepository;
+  public history: IOrderHistoryRepository;
   public categories: ICategoryRepository;
   public services: IServiceRepository;
   public faqs: IFaqRepository;
@@ -690,6 +1457,9 @@ export class DatabaseService {
       console.log("Supabase credentials detected! Initializing Supabase repositories.");
       this.orders = new SupabaseOrderRepository();
       this.inquiries = new SupabaseInquiryRepository();
+      this.staff = new SupabaseStaffRepository();
+      this.templates = new SupabaseMessageTemplateRepository();
+      this.history = new SupabaseOrderHistoryRepository();
       this.categories = new SupabaseCategoryRepository();
       this.services = new SupabaseServiceRepository();
       this.faqs = new SupabaseFaqRepository();
@@ -698,6 +1468,9 @@ export class DatabaseService {
       console.log("No Supabase configuration. Initializing LocalStorage repositories.");
       this.orders = new LocalOrderRepository();
       this.inquiries = new LocalInquiryRepository();
+      this.staff = new LocalStaffRepository();
+      this.templates = new LocalMessageTemplateRepository();
+      this.history = new LocalOrderHistoryRepository();
       this.categories = new LocalCategoryRepository();
       this.services = new LocalServiceRepository();
       this.faqs = new LocalFaqRepository();

@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { db } from "@/services/db";
+import { CountryPhoneInput } from "./CountryPhoneInput";
 import { X, ShoppingBag, Trash2, Plus, Minus, Send, ArrowLeft, ArrowRight, CheckCircle, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,11 +28,14 @@ export const CartDrawer: React.FC = () => {
   // Customer Form State
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
-    phone: "",
+    phone: "", // Full number, e.g. "+966501234567"
     email: "",
     contactMethod: "whatsapp", // whatsapp, call, email
     preferredTime: "afternoon", // morning, afternoon, evening
     generalNotes: "",
+    country: "Saudi Arabia",
+    countryCode: "+966",
+    localPhone: ""
   });
 
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -67,14 +71,27 @@ export const CartDrawer: React.FC = () => {
     }
   };
 
+  const handlePhoneChange = (fullNum: string, countryName: string, code: string, local: string) => {
+    setCustomerInfo((prev) => ({
+      ...prev,
+      phone: fullNum,
+      country: countryName,
+      countryCode: code,
+      localPhone: local
+    }));
+    if (errors.phone) {
+      setErrors((prev) => ({ ...prev, phone: false }));
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, boolean> = {};
     if (!customerInfo.name.trim()) newErrors.name = true;
-    if (!customerInfo.phone.trim()) newErrors.phone = true;
+    if (!customerInfo.localPhone.trim()) newErrors.phone = true;
     
-    // Simple phone regex check (should be at least 9 digits)
-    const phoneClean = customerInfo.phone.replace(/\D/g, "");
-    if (phoneClean.length < 9) newErrors.phone = true;
+    // Simple phone regex check (should be at least 7 digits)
+    const phoneClean = customerInfo.localPhone.replace(/\D/g, "");
+    if (phoneClean.length < 7) newErrors.phone = true;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -90,12 +107,14 @@ export const CartDrawer: React.FC = () => {
     try {
       createdOrder = await db.orders.createOrder({
         customerName: customerInfo.name,
-        customerPhone: customerInfo.phone,
+        customerPhone: customerInfo.localPhone, // Store local number in phone field
         customerEmail: customerInfo.email,
         contactMethod: customerInfo.contactMethod,
         preferredTime: customerInfo.preferredTime,
         generalNotes: customerInfo.generalNotes,
         status: "pending",
+        customerCountry: customerInfo.country,
+        customerCountryCode: customerInfo.countryCode,
         services: cartItems.map((item) => ({
           id: "",
           serviceId: item.service.id,
@@ -371,21 +390,16 @@ export const CartDrawer: React.FC = () => {
                       <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1">
                         {locale === "ar" ? "رقم الجوال *" : "Mobile Number *"}
                       </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        required
+                      <CountryPhoneInput
                         value={customerInfo.phone}
-                        onChange={handleInputChange}
-                        placeholder={locale === "ar" ? "مثال: 05XXXXXXXX" : "e.g. 05XXXXXXXX"}
-                        className={`w-full bg-gray-50 dark:bg-medium-gray/30 border ${
-                          errors.phone ? "border-red-500" : "border-gray-200 dark:border-border-dark"
-                        } focus:border-primary rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-all text-start`}
-                        dir="ltr"
+                        onChange={handlePhoneChange}
+                        required
+                        error={errors.phone}
+                        placeholder={locale === "ar" ? "5XXXXXXXX" : "5XXXXXXXX"}
                       />
                       {errors.phone && (
                         <p className="text-[10px] text-red-500 font-extrabold mt-1">
-                          {locale === "ar" ? "يرجى إدخال رقم جوال سعودي صحيح" : "Please enter a valid mobile number"}
+                          {locale === "ar" ? "يرجى إدخال رقم جوال صحيح" : "Please enter a valid mobile number"}
                         </p>
                       )}
                     </div>
