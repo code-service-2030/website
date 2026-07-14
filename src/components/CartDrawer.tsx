@@ -8,7 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { db, defaultSystemSettings } from "@/services/db";
 import { CountryPhoneInput } from "./CountryPhoneInput";
 import { CommunicationRouter } from "@/services/communication";
-import { X, ShoppingBag, Trash2, Plus, Minus, Send, ArrowLeft, ArrowRight, CheckCircle, MessageSquare } from "lucide-react";
+import { X, ShoppingBag, Trash2, Plus, Minus, Send, ArrowLeft, ArrowRight, CheckCircle, MessageSquare, Mail, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const CartDrawer: React.FC = () => {
@@ -132,13 +132,18 @@ export const CartDrawer: React.FC = () => {
       });
     } catch (err) {
       console.error("Failed to save request:", err);
-      // Fail-safe fallback ID for WhatsApp template if creation fails
-      createdOrder = {
-        id: "REQ-" + Math.floor(100000 + Math.random() * 900000)
-      };
+      alert(locale === "ar" ? "حدث خطأ أثناء حفظ الطلب. الرجاء المحاولة مرة أخرى." : "Error saving request. Please try again.");
+      setIsSubmitting(false);
+      return;
     }
 
     const requestId = createdOrder.id;
+
+    // Show success notification
+    alert(locale === "ar" 
+      ? `تم حفظ الطلب بنجاح! رقم طلبك هو: ${requestId}` 
+      : `Request saved successfully! Your request ID is: ${requestId}`
+    );
 
     // Compile variables for templates
     const servicesSummary = cartItems
@@ -484,13 +489,31 @@ export const CartDrawer: React.FC = () => {
                       <button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
-                        className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                        className={`w-full py-4 text-white rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 ${
+                          customerInfo.contactMethod === "whatsapp"
+                            ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
+                            : customerInfo.contactMethod === "email"
+                            ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/20"
+                            : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20"
+                        }`}
                       >
-                        <MessageSquare size={16} fill="currentColor" />
+                        {customerInfo.contactMethod === "whatsapp" ? (
+                          <MessageSquare size={16} fill="currentColor" />
+                        ) : customerInfo.contactMethod === "email" ? (
+                          <Mail size={16} />
+                        ) : (
+                          <Phone size={16} />
+                        )}
                         <span>
-                          {isSubmitting
-                            ? (locale === "ar" ? "جاري الإرسال..." : "Submitting...")
-                            : (locale === "ar" ? "إرسال وتوجيه للواتساب" : "Submit & Send to WhatsApp")}
+                          {isSubmitting ? (
+                            locale === "ar" ? "جاري الإرسال..." : "Submitting..."
+                          ) : customerInfo.contactMethod === "whatsapp" ? (
+                            locale === "ar" ? "إرسال الطلب وفتح واتساب" : "Submit Request & Open WhatsApp"
+                          ) : customerInfo.contactMethod === "email" ? (
+                            locale === "ar" ? "إرسال الطلب وفتح البريد الإلكتروني" : "Submit Request & Open Email"
+                          ) : (
+                            locale === "ar" ? "إرسال الطلب والاتصال بالشركة" : "Submit Request & Call Company"
+                          )}
                         </span>
                       </button>
 

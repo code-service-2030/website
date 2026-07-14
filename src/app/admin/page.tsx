@@ -59,7 +59,8 @@ import {
   ToggleLeft,
   ToggleRight,
   Eye,
-  EyeOff
+  EyeOff,
+  Mail
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -203,6 +204,10 @@ export default function AdminDashboard() {
   const [selectedStaffForMessage, setSelectedStaffForMessage] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('welcome');
   const [whatsAppPreview, setWhatsAppPreview] = useState('');
+
+  // Smart Contact Fallback Override States
+  const [showOverrideContactModal, setShowOverrideContactModal] = useState(false);
+  const [overrideErrorMsg, setOverrideErrorMsg] = useState('');
 
   // Request History States
   const [requestHistory, setRequestHistory] = useState<any[]>([]);
@@ -774,6 +779,113 @@ export default function AdminDashboard() {
     setSelectedTemplateId('welcome');
     setWhatsAppPreview('');
     setShowWhatsAppDialog(true);
+  };
+
+  // ===== SMART CUSTOMER CONTACT PROCESSOR =====
+  const handleContactCustomerSmart = async (request: any) => {
+    try {
+      const method = request.contactMethod || "whatsapp";
+      const staff = staffMembers.find(s => s.id === request.assignedStaffId);
+      const staffName = staff ? staff.fullName : (commSettings.supportName || "Support Agent");
+      const department = staff ? (staff.jobTitle || "Customer Care") : (commSettings.supportDepartment || "Customer Care");
+      const statusLabel = request.status ? request.status.toUpperCase() : "PENDING";
+      const servicesText = request.services?.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(", ") || "";
+
+      if (method === "whatsapp") {
+        // Resolve welcome template or default template
+        const welcomeTemplate = templates.find(t => t.id === "welcome");
+        let body = welcomeTemplate ? welcomeTemplate.body : "السلام عليكم أستاذ/ة {Customer Name}\n\nنرحب بك في كود خدمات.\nأنا {Staff Name} وسأكون المسؤول عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n{Request ID}\n\nالخدمة المطلوبة:\n{Requested Services}\n\nشكراً لاختياركم كود خدمات.";
+        
+        body = body.replace(/\{Customer Name\}/g, request.customerName || "");
+        body = body.replace(/\{Staff Name\}/g, staffName);
+        body = body.replace(/\{Request ID\}/g, request.id || "");
+        body = body.replace(/\{Requested Services\}/g, servicesText);
+        body = body.replace(/\{Staff Signature\}/g, staff?.signature || "");
+
+        const phoneVal = (request.customerCountryCode || "+966") + request.customerPhone;
+        const cleanPhone = phoneVal.replace(/[\s+]/g, "");
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(body)}`;
+        
+        // Log action to history
+        await db.history.addHistoryEntry({
+          orderId: request.id,
+          staffId: staff?.id || undefined,
+          staffName,
+          actionType: "contacted",
+          templateName: "welcome",
+          details: `Sent welcome message to customer via WhatsApp.`
+        });
+
+        // Trigger event
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("history_updated"));
+        }
+
+        window.open(url, "_blank");
+
+      } else if (method === "email") {
+        // Generate prefilled email
+        if (!request.customerEmail) {
+          throw new Error(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
+        }
+        
+        const subject = `Request #${request.id} - Code Services`;
+        const body = `Dear ${request.customerName || ""},\n\nThank you for choosing Code Services.\n\nThis is ${staffName}, and I will be responsible for your request until completion.\n\nRequest Number:\n${request.id}\n\nRequested Services:\n${servicesText}\n\nStatus:\n${statusLabel}\n\nIf you have any questions, feel free to reply to this email.\n\nBest regards,\n\n${staffName}\n${department}\nCode Services`;
+
+        const mailtoUrl = `mailto:${request.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+        // Log action to history
+        await db.history.addHistoryEntry({
+          orderId: request.id,
+          staffId: staff?.id || undefined,
+          staffName,
+          actionType: "contacted",
+          templateName: "email_template",
+          details: `Opened email client for customer.`
+        });
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("history_updated"));
+        }
+
+        window.open(mailtoUrl, "_blank");
+
+      } else if (method === "call") {
+        const phoneVal = (request.customerCountryCode || "+966") + request.customerPhone;
+        const cleanPhone = phoneVal.replace(/[\s+]/g, "");
+        
+        // Log action to history
+        await db.history.addHistoryEntry({
+          orderId: request.id,
+          staffId: staff?.id || undefined,
+          staffName,
+          actionType: "contacted",
+          templateName: "phone_call",
+          details: `Initiated phone call to customer.`
+        });
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("history_updated"));
+        }
+
+        window.open(`tel:${cleanPhone}`, "_self");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setOverrideErrorMsg(err.message || String(err));
+      setShowOverrideContactModal(true);
+    }
+  };
+
+  const handleManualContactOverride = async (request: any, method: string) => {
+    setShowOverrideContactModal(false);
+    const overriddenRequest = { ...request, contactMethod: method };
+    if (method === "email" && !request.customerEmail) {
+      const emailInput = prompt(locale === "ar" ? "أدخل البريد الإلكتروني للعميل:" : "Enter customer email address:");
+      if (!emailInput) return;
+      overriddenRequest.customerEmail = emailInput;
+    }
+    await handleContactCustomerSmart(overriddenRequest);
   };
 
   // ===== ASSIGN STAFF TO REQUEST =====
@@ -3528,11 +3640,29 @@ export default function AdminDashboard() {
 
                 <div className="flex gap-2 w-full mt-2">
                   <button
-                    onClick={() => openWhatsAppDialog(selectedRequest)}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 cursor-pointer"
+                    onClick={() => handleContactCustomerSmart(selectedRequest)}
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all ${
+                      (selectedRequest.contactMethod || "whatsapp") === "whatsapp"
+                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
+                        : (selectedRequest.contactMethod || "whatsapp") === "email"
+                        ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/10"
+                        : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/10"
+                    }`}
                   >
-                    <MessageSquare size={14} fill="currentColor" />
-                    <span>{locale === "ar" ? "مراسلة العميل" : "Chat client"}</span>
+                    {(selectedRequest.contactMethod || "whatsapp") === "whatsapp" ? (
+                      <MessageSquare size={14} fill="currentColor" />
+                    ) : (selectedRequest.contactMethod || "whatsapp") === "email" ? (
+                      <Mail size={14} />
+                    ) : (
+                      <Phone size={14} />
+                    )}
+                    <span>
+                      {(selectedRequest.contactMethod || "whatsapp") === "whatsapp"
+                        ? (locale === "ar" ? "مراسلة عبر واتساب" : "Message via WhatsApp")
+                        : (selectedRequest.contactMethod || "whatsapp") === "email"
+                        ? (locale === "ar" ? "إرسال بريد إلكتروني" : "Send Email")
+                        : (locale === "ar" ? "اتصال بالعميل (هاتف)" : "Call Customer")}
+                    </span>
                   </button>
                   
                   <button
@@ -3540,6 +3670,18 @@ export default function AdminDashboard() {
                     className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-600 transition-colors text-xs font-black cursor-pointer"
                   >
                     {locale === "ar" ? "حذف الطلب" : "Delete Request"}
+                  </button>
+                </div>
+
+                <div className="text-center mt-2.5">
+                  <button
+                    onClick={() => {
+                      setOverrideErrorMsg(locale === "ar" ? "يرجى تحديد طريقة التواصل البديلة:" : "Please select alternative communication channel:");
+                      setShowOverrideContactModal(true);
+                    }}
+                    className="text-xxs font-bold text-gray-400 hover:text-primary transition-colors underline cursor-pointer select-none"
+                  >
+                    {locale === "ar" ? "تعديل قناة التواصل يدوياً" : "Manually choose another channel"}
                   </button>
                 </div>
 
@@ -3966,6 +4108,88 @@ export default function AdminDashboard() {
                   className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs cursor-pointer shadow-md shadow-emerald-500/10 text-center"
                 >
                   {locale === "ar" ? "فتح واتساب" : "Open WhatsApp"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 12: SMART CONTACT OVERRIDE DIALOG */}
+      <AnimatePresence>
+        {showOverrideContactModal && selectedRequest && (
+          <div className="fixed inset-0 z-[70] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-dark-gray max-w-md w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-red-500/20 text-start flex flex-col"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-4">
+                <h3 className="text-lg font-black text-red-600 dark:text-red-400">
+                  {locale === "ar" ? "قناة تواصل بديلة" : "Alternative Contact Channel"}
+                </h3>
+                <button onClick={() => setShowOverrideContactModal(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                  {locale === "ar" 
+                    ? `فشلت طريقة التواصل التلقائية المحددة بواسطة العميل. السبب: ${overrideErrorMsg}`
+                    : `The customer's preferred communication method could not be executed. Reason: ${overrideErrorMsg}`}
+                </p>
+
+                <p className="text-xxs font-bold text-gray-400 uppercase tracking-wider">
+                  {locale === "ar" ? "اختر طريقة تواصل بديلة للاتصال بالعميل:" : "Choose another channel to contact customer:"}
+                </p>
+
+                <div className="grid grid-cols-1 gap-2.5">
+                  {/* Option 1: WhatsApp */}
+                  <button
+                    onClick={() => handleManualContactOverride(selectedRequest, "whatsapp")}
+                    className="w-full p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-500 text-emerald-600 dark:text-emerald-400 transition-all font-bold text-xs flex items-center justify-between cursor-pointer border border-emerald-500/20"
+                  >
+                    <span className="flex items-center gap-2">
+                      <MessageSquare size={16} fill="currentColor" />
+                      <span>{locale === "ar" ? "فتح واتساب (WhatsApp)" : "Open WhatsApp"}</span>
+                    </span>
+                    <span className="text-xxs opacity-70">wa.me</span>
+                  </button>
+
+                  {/* Option 2: Email */}
+                  <button
+                    onClick={() => handleManualContactOverride(selectedRequest, "email")}
+                    className="w-full p-4 rounded-2xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 text-blue-600 dark:text-blue-400 transition-all font-bold text-xs flex items-center justify-between cursor-pointer border border-blue-500/20"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Mail size={16} />
+                      <span>{locale === "ar" ? "إرسال بريد إلكتروني (Email)" : "Send Email"}</span>
+                    </span>
+                    <span className="text-xxs opacity-70">mailto</span>
+                  </button>
+
+                  {/* Option 3: Call */}
+                  <button
+                    onClick={() => handleManualContactOverride(selectedRequest, "call")}
+                    className="w-full p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 text-indigo-600 dark:text-indigo-400 transition-all font-bold text-xs flex items-center justify-between cursor-pointer border border-indigo-500/20"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Phone size={16} />
+                      <span>{locale === "ar" ? "الاتصال بالهاتف (Call)" : "Phone Call"}</span>
+                    </span>
+                    <span className="text-xxs opacity-70">tel</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 dark:border-white/5 mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowOverrideContactModal(false)}
+                  className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300 font-bold text-xs cursor-pointer"
+                >
+                  {locale === "ar" ? "إغلاق" : "Close"}
                 </button>
               </div>
             </motion.div>
