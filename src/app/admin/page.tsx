@@ -9,7 +9,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { db, defaultSystemSettings, SystemSettings } from "@/services/db";
 import { supabase } from "@/services/supabaseClient";
 import { exportRequestsToExcel } from "@/services/excelExport";
-import { buildLocalizedMessage } from "@/services/communication";
+import { buildLocalizedMessage, formatPrice } from "@/services/communication";
 import { 
   defaultCategories, 
   defaultServices, 
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
   const [showWhatsAppDialog, setShowWhatsAppDialog] = useState(false);
   const [whatsAppRequest, setWhatsAppRequest] = useState<any>(null);
   const [selectedStaffForMessage, setSelectedStaffForMessage] = useState('');
-  const [selectedTemplateId, setSelectedTemplateId] = useState('welcome');
+  const [selectedTemplateId, setSelectedTemplateId] = useState('00000000-0000-0000-0000-000000000001');
   const [whatsAppPreview, setWhatsAppPreview] = useState('');
 
   // Smart Contact Fallback Override States
@@ -377,15 +377,118 @@ export default function AdminDashboard() {
         if (loadedTemplates && loadedTemplates.length > 0) {
           setTemplates(loadedTemplates);
         } else {
-          // Seed default templates
           const defaultTemplates = [
-            { id: 'welcome', name: 'ترحيب / Welcome', body: 'السلام عليكم أستاذ/ة {Customer Name}\n\nنرحب بك في كود خدمات.\nأنا {Staff Name} وسأكون المسؤول عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n{Request ID}\n\nالخدمة المطلوبة:\n{Requested Services}\n\nإذا احتجتم أي استفسار فأنا في خدمتكم.\n\nشكراً لاختياركم كود خدمات.\n\n{Staff Signature}' },
-            { id: 'received', name: 'تم الاستلام / Request Received', body: 'السلام عليكم {Customer Name}\n\nتم استلام طلبكم بنجاح.\nرقم الطلب: {Request ID}\nالخدمة: {Requested Services}\n\nسيتم البدء في معالجته في أقرب وقت.\n\n{Staff Signature}' },
-            { id: 'missing_docs', name: 'مستندات ناقصة / Missing Documents', body: 'السلام عليكم {Customer Name}\n\nبخصوص طلبكم رقم {Request ID}\nنحتاج منكم المستندات التالية:\n\n[أضف المستندات هنا]\n\nيرجى إرسالها في أقرب وقت.\n\n{Staff Signature}' },
-            { id: 'payment', name: 'تذكير بالدفع / Payment Reminder', body: 'السلام عليكم {Customer Name}\n\nنود تذكيركم بسداد رسوم الخدمة لطلبكم رقم {Request ID}.\n\nالخدمة: {Requested Services}\n\nيرجى التواصل معنا لإتمام عملية الدفع.\n\n{Staff Signature}' },
-            { id: 'completed', name: 'تم الإنجاز / Request Completed', body: 'السلام عليكم {Customer Name}\n\nيسرنا إبلاغكم بأن طلبكم رقم {Request ID} قد تم إنجازه بنجاح.\n\nالخدمة: {Requested Services}\n\nشكراً لثقتكم بكود خدمات.\n\n{Staff Signature}' },
-            { id: 'ready', name: 'جاهز للاستلام / Ready for Collection', body: 'السلام عليكم {Customer Name}\n\nطلبكم رقم {Request ID} جاهز للاستلام.\n\nيرجى التواصل معنا لتحديد موعد الاستلام.\n\n{Staff Signature}' },
-            { id: 'info_needed', name: 'نحتاج معلومات / Need More Info', body: 'السلام عليكم {Customer Name}\n\nبخصوص طلبكم رقم {Request ID}\nنحتاج منكم بعض المعلومات الإضافية:\n\n[أضف الأسئلة هنا]\n\nيرجى الرد في أقرب وقت.\n\n{Staff Signature}' }
+            {
+              id: "00000000-0000-0000-0000-000000000001",
+              name: "ترحيب / Welcome Message",
+              body: `السلام عليكم ورحمة الله وبركاته، أستاذ/ة {CustomerName}،
+
+نرحب بك في مكتب كود خدمات.
+
+أنا {StaffName} وسأكون المسؤول عن تنفيذ طلبكم رقم {RequestID} ومتابعته حتى الانتهاء بإذن الله.
+
+الخدمات المطلوبة:
+
+{ServicesList}
+
+إجمالي السعر: {TotalPrice}
+
+نحن في خدمتكم لأي استفسار.
+
+شكراً لكم،
+كود خدمات`
+            },
+            {
+              id: "00000000-0000-0000-0000-000000000002",
+              name: "تم الاستلام / Request Received",
+              body: `السلام عليكم أستاذ/ة {CustomerName}،
+
+تم استلام طلبكم رقم {RequestID} بنجاح وجاري تحويله للمختصين للبدء بالعمل.
+
+الخدمات المطلوبة:
+
+{ServicesList}
+
+سعداء بخدمتكم.
+
+شكراً لكم،
+كود خدمات`
+            },
+            {
+              id: "00000000-0000-0000-0000-000000000003",
+              name: "قيد المراجعة / Under Review",
+              body: `السلام عليكم أستاذ/ة {CustomerName}،
+
+نفيدكم بأن طلبكم رقم {RequestID} قيد المراجعة والدراسة حالياً من قبل الفريق المختص. سنقوم بتحديثكم بالخطوات التالية قريباً.
+
+شكراً لكم،
+كود خدمات`
+            },
+            {
+              id: "00000000-0000-0000-0000-000000000004",
+              name: "مستندات ناقصة / Missing Documents",
+              body: `السلام عليكم أستاذ/ة {CustomerName}،
+
+بخصوص طلبكم رقم {RequestID}، نرجو منكم تزويدنا بالمستندات الناقصة لإتمام المعاملة في أقرب وقت.
+
+المستندات المطلوبة:
+[أدخل المستندات المطلوبة هنا]
+
+شكراً لتفهمكم وتعاونكم.
+
+مكتب كود خدمات`
+            },
+            {
+              id: "00000000-0000-0000-0000-000000000005",
+              name: "تذكير بالدفع / Payment Reminder",
+              body: `السلام عليكم أستاذ/ة {CustomerName}،
+
+تذكير لطيف بسداد رسوم الخدمة لطلبكم رقم {RequestID}.
+
+الخدمات المطلوبة:
+{ServicesList}
+
+المبلغ المطلوب: {TotalPrice}
+
+شاكرين لكم حسن تعاونكم.
+
+مكتب كود خدمات`
+            },
+            {
+              id: "00000000-0000-0000-0000-000000000006",
+              name: "قيد التنفيذ / In Progress",
+              body: `السلام عليكم أستاذ/ة {CustomerName}،
+
+نفيدكم بأن طلبكم رقم {RequestID} قيد التنفيذ حالياً وسنوافيكم بالجديد فوراً عند الانتهاء.
+
+حالة الطلب الحالية: {CurrentStatus}
+
+شكراً لصبركم وتواصلكم.
+
+مكتب كود خدمات`
+            },
+            {
+              id: "00000000-0000-0000-0000-000000000007",
+              name: "تم الإنجاز / Request Completed",
+              body: `السلام عليكم أستاذ/ة {CustomerName}،
+
+يسرنا إبلاغكم بأنه تم إنجاز طلبكم رقم {RequestID} بنجاح.
+
+الخدمات المنجزة:
+{ServicesList}
+
+شكراً لثقتكم بمكتب كود خدمات.`
+            },
+            {
+              id: "00000000-0000-0000-0000-000000000008",
+              name: "جاهز للاستلام / Ready for Collection",
+              body: `السلام عليكم أستاذ/ة {CustomerName}،
+
+المعاملة الخاصة بطلبكم رقم {RequestID} جاهزة للاستلام الآن. يرجى التنسيق معنا لتحديد موعد الاستلام.
+
+شكراً لكم،
+مكتب كود خدمات`
+            }
           ];
           for (const tmpl of defaultTemplates) {
             try { await db.templates.createTemplate(tmpl); } catch {}
@@ -764,152 +867,74 @@ export default function AdminDashboard() {
   const resolveTemplate = (template: any, request: any, staff: any) => {
     if (!template || !request) return '';
     let text = template.body || '';
+    
+    // Resolve CustomerName
+    text = text.replace(/\{CustomerName\}/g, request.customerName || '');
     text = text.replace(/\{Customer Name\}/g, request.customerName || '');
+    
+    // Resolve StaffName
+    text = text.replace(/\{StaffName\}/g, staff?.fullName || '');
     text = text.replace(/\{Staff Name\}/g, staff?.fullName || '');
+    
+    // Resolve RequestID
+    text = text.replace(/\{RequestID\}/g, request.id || '');
     text = text.replace(/\{Request ID\}/g, request.id || '');
-    text = text.replace(/\{Requested Services\}/g,
-      request.services?.map((s: any) => s.titleAr || s.titleEn).join(', ') || ''
-    );
+    
+    // Resolve ServicesList
+    const servicesList = request.services?.map((s: any) => {
+      const p = s.price ? formatPrice(s.price, request.language || "ar") : (request.language === "en" ? "Per agreement" : "حسب الاتفاق");
+      return `${s.titleAr || s.titleEn} (x${s.quantity || 1}) - ${p}`;
+    }).join('\n') || '';
+    
+    text = text.replace(/\{ServicesList\}/g, servicesList);
+    text = text.replace(/\{Requested Services\}/g, servicesList);
+    
+    // Resolve CurrentStatus
+    const statusLabel = request.status === "completed" ? (locale === "ar" ? "مكتمل" : "Completed") :
+                       request.status === "pending" ? (locale === "ar" ? "قيد الانتظار" : "Pending") :
+                       request.status === "in_progress" ? (locale === "ar" ? "قيد التنفيذ" : "In Progress") :
+                       request.status || "PENDING";
+    text = text.replace(/\{CurrentStatus\}/g, statusLabel);
+    
+    // Resolve TotalPrice
+    const estTotalPrice = request.services?.reduce((acc: number, s: any) => {
+      const match = (s.price || "").match(/\d+/);
+      const unitPrice = match ? parseInt(match[0], 10) : 0;
+      return acc + unitPrice * (s.quantity || 1);
+    }, 0) || 0;
+    const checkoutTotalPrice = estTotalPrice > 0 
+      ? formatPrice(estTotalPrice.toString(), request.language || "ar")
+      : (request.language === "en" ? "Per agreement" : "حسب الاتفاق");
+      
+    text = text.replace(/\{TotalPrice\}/g, checkoutTotalPrice);
+    
+    // Resolve PhoneNumber
+    text = text.replace(/\{PhoneNumber\}/g, (request.customerCountryCode || "+966") + request.customerPhone);
+    
+    // Resolve Email
+    text = text.replace(/\{Email\}/g, request.customerEmail || "-");
+    
+    // Resolve Staff Signature
     text = text.replace(/\{Staff Signature\}/g, staff?.signature || '');
+    
     return text;
   };
 
   const openWhatsAppDialog = (request: any) => {
     setWhatsAppRequest(request);
-    setSelectedStaffForMessage('');
-    setSelectedTemplateId('welcome');
+    // Auto-select assigned staff if exists
+    setSelectedStaffForMessage(request.assignedStaffId || '');
+    setSelectedTemplateId('00000000-0000-0000-0000-000000000001');
     setWhatsAppPreview('');
     setShowWhatsAppDialog(true);
   };
 
   // ===== SMART CUSTOMER CONTACT PROCESSOR =====
   const handleContactCustomerSmart = async (request: any) => {
-    try {
-      const method = request.contactMethod || "whatsapp";
-      const staff = staffMembers.find(s => s.id === request.assignedStaffId);
-      const staffName = staff ? staff.fullName : (commSettings.supportName || "Support Agent");
-      const department = staff ? (staff.jobTitle || "Customer Care") : (commSettings.supportDepartment || "Customer Care");
-      const statusLabel = request.status ? request.status.toUpperCase() : "PENDING";
-      const servicesText = request.services?.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(", ") || "";
-
-      const customerLang = request.language || "ar";
-
-      if (method === "whatsapp") {
-        const checkoutItems = request.services?.map((s: any) => ({
-          name: customerLang === "ar" ? (s.titleAr || s.titleEn) : (s.titleEn || s.titleAr),
-          quantity: s.quantity || 1,
-          price: s.price || (customerLang === "ar" ? "حسب الاتفاق" : "Per agreement")
-        })) || [];
-        
-        const estTotalPrice = request.services?.reduce((acc: number, s: any) => {
-          const match = (s.price || "").match(/\d+/);
-          const unitPrice = match ? parseInt(match[0], 10) : 0;
-          return acc + unitPrice * (s.quantity || 1);
-        }, 0) || 0;
-        
-        const checkoutTotalPrice = estTotalPrice > 0 
-          ? estTotalPrice.toString() 
-          : (customerLang === "ar" ? "حسب الاتفاق" : "Per agreement");
-
-        const contactMethodLabel = request.contactMethod === "whatsapp" ? (customerLang === "ar" ? "واتساب" : "WhatsApp") :
-                                   request.contactMethod === "call" ? (customerLang === "ar" ? "اتصال هاتفي" : "Phone Call") :
-                                   (customerLang === "ar" ? "بريد إلكتروني" : "Email");
-
-        const preferredTimeLabel = request.preferredTime === "morning" ? (customerLang === "ar" ? "صباحاً" : "Morning") :
-                                   request.preferredTime === "afternoon" ? (customerLang === "ar" ? "بعد الظهر" : "Afternoon") :
-                                   (customerLang === "ar" ? "مساءً" : "Evening");
-
-        const payload = {
-          requestId: request.id,
-          customerName: request.customerName,
-          customerPhone: (request.customerCountryCode || "+966") + request.customerPhone,
-          customerEmail: request.customerEmail || "",
-          preferredContact: contactMethodLabel,
-          preferredTime: preferredTimeLabel,
-          generalNotes: request.generalNotes || "",
-          servicesSummary: request.services?.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(", ") || "",
-          categoriesSummary: "",
-          items: checkoutItems,
-          totalPrice: checkoutTotalPrice,
-          language: customerLang
-        };
-        
-        const { body } = buildLocalizedMessage(payload, customerLang, commSettings);
-
-        const phoneVal = (request.customerCountryCode || "+966") + request.customerPhone;
-        const cleanPhone = phoneVal.replace(/[\s+]/g, "");
-        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(body)}`;
-        
-        // Log action to history
-        await db.history.addHistoryEntry({
-          orderId: request.id,
-          staffId: staff?.id || undefined,
-          staffName,
-          actionType: "contacted",
-          templateName: "welcome",
-          details: `Sent welcome message to customer via WhatsApp.`
-        });
-
-        // Trigger event
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("history_updated"));
-        }
-
-        window.open(url, "_blank");
-
-      } else if (method === "email") {
-        // Generate prefilled email
-        if (!request.customerEmail) {
-          setOverrideErrorMsg(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
-          setShowOverrideContactModal(true);
-          return;
-        }
-        
-        const subject = customerLang === "ar" 
-          ? `طلب جديد - رقم الطلب ${request.id}`
-          : `New Request - ${request.id}`;
-
-        const body = customerLang === "ar"
-          ? `عزيزي/ة ${request.customerName || ""}،\n\nنشكرك على اختيارك كود خدمات.\n\nاسمي هو ${staffName} وسأكون المسؤول شخصياً عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n${request.id}\n\nالخدمات المطلوبة:\n${servicesText}\n\nحالة الطلب الحالية:\n${statusLabel}\n\nإذا كان لديك أي استفسار، يمكنك ببساطة الرد على هذا البريد الإلكتروني.\n\nمع خالص التحية،\n\n${staffName}\n${department}\nكود خدمات`
-          : `Dear ${request.customerName || ""},\n\nThank you for choosing Code Services.\n\nMy name is ${staffName} and I will personally handle your request until completion.\n\nRequest Number:\n${request.id}\n\nRequested Services:\n${servicesText}\n\nCurrent Status:\n${statusLabel}\n\nIf you have any questions, simply reply to this email.\n\nBest regards,\n\n${staffName}\n${department}\nCode Services`;
-
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(request.customerEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-        // Log action to history
-        await db.history.addHistoryEntry({
-          orderId: request.id,
-          staffId: staff?.id || undefined,
-          staffName,
-          actionType: "contacted",
-          templateName: "email_template",
-          details: `Opened Gmail compose for customer.`
-        });
-
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("history_updated"));
-        }
-
-        const mailtoUrl = `mailto:${request.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-        const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobile) {
-          // Mobile: Use mailto: with fallback alert if fails
-          let hasFocus = true;
-          const onBlur = () => { hasFocus = false; };
-          window.addEventListener("blur", onBlur);
-          
-          window.location.href = mailtoUrl;
-          
-          setTimeout(() => {
-            window.removeEventListener("blur", onBlur);
-            if (hasFocus) {
-              alert(locale === "ar" 
-                ? "لم يتم العثور على تطبيق بريد إلكتروني مهيأ على جهازك لإرسال البريد." 
-                : "No email application is configured on your device to send emails.");
-            }
-          }, 1500);
-        } else {
-          // Desktop: Open Gmail Compose in new browser tab
+    // Employees must ALWAYS choose an Employee Template before contacting a customer.
+    // So we open the Contact Dialog instead of immediately sending.
+    openWhatsAppDialog(request);
+  };
           const newTab = window.open(gmailUrl, "_blank");
           
           // Fallback to mailto: if Gmail cannot be opened or is blocked
@@ -4143,54 +4168,93 @@ export default function AdminDashboard() {
             >
               <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-6">
                 <h3 className="text-lg font-black">{locale === "ar" ? "تعديل قالب الرسالة" : "Edit Message Template"}</h3>
-                <button onClick={() => setEditingTemplate(null)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
-                  <X size={18} />
+                <button onClick={() => setEditingTemp              {/* Action Buttons */}
+              <div className="pt-4 border-t border-gray-150 dark:border-white/5 mt-4 flex gap-3">
+                <button
+                  onClick={() => setShowWhatsAppDialog(false)}
+                  className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300 font-bold text-xs cursor-pointer text-center"
+                >
+                  {locale === "ar" ? "إلغاء" : "Cancel"}
                 </button>
-              </div>
+                <button
+                  onClick={async () => {
+                    if (!selectedStaffForMessage) {
+                      alert(locale === "ar" ? "الرجاء اختيار الموظف أولاً" : "Please select a staff member first");
+                      return;
+                    }
+                    const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
+                    const template = templates.find(t => t.id === selectedTemplateId);
+                    const contactMethod = whatsAppRequest.contactMethod || "whatsapp";
+                    
+                    // Log the contact action in order history
+                    try {
+                      await db.history.addHistoryEntry({
+                        orderId: whatsAppRequest.id,
+                        staffId: staff.id,
+                        staffName: staff.fullName,
+                        actionType: "contacted",
+                        templateName: template?.name || "Custom",
+                        details: `Contacted customer via ${contactMethod === "email" ? "Email" : contactMethod === "call" ? "Phone Call" : "WhatsApp"} using template: ${template?.name || "Custom"}`
+                      });
+                      
+                      // Refresh the local history timeline
+                      const history = await db.history.getHistory(whatsAppRequest.id);
+                      setRequestHistory(history);
+                    } catch (e) {
+                      console.error("Failed to log order history:", e);
+                    }
 
-              <form onSubmit={handleEditTemplate} className="space-y-4">
-                <div>
-                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "اسم القالب *" : "Template Name *"}</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingTemplate.name}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "محتوى الرسالة *" : "Message Body *"}</label>
-                  <textarea
-                    rows={8}
-                    required
-                    value={editingTemplate.body}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold font-mono leading-relaxed"
-                  />
-                </div>
+                    const phoneWithCode = (whatsAppRequest.customerCountryCode || "+966") + whatsAppRequest.customerPhone;
+                    const cleanPhone = phoneWithCode.replace(/[\s+]/g, "");
 
-                <button type="submit" className="w-full py-3 rounded-xl bg-primary text-white font-bold text-xs shadow-md transition-colors cursor-pointer select-none">
-                  {locale === "ar" ? "حفظ التغييرات" : "Save Changes"}
+                    if (contactMethod === "email") {
+                      if (!whatsAppRequest.customerEmail) {
+                        alert(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
+                        return;
+                      }
+                      const subject = `${template?.name || "Update"} - Request #${whatsAppRequest.id}`;
+                      const body = whatsAppPreview;
+                      const to = whatsAppRequest.customerEmail;
+                      
+                      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      
+                      // Device detection
+                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                      
+                      if (isMobile) {
+                        window.location.href = mailtoUrl;
+                      } else {
+                        const newTab = window.open(gmailUrl, "_blank");
+                        if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+                          window.location.href = mailtoUrl;
+                        }
+                      }
+                    } else if (contactMethod === "call") {
+                      window.location.href = `tel:${phoneWithCode}`;
+                    } else {
+                      // Default to WhatsApp
+                      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsAppPreview)}`;
+                      window.open(waUrl, "_blank");
+                    }
+                    
+                    setShowWhatsAppDialog(false);
+                  }}
+                  className={`flex-1 py-3 rounded-xl text-white font-bold text-xs cursor-pointer shadow-md text-center ${
+                    whatsAppRequest.contactMethod === "email"
+                      ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/10"
+                      : whatsAppRequest.contactMethod === "call"
+                      ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/10"
+                      : "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
+                  }`}
+                >
+                  {whatsAppRequest.contactMethod === "email"
+                    ? (locale === "ar" ? "فتح البريد الإلكتروني" : "Open Email")
+                    : whatsAppRequest.contactMethod === "call"
+                    ? (locale === "ar" ? "الاتصال بالعميل" : "Call Customer")
+                    : (locale === "ar" ? "فتح واتساب" : "Open WhatsApp")}
                 </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* MODAL 11: WHATSAPP CONTACT DIALOG */}
-      <AnimatePresence>
-        {showWhatsAppDialog && whatsAppRequest && (
-          <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-dark-gray max-w-lg w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-primary/15 text-start flex flex-col max-h-[90vh]"
-            >
-              <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-4">
-                <h3 className="text-lg font-black">{locale === "ar" ? "مراسلة العميل" : "Contact Customer"}</h3>
+              </div>�لة العميل" : "Contact Customer"}</h3>
                 <button onClick={() => setShowWhatsAppDialog(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
                   <X size={18} />
                 </button>
