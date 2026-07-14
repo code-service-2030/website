@@ -35,108 +35,20 @@ export interface ICommunicationHandler {
   handleRoute(payload: CommunicationPayload, settings: SystemSettings): Promise<RouteResponse>;
 }
 
-// Future-ready template dictionary supporting multiple languages
-const LOCALIZED_TEMPLATES: Record<string, {
-  emailSubject: string;
-  whatsappMessage: string;
-}> = {
-  ar: {
-    emailSubject: "طلب جديد - رقم الطلب {RequestID}",
-    whatsappMessage: `السلام عليكم ورحمة الله وبركاته،
+export function buildLocalizedMessage(
+  payload: CommunicationPayload,
+  lang: string,
+  settings: SystemSettings
+): { subject: string; body: string } {
+  const selectedLang = lang === "en" ? "en" : "ar";
 
-أرغب بطلب الخدمات التالية من مكتب كود خدمات.
+  const emailSubjectTpl = selectedLang === "en"
+    ? (settings.emailSubjectEn || "New Request - {RequestID}")
+    : (settings.emailSubject || "طلب جديد - رقم الطلب {RequestID}");
 
-رقم الطلب:
-{RequestID}
-
-----------------------------------------
-
-الخدمات المطلوبة:
-
-{ServicesList}
-
-----------------------------------------
-
-إجمالي السعر التقريبي:
-
-{TotalPrice} ريال سعودي
-
-----------------------------------------
-
-معلومات العميل:
-
-الاسم:
-{CustomerName}
-
-الجوال:
-{PhoneNumber}
-
-البريد الإلكتروني:
-{Email}
-
-طريقة التواصل المفضلة:
-{PreferredContactMethod}
-
-وقت التواصل المفضل:
-{PreferredContactTime}
-
-----------------------------------------
-
-شكراً لكم،
-
-كود خدمات`
-  },
-  en: {
-    emailSubject: "New Request - {RequestID}",
-    whatsappMessage: `Hello,
-
-I would like to request the following services from Code Services.
-
-Request Number:
-{RequestID}
-
-----------------------------------------
-
-Requested Services:
-
-{ServicesList}
-
-----------------------------------------
-
-Estimated Total:
-
-{TotalPrice} SAR
-
-----------------------------------------
-
-Customer Information:
-
-Name:
-{CustomerName}
-
-Phone:
-{PhoneNumber}
-
-Email:
-{Email}
-
-Preferred Contact Method:
-{PreferredContactMethod}
-
-Preferred Contact Time:
-{PreferredContactTime}
-
-----------------------------------------
-
-Thank you.
-
-Code Services`
-  }
-};
-
-export function buildLocalizedMessage(payload: CommunicationPayload, lang: string): { subject: string; body: string } {
-  const selectedLang = LOCALIZED_TEMPLATES[lang] ? lang : "ar";
-  const tpl = LOCALIZED_TEMPLATES[selectedLang];
+  const whatsappMessageTpl = selectedLang === "en"
+    ? (settings.whatsappTemplateEn || "Hello, I would like to request the following services...")
+    : (settings.whatsappTemplate || "السلام عليكم ورحمة الله وبركاته، أرغب بطلب الخدمات التالية...");
 
   let servicesList = "";
   if (payload.items && payload.items.length > 0) {
@@ -151,9 +63,9 @@ export function buildLocalizedMessage(payload: CommunicationPayload, lang: strin
     servicesList = payload.servicesSummary;
   }
 
-  const subject = tpl.emailSubject.replace(/\{RequestID\}/g, payload.requestId);
+  const subject = emailSubjectTpl.replace(/\{RequestID\}/g, payload.requestId);
 
-  let body = tpl.whatsappMessage;
+  let body = whatsappMessageTpl;
   body = body.replace(/\{RequestID\}/g, payload.requestId);
   body = body.replace(/\{ServicesList\}/g, servicesList);
   body = body.replace(/\{TotalPrice\}/g, payload.totalPrice || "0");
@@ -176,7 +88,7 @@ export class WhatsAppHandler implements ICommunicationHandler {
     console.log("[WhatsAppHandler] Generating message using templates...");
     
     const lang = payload.language || "ar";
-    const { body } = buildLocalizedMessage(payload, lang);
+    const { body } = buildLocalizedMessage(payload, lang, settings);
 
     const whatsappPhone = settings.whatsappNumber.replace(/[\s+]/g, "");
     const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(body)}`;
@@ -200,7 +112,7 @@ export class EmailHandler implements ICommunicationHandler {
     console.log("[EmailHandler] Resolving email template...");
 
     const lang = payload.language || "ar";
-    const { subject, body } = buildLocalizedMessage(payload, lang);
+    const { subject, body } = buildLocalizedMessage(payload, lang, settings);
 
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(settings.companyEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     const mailtoUrl = `mailto:${settings.companyEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;

@@ -114,6 +114,9 @@ export interface SystemSettings {
   emailSubject: string;
   emailTemplate: string;
   whatsappTemplate: string;
+  emailSubjectEn?: string;
+  emailTemplateEn?: string;
+  whatsappTemplateEn?: string;
 }
 
 export interface ISystemSettingsRepository {
@@ -1056,9 +1059,152 @@ export const defaultSystemSettings: SystemSettings = {
   supportName: "Support Agent",
   supportDepartment: "Customer Care",
   officeHours: "9:00 AM - 5:00 PM",
-  emailSubject: "New Service Request - {Request ID}",
-  emailTemplate: "Name: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}\nCategory: {Category}\nNotes: {Notes}\nContact Method: {Preferred Contact Method}\nRequest ID: {Request ID}",
-  whatsappTemplate: "New Request: {Request ID}\nName: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}"
+  emailSubject: "طلب جديد - رقم الطلب {RequestID}",
+  emailSubjectEn: "New Request - {RequestID}",
+  emailTemplate: `السلام عليكم ورحمة الله وبركاته،
+
+أرغب بطلب الخدمات التالية من مكتب كود خدمات.
+
+رقم الطلب:
+
+{RequestID}
+
+الخدمات المطلوبة:
+
+{ServicesList}
+
+إجمالي السعر التقريبي:
+
+{TotalPrice} ريال سعودي
+
+معلومات العميل:
+
+الاسم:
+{CustomerName}
+
+الجوال:
+{PhoneNumber}
+
+البريد الإلكتروني:
+{Email}
+
+طريقة التواصل المفضلة:
+{PreferredContactMethod}
+
+وقت التواصل المفضل:
+{PreferredContactTime}
+
+شكراً لكم،
+
+كود خدمات`,
+  emailTemplateEn: `Hello,
+
+I would like to request the following services from Code Services.
+
+Request Number:
+
+{RequestID}
+
+Requested Services:
+
+{ServicesList}
+
+Estimated Total:
+
+{TotalPrice} SAR
+
+Customer Information:
+
+Name:
+{CustomerName}
+
+Phone:
+{PhoneNumber}
+
+Email:
+{Email}
+
+Preferred Contact Method:
+{PreferredContactMethod}
+
+Preferred Contact Time:
+{PreferredContactTime}
+
+Thank you.
+
+Code Services`,
+  whatsappTemplate: `السلام عليكم ورحمة الله وبركاته،
+
+أرغب بطلب الخدمات التالية من مكتب كود خدمات.
+
+رقم الطلب:
+
+{RequestID}
+
+الخدمات المطلوبة:
+
+{ServicesList}
+
+إجمالي السعر التقريبي:
+
+{TotalPrice} ريال سعودي
+
+معلومات العميل:
+
+الاسم:
+{CustomerName}
+
+الجوال:
+{PhoneNumber}
+
+البريد الإلكتروني:
+{Email}
+
+طريقة التواصل المفضلة:
+{PreferredContactMethod}
+
+وقت التواصل المفضل:
+{PreferredContactTime}
+
+شكراً لكم،
+
+كود خدمات`,
+  whatsappTemplateEn: `Hello,
+
+I would like to request the following services from Code Services.
+
+Request Number:
+
+{RequestID}
+
+Requested Services:
+
+{ServicesList}
+
+Estimated Total:
+
+{TotalPrice} SAR
+
+Customer Information:
+
+Name:
+{CustomerName}
+
+Phone:
+{PhoneNumber}
+
+Email:
+{Email}
+
+Preferred Contact Method:
+{PreferredContactMethod}
+
+Preferred Contact Time:
+{PreferredContactTime}
+
+Thank you.
+
+Code Services`
 };
 
 export class SupabaseSystemSettingsRepository implements ISystemSettingsRepository {
@@ -1093,12 +1239,15 @@ export class SupabaseSystemSettingsRepository implements ISystemSettingsReposito
       officeHours: data.office_hours,
       emailSubject: data.email_subject,
       emailTemplate: data.email_template,
-      whatsappTemplate: data.whatsapp_template
+      whatsappTemplate: data.whatsapp_template,
+      emailSubjectEn: data.email_subject_en || defaultSystemSettings.emailSubjectEn,
+      emailTemplateEn: data.email_template_en || defaultSystemSettings.emailTemplateEn,
+      whatsappTemplateEn: data.whatsapp_template_en || defaultSystemSettings.whatsappTemplateEn
     };
   }
 
   async saveSettings(settings: SystemSettings): Promise<void> {
-    const payload = {
+    const payload: any = {
       id: "communication",
       company_email: settings.companyEmail,
       primary_phone: settings.primaryPhone,
@@ -1109,10 +1258,25 @@ export class SupabaseSystemSettingsRepository implements ISystemSettingsReposito
       email_subject: settings.emailSubject,
       email_template: settings.emailTemplate,
       whatsapp_template: settings.whatsappTemplate,
+      email_subject_en: settings.emailSubjectEn || "",
+      email_template_en: settings.emailTemplateEn || "",
+      whatsapp_template_en: settings.whatsappTemplateEn || "",
       updated_at: new Date().toISOString()
     };
 
-    const { error } = await supabase.from("system_settings").upsert(payload);
+    let { error } = await supabase.from("system_settings").upsert(payload);
+    
+    // Fallback if the database doesn't have the new English template columns yet
+    if (error && (error.message.includes("column") || error.code === "42703")) {
+      console.warn("New English settings columns do not exist yet. Retrying save without them...");
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.email_subject_en;
+      delete fallbackPayload.email_template_en;
+      delete fallbackPayload.whatsapp_template_en;
+      const retryResult = await supabase.from("system_settings").upsert(fallbackPayload);
+      error = retryResult.error;
+    }
+
     if (error) {
       console.error("Error saving system settings to Supabase:", error);
       throw error;

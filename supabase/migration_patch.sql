@@ -73,6 +73,10 @@ INSERT INTO system_settings (id, company_email, primary_phone, whatsapp_number, 
 VALUES ('communication', 'eyadk0444@gmail.com', '+966537073161', '+966537073161', 'Support Agent', 'Customer Care', '9:00 AM - 5:00 PM', 'New Service Request - {Request ID}', 'Name: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}\nCategory: {Category}\nNotes: {Notes}\nContact Method: {Preferred Contact Method}\nRequest ID: {Request ID}', 'New Request: {Request ID}\nName: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}')
 ON CONFLICT (id) DO NOTHING;
 
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS email_subject_en VARCHAR(255) DEFAULT 'New Request - {RequestID}';
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS email_template_en TEXT;
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS whatsapp_template_en TEXT;
+
 -- 6. Fix orders (Requests) Table Columns (including Payment Integration columns)
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS assigned_staff_id UUID;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_country VARCHAR(100) DEFAULT 'Saudi Arabia';
@@ -95,6 +99,11 @@ ALTER TABLE order_items ADD COLUMN IF NOT EXISTS category_id VARCHAR(100) DEFAUL
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS assigned_staff_id UUID;
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS country VARCHAR(100) DEFAULT 'Saudi Arabia';
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS country_code VARCHAR(50) DEFAULT '+966';
+
+-- 8.5 Fix system_settings Table Columns (English templates)
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS email_subject_en VARCHAR(255) DEFAULT 'New Request - {RequestID}';
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS email_template_en TEXT;
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS whatsapp_template_en TEXT;
 
 -- 9. Foreign Key References
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS fk_orders_assigned_staff;

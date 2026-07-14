@@ -833,8 +833,8 @@ export default function AdminDashboard() {
           totalPrice: checkoutTotalPrice,
           language: customerLang
         };
-
-        const { body } = buildLocalizedMessage(payload, customerLang);
+        
+        const { body } = buildLocalizedMessage(payload, customerLang, commSettings);
 
         const phoneVal = (request.customerCountryCode || "+966") + request.customerPhone;
         const cleanPhone = phoneVal.replace(/[\s+]/g, "");
@@ -2708,7 +2708,7 @@ export default function AdminDashboard() {
                 {/* Email Subject */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "موضوع البريد الإلكتروني الافتراضي" : "Default Email Subject"}
+                    {locale === "ar" ? "موضوع البريد الإلكتروني الافتراضي (عربي)" : "Default Email Subject (Arabic)"}
                   </label>
                   <input
                     type="text"
@@ -2721,10 +2721,26 @@ export default function AdminDashboard() {
                   </span>
                 </div>
 
+                {/* Email Subject (English) */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                    {locale === "ar" ? "موضوع البريد الإلكتروني الافتراضي (إنجليزي)" : "Default Email Subject (English)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={commSettings.emailSubjectEn || ""}
+                    onChange={(e) => setCommSettings({ ...commSettings, emailSubjectEn: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                  />
+                  <span className="text-xxs text-gray-400 mt-1 block">
+                    Placeholders: {`{Request ID}`}
+                  </span>
+                </div>
+
                 {/* Email Template */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "قالب البريد الإلكتروني الافتراضي" : "Default Email Template"}
+                    {locale === "ar" ? "قالب البريد الإلكتروني الافتراضي (عربي)" : "Default Email Template (Arabic)"}
                   </label>
                   <textarea
                     rows={6}
@@ -2737,15 +2753,47 @@ export default function AdminDashboard() {
                   </span>
                 </div>
 
+                {/* Email Template (English) */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                    {locale === "ar" ? "قالب البريد الإلكتروني الافتراضي (إنجليزي)" : "Default Email Template (English)"}
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={commSettings.emailTemplateEn || ""}
+                    onChange={(e) => setCommSettings({ ...commSettings, emailTemplateEn: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
+                  />
+                  <span className="text-xxs text-gray-400 mt-1 block">
+                    Placeholders: {`{Customer Name}`}, {`{Phone Number}`}, {`{Requested Services}`}, {`{Category}`}, {`{Notes}`}, {`{Preferred Contact Method}`}, {`{Request ID}`}
+                  </span>
+                </div>
+
                 {/* WhatsApp Template */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "قالب الواتساب الافتراضي" : "Default WhatsApp Template"}
+                    {locale === "ar" ? "قالب الواتساب الافتراضي (عربي)" : "Default WhatsApp Template (Arabic)"}
                   </label>
                   <textarea
                     rows={6}
                     value={commSettings.whatsappTemplate}
                     onChange={(e) => setCommSettings({ ...commSettings, whatsappTemplate: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
+                  />
+                  <span className="text-xxs text-gray-400 mt-1 block">
+                    Placeholders: {`{Customer Name}`}, {`{Phone Number}`}, {`{Requested Services}`}, {`{Category}`}, {`{Notes}`}, {`{Preferred Contact Method}`}, {`{Request ID}`}
+                  </span>
+                </div>
+
+                {/* WhatsApp Template (English) */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                    {locale === "ar" ? "قالب الواتساب الافتراضي (إنجليزي)" : "Default WhatsApp Template (English)"}
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={commSettings.whatsappTemplateEn || ""}
+                    onChange={(e) => setCommSettings({ ...commSettings, whatsappTemplateEn: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
                   />
                   <span className="text-xxs text-gray-400 mt-1 block">
