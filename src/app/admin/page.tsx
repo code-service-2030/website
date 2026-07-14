@@ -832,9 +832,9 @@ export default function AdminDashboard() {
         }
         
         const subject = `Request #${request.id} - Code Services`;
-        const body = `Dear ${request.customerName || ""},\n\nThank you for choosing Code Services.\n\nThis is ${staffName}, and I will be responsible for your request until completion.\n\nRequest Number:\n${request.id}\n\nRequested Services:\n${servicesText}\n\nStatus:\n${statusLabel}\n\nIf you have any questions, feel free to reply to this email.\n\nBest regards,\n\n${staffName}\n${department}\nCode Services`;
+        const body = `Dear ${request.customerName || ""},\n\nThank you for choosing Code Services.\n\nMy name is ${staffName} and I will personally handle your request until completion.\n\nRequest Number:\n${request.id}\n\nRequested Services:\n${servicesText}\n\nCurrent Status:\n${statusLabel}\n\nIf you have any questions, simply reply to this email.\n\nBest regards,\n\n${staffName}\n${department}\nCode Services`;
 
-        const mailtoUrl = `mailto:${request.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(request.customerEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
         // Log action to history
         await db.history.addHistoryEntry({
@@ -843,14 +843,32 @@ export default function AdminDashboard() {
           staffName,
           actionType: "contacted",
           templateName: "email_template",
-          details: `Opened email client for customer.`
+          details: `Opened Gmail compose for customer.`
         });
 
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("history_updated"));
         }
 
-        window.open(mailtoUrl, "_blank");
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+          const appUrl = `googlegmail:///co?to=${encodeURIComponent(request.customerEmail)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+          
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = appUrl;
+          document.body.appendChild(iframe);
+          
+          const start = Date.now();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            if (Date.now() - start < 1500) {
+              window.open(gmailUrl, "_blank");
+            }
+          }, 1000);
+        } else {
+          window.open(gmailUrl, "_blank");
+        }
 
       } else if (method === "call") {
         const phoneVal = (request.customerCountryCode || "+966") + request.customerPhone;

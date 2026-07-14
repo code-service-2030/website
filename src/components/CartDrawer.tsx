@@ -194,8 +194,39 @@ export const CartDrawer: React.FC = () => {
       if (customerInfo.contactMethod === "call") {
         // Dialers should be opened in self page to trigger native phone apps
         window.open(routeRes.redirectUrl, "_self");
+      } else if (customerInfo.contactMethod === "email") {
+        // Handle Gmail compose with mobile app fallback
+        try {
+          const parsedUrl = new URL(routeRes.redirectUrl);
+          const to = parsedUrl.searchParams.get("to") || "";
+          const subject = parsedUrl.searchParams.get("su") || "";
+          const body = parsedUrl.searchParams.get("body") || "";
+          
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          if (isMobile) {
+            const appUrl = `googlegmail:///co?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.src = appUrl;
+            document.body.appendChild(iframe);
+            
+            const start = Date.now();
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              if (Date.now() - start < 1500) {
+                window.open(routeRes.redirectUrl, "_blank");
+              }
+            }, 1000);
+          } else {
+            window.open(routeRes.redirectUrl, "_blank");
+          }
+        } catch (e) {
+          console.error("Failed to parse Gmail compose URL:", e);
+          window.open(routeRes.redirectUrl, "_blank");
+        }
       } else {
-        // WhatsApp and email can be opened in new tabs
+        // WhatsApp opened in new tab
         window.open(routeRes.redirectUrl, "_blank");
       }
     } else if (routeRes.error) {

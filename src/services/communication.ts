@@ -88,12 +88,14 @@ export class EmailHandler implements ICommunicationHandler {
     body = body.replace(/\{Notes\}/g, payload.generalNotes || "-");
     body = body.replace(/\{Preferred Contact Method\}/g, payload.preferredContact);
 
-    const mailtoUrl = `mailto:${settings.companyEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const bodyFormatted = `Customer Name:\n${payload.customerName}\n\nPhone:\n${payload.customerPhone}\n\nRequested Services:\n${payload.servicesSummary}\n\nCategory:\n${payload.categoriesSummary}\n\nNotes:\n${payload.generalNotes || "-"}\n\nPreferred Contact Method:\nEmail\n\nRequest Number:\n${payload.requestId}`;
+
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(settings.companyEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyFormatted)}`;
 
     return {
       success: true,
-      actionTaken: "Opened Mail Client",
-      redirectUrl: mailtoUrl
+      actionTaken: "Opened Gmail Compose",
+      redirectUrl: gmailUrl
     };
   }
 }
