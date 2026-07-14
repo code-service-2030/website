@@ -826,7 +826,9 @@ export default function AdminDashboard() {
       } else if (method === "email") {
         // Generate prefilled email
         if (!request.customerEmail) {
-          throw new Error(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
+          setOverrideErrorMsg(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
+          setShowOverrideContactModal(true);
+          return;
         }
         
         const subject = `Request #${request.id} - Code Services`;
