@@ -194,7 +194,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
     const id = generateRequestId();
     
     // 1. Insert order details
-    const { error: orderError } = await supabase.from("orders").insert({
+    const insertData: any = {
       id,
       customer_name: orderData.customerName,
       customer_phone: orderData.customerPhone,
@@ -215,7 +215,18 @@ export class SupabaseOrderRepository implements IOrderRepository {
       gateway_name: orderData.gatewayName || "",
       amount_paid: orderData.amountPaid || 0,
       currency: orderData.currency || "SAR"
-    });
+    };
+
+    let { error: orderError } = await supabase.from("orders").insert(insertData);
+
+    // Fallback if the database schema is not updated yet (language column missing)
+    if (orderError && (orderError.message.includes("column \"language\"") || orderError.message.includes("language") || orderError.code === "42703")) {
+      console.warn("Language column does not exist in orders table. Retrying insert without it...");
+      const fallbackData = { ...insertData };
+      delete fallbackData.language;
+      const retryResult = await supabase.from("orders").insert(fallbackData);
+      orderError = retryResult.error;
+    }
 
     if (orderError) {
       console.error("Supabase Order insertion failed:", orderError);
