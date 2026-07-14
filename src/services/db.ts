@@ -920,10 +920,10 @@ export class SupabaseFaqRepository implements IFaqRepository {
   async saveFaqs(faqs: FAQItem[]): Promise<void> {
     const payloads = faqs.map(f => ({
       id: f.id,
-      q_ar: f.q_ar,
-      q_en: f.q_en,
-      a_ar: f.a_ar,
-      a_en: f.a_en,
+      q_ar: f.qAr,
+      q_en: f.qEn,
+      a_ar: f.aAr,
+      a_en: f.aEn,
       visible: f.visible,
       order: f.order
     }));
