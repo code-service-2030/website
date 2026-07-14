@@ -6,6 +6,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
+import { db } from "@/services/db";
+import { supabase } from "@/services/supabaseClient";
 import { 
   defaultCategories, 
   defaultServices, 
@@ -174,66 +176,153 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!authenticated) return;
 
-    // inquiries
-    const savedInq = localStorage.getItem("code_services_inquiries");
-    if (savedInq) {
-      try { setInquiries(JSON.parse(savedInq)); } catch {}
-    }
+    const loadData = async () => {
+      // inquiries
+      const savedInq = localStorage.getItem("code_services_inquiries");
+      if (savedInq) {
+        try { setInquiries(JSON.parse(savedInq)); } catch {}
+      }
 
-    // categories
-    const savedCat = localStorage.getItem("code_services_categories");
-    if (savedCat) {
-      try { setCategories(JSON.parse(savedCat)); } catch {}
-    } else {
-      setCategories(defaultCategories);
-      localStorage.setItem("code_services_categories", JSON.stringify(defaultCategories));
-    }
+      // categories
+      try {
+        const cats = await db.categories.getCategories();
+        if (cats && cats.length > 0) {
+          setCategories(cats);
+        } else {
+          setCategories(defaultCategories);
+          await db.categories.saveCategories(defaultCategories);
+        }
+      } catch (e) {
+        console.error("Error loading categories:", e);
+      }
 
-    // services
-    setServices(getMigratedServices());
+      // services
+      try {
+        const svcs = await db.services.getServices();
+        if (svcs && svcs.length > 0) {
+          setServices(svcs);
+        } else {
+          const migrated = getMigratedServices();
+          setServices(migrated);
+          await db.services.saveServices(migrated);
+        }
+      } catch (e) {
+        console.error("Error loading services:", e);
+      }
 
-    // FAQs
-    const savedFaq = localStorage.getItem("code_services_faqs");
-    if (savedFaq) {
-      try { setFaqs(JSON.parse(savedFaq)); } catch {}
-    } else {
-      setFaqs(defaultFAQs);
-      localStorage.setItem("code_services_faqs", JSON.stringify(defaultFAQs));
-    }
+      // FAQs
+      try {
+        const faqList = await db.faqs.getFaqs();
+        if (faqList && faqList.length > 0) {
+          setFaqs(faqList);
+        } else {
+          setFaqs(defaultFAQs);
+          await db.faqs.saveFaqs(defaultFAQs);
+        }
+      } catch (e) {
+        console.error("Error loading FAQs:", e);
+      }
 
-    // announcement
-    const savedAnn = localStorage.getItem("code_services_announcement");
-    if (savedAnn) {
-      try { setAnnouncement(JSON.parse(savedAnn)); } catch {}
-    } else {
-      setAnnouncement(defaultAnnouncement);
-      localStorage.setItem("code_services_announcement", JSON.stringify(defaultAnnouncement));
-    }
+      // announcement
+      try {
+        const ann = await db.announcements.getAnnouncement();
+        if (ann && ann.id) {
+          setAnnouncement(ann);
+        } else {
+          setAnnouncement(defaultAnnouncement);
+          await db.announcements.saveAnnouncement(defaultAnnouncement);
+        }
+      } catch (e) {
+        console.error("Error loading announcement:", e);
+      }
 
-    // stats counters
-    const savedStats = localStorage.getItem("code_services_stats");
-    if (savedStats) {
-      try { setStats(JSON.parse(savedStats)); } catch {}
-    }
-    
-    const savedLimit = localStorage.getItem("code_services_featured_limit");
-    if (savedLimit) {
-      setFeaturedLimit(parseInt(savedLimit) || 6);
-    }
+      // stats counters
+      const savedStats = localStorage.getItem("code_services_stats");
+      if (savedStats) {
+        try { setStats(JSON.parse(savedStats)); } catch {}
+      }
+      
+      const savedLimit = localStorage.getItem("code_services_featured_limit");
+      if (savedLimit) {
+        setFeaturedLimit(parseInt(savedLimit) || 6);
+      }
+    };
+
+    loadData();
+
+    // Listen to changes
+    const reloadCatalog = async () => {
+      try {
+        const cats = await db.categories.getCategories();
+        if (cats && cats.length > 0) setCategories(cats);
+        const svcs = await db.services.getServices();
+        if (svcs && svcs.length > 0) setServices(svcs);
+      } catch (e) {}
+    };
+
+    const reloadFaqs = async () => {
+      try {
+        const faqList = await db.faqs.getFaqs();
+        if (faqList && faqList.length > 0) setFaqs(faqList);
+      } catch (e) {}
+    };
+
+    const reloadAnnouncement = async () => {
+      try {
+        const ann = await db.announcements.getAnnouncement();
+        if (ann && ann.id) setAnnouncement(ann);
+      } catch (e) {}
+    };
+
+    window.addEventListener("catalog_updated", reloadCatalog);
+    window.addEventListener("faqs_updated", reloadFaqs);
+    window.addEventListener("announcement_updated", reloadAnnouncement);
+
+    return () => {
+      window.removeEventListener("catalog_updated", reloadCatalog);
+      window.removeEventListener("faqs_updated", reloadFaqs);
+      window.removeEventListener("announcement_updated", reloadAnnouncement);
+    };
   }, [authenticated]);
 
   // Load and listen to requests changes
   useEffect(() => {
     if (!authenticated) return;
-    const loadRequests = () => {
-      const savedReq = localStorage.getItem("code_services_requests");
-      if (savedReq) {
-        try { setRequests(JSON.parse(savedReq)); } catch {}
+    
+    const loadRequests = async () => {
+      try {
+        const reqs = await db.orders.getOrders();
+        setRequests(reqs);
+      } catch (e) {
+        console.error("Error loading requests:", e);
       }
     };
+    
     loadRequests();
     window.addEventListener("requests_updated", loadRequests);
-    return () => window.removeEventListener("requests_updated", loadRequests);
+    
+    // Realtime Supabase updates if keys present
+    let channel: any = null;
+    const useSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (useSupabase) {
+      channel = supabase
+        .channel("schema-db-changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "orders" },
+          () => {
+            loadRequests();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      window.removeEventListener("requests_updated", loadRequests);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [authenticated]);
 
   const handleLogout = () => {
