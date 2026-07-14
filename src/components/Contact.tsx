@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Phone, MessageSquare, Clock, MapPin, Send, CheckCircle, Calendar, Map, Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { db } from "@/services/db";
 
 export const Contact: React.FC = () => {
   const { t, locale } = useLanguage();
@@ -61,7 +62,7 @@ export const Contact: React.FC = () => {
     setError(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.message) {
       setError(true);
@@ -69,35 +70,21 @@ export const Contact: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    
-    // Save to LocalStorage for Admin Panel
-    const newInquiry = {
-      id: Date.now().toString(),
-      name: formData.name,
-      email: formData.email || "",
-      phone: formData.phone,
-      service: formData.service || "General",
-      message: formData.message,
-      appointmentDate: formData.appointmentDate || "",
-      appointmentTime: formData.appointmentTime || "",
-      date: new Date().toLocaleString(locale === "ar" ? "ar-EG" : "en-US"),
-      status: "pending",
-    };
+    setError(false);
 
     try {
-      const existing = localStorage.getItem("code_services_inquiries");
-      const list = existing ? JSON.parse(existing) : [];
-      list.unshift(newInquiry);
-      localStorage.setItem("code_services_inquiries", JSON.stringify(list));
-      
-      // Dispatch event to notify admin tables if active
-      window.dispatchEvent(new Event("inquiries_updated"));
-    } catch (err) {
-      console.error("Failed to save inquiry:", err);
-    }
+      await db.inquiries.createInquiry({
+        name: formData.name,
+        email: formData.email || "",
+        phone: formData.phone,
+        service: formData.service || "General",
+        message: formData.message,
+        appointmentDate: formData.appointmentDate || "",
+        appointmentTime: formData.appointmentTime || "",
+        status: "pending"
+      });
 
-    // Simulate API submission
-    setTimeout(() => {
+      // Show success and reset form
       setIsSubmitting(false);
       setSuccess(true);
       setFormData({
@@ -109,9 +96,14 @@ export const Contact: React.FC = () => {
         appointmentDate: "",
         appointmentTime: "",
       });
+      
       // Clear success banner after 5s
       setTimeout(() => setSuccess(false), 5000);
-    }, 1500);
+    } catch (err) {
+      console.error("Failed to submit inquiry to database:", err);
+      setIsSubmitting(false);
+      setError(true);
+    }
   };
 
   const contactDetails = [

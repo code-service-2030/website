@@ -1,6 +1,13 @@
 import { Category, ServiceItem, FAQItem, Announcement } from "@/data/translations";
 import { supabase } from "./supabaseClient";
 
+// Helper to generate unique request ID matching format: KD-2026-123456
+export const generateRequestId = (): string => {
+  const year = new Date().getFullYear();
+  const randNum = String(Math.floor(100000 + Math.random() * 900000));
+  return `KD-${year}-${randNum}`;
+};
+
 // Interfaces for our entities
 export interface Customer {
   id: string;
@@ -34,6 +41,19 @@ export interface Order {
   services: OrderItem[];
 }
 
+export interface Inquiry {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  service: string;
+  message: string;
+  appointmentDate?: string;
+  appointmentTime?: string;
+  date: string;
+  status: "pending" | "completed";
+}
+
 export interface StatsConfig {
   completedServices: string;
   availableServices: string;
@@ -47,6 +67,13 @@ export interface IOrderRepository {
   getOrders(): Promise<Order[]>;
   updateOrderStatus(orderId: string, status: Order["status"]): Promise<Order | null>;
   deleteOrder(orderId: string): Promise<boolean>;
+}
+
+export interface IInquiryRepository {
+  createInquiry(inquiry: Omit<Inquiry, "id" | "date">): Promise<Inquiry>;
+  getInquiries(): Promise<Inquiry[]>;
+  updateInquiryStatus(inquiryId: string, status: Inquiry["status"]): Promise<Inquiry | null>;
+  deleteInquiry(inquiryId: string): Promise<boolean>;
 }
 
 export interface ICategoryRepository {
@@ -72,7 +99,7 @@ export interface IAnnouncementRepository {
 // Supabase implementation of Order repository
 export class SupabaseOrderRepository implements IOrderRepository {
   async createOrder(orderData: Omit<Order, "id" | "timestamp" | "date">): Promise<Order> {
-    const id = "REQ-" + Math.floor(100000 + Math.random() * 900000);
+    const id = generateRequestId();
     
     // 1. Insert order details
     const { error: orderError } = await supabase.from("orders").insert({
@@ -86,7 +113,10 @@ export class SupabaseOrderRepository implements IOrderRepository {
       status: "pending"
     });
 
-    if (orderError) throw orderError;
+    if (orderError) {
+      console.error("Supabase Order insertion failed:", orderError);
+      throw orderError;
+    }
 
     // 2. Insert order services/items
     const orderItems = orderData.services.map(s => ({
@@ -100,7 +130,10 @@ export class SupabaseOrderRepository implements IOrderRepository {
     }));
 
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-    if (itemsError) throw itemsError;
+    if (itemsError) {
+      console.error("Supabase OrderItems insertion failed:", itemsError);
+      throw itemsError;
+    }
 
     const order: Order = {
       ...orderData,
@@ -177,6 +210,96 @@ export class SupabaseOrderRepository implements IOrderRepository {
     
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("requests_updated"));
+    }
+    
+    return true;
+  }
+}
+
+// Supabase implementation of Inquiry repository
+export class SupabaseInquiryRepository implements IInquiryRepository {
+  async createInquiry(inquiryData: Omit<Inquiry, "id" | "date">): Promise<Inquiry> {
+    const id = generateRequestId();
+    
+    const { error } = await supabase.from("inquiries").insert({
+      id,
+      name: inquiryData.name,
+      phone: inquiryData.phone,
+      email: inquiryData.email,
+      service: inquiryData.service,
+      message: inquiryData.message,
+      appointment_date: inquiryData.appointmentDate,
+      appointment_time: inquiryData.appointmentTime,
+      status: "pending"
+    });
+
+    if (error) {
+      console.error("Supabase Inquiry insertion failed:", error);
+      throw error;
+    }
+
+    const inquiry: Inquiry = {
+      ...inquiryData,
+      id,
+      date: new Date().toLocaleString("en-US"),
+      status: "pending"
+    };
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("inquiries_updated"));
+    }
+
+    return inquiry;
+  }
+
+  async getInquiries(): Promise<Inquiry[]> {
+    const { data, error } = await supabase
+      .from("inquiries")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching inquiries from Supabase:", error);
+      return [];
+    }
+
+    return (data || []).map((i: any) => ({
+      id: i.id,
+      name: i.name,
+      phone: i.phone,
+      email: i.email || "",
+      service: i.service || "General",
+      message: i.message,
+      appointmentDate: i.appointment_date || "",
+      appointmentTime: i.appointment_time || "",
+      date: new Date(i.created_at).toLocaleString("en-US"),
+      status: i.status
+    }));
+  }
+
+  async updateInquiryStatus(inquiryId: string, status: Inquiry["status"]): Promise<Inquiry | null> {
+    const { data, error } = await supabase
+      .from("inquiries")
+      .update({ status })
+      .eq("id", inquiryId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("inquiries_updated"));
+    }
+    
+    return data;
+  }
+
+  async deleteInquiry(inquiryId: string): Promise<boolean> {
+    const { error } = await supabase.from("inquiries").delete().eq("id", inquiryId);
+    if (error) return false;
+    
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("inquiries_updated"));
     }
     
     return true;
@@ -382,7 +505,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
 // LocalStorage implementations of repositories as development fallback
 export class LocalOrderRepository implements IOrderRepository {
   async createOrder(orderData: Omit<Order, "id" | "timestamp" | "date">): Promise<Order> {
-    const id = "REQ-" + Math.floor(100000 + Math.random() * 900000);
+    const id = generateRequestId();
     const order: Order = {
       ...orderData,
       id,
@@ -429,6 +552,60 @@ export class LocalOrderRepository implements IOrderRepository {
     if (filtered.length !== list.length) {
       localStorage.setItem("code_services_requests", JSON.stringify(filtered));
       window.dispatchEvent(new Event("requests_updated"));
+      return true;
+    }
+    return false;
+  }
+}
+
+export class LocalInquiryRepository implements IInquiryRepository {
+  async createInquiry(inquiryData: Omit<Inquiry, "id" | "date">): Promise<Inquiry> {
+    const id = generateRequestId();
+    const inquiry: Inquiry = {
+      ...inquiryData,
+      id,
+      date: new Date().toLocaleString("en-US"),
+      status: "pending"
+    };
+
+    if (typeof window !== "undefined") {
+      const existing = localStorage.getItem("code_services_inquiries");
+      const list = existing ? JSON.parse(existing) : [];
+      list.unshift(inquiry);
+      localStorage.setItem("code_services_inquiries", JSON.stringify(list));
+      window.dispatchEvent(new Event("inquiries_updated"));
+    }
+    return inquiry;
+  }
+
+  async getInquiries(): Promise<Inquiry[]> {
+    if (typeof window === "undefined") return [];
+    const existing = localStorage.getItem("code_services_inquiries");
+    return existing ? JSON.parse(existing) : [];
+  }
+
+  async updateInquiryStatus(inquiryId: string, status: Inquiry["status"]): Promise<Inquiry | null> {
+    if (typeof window === "undefined") return null;
+    const existing = localStorage.getItem("code_services_inquiries");
+    const list: Inquiry[] = existing ? JSON.parse(existing) : [];
+    const idx = list.findIndex(i => i.id === inquiryId);
+    if (idx > -1) {
+      list[idx].status = status;
+      localStorage.setItem("code_services_inquiries", JSON.stringify(list));
+      window.dispatchEvent(new Event("inquiries_updated"));
+      return list[idx];
+    }
+    return null;
+  }
+
+  async deleteInquiry(inquiryId: string): Promise<boolean> {
+    if (typeof window === "undefined") return false;
+    const existing = localStorage.getItem("code_services_inquiries");
+    const list: Inquiry[] = existing ? JSON.parse(existing) : [];
+    const filtered = list.filter(i => i.id !== inquiryId);
+    if (filtered.length !== list.length) {
+      localStorage.setItem("code_services_inquiries", JSON.stringify(filtered));
+      window.dispatchEvent(new Event("inquiries_updated"));
       return true;
     }
     return false;
@@ -500,6 +677,7 @@ export class DatabaseService {
   private static instance: DatabaseService;
   
   public orders: IOrderRepository;
+  public inquiries: IInquiryRepository;
   public categories: ICategoryRepository;
   public services: IServiceRepository;
   public faqs: IFaqRepository;
@@ -511,6 +689,7 @@ export class DatabaseService {
     if (useSupabase) {
       console.log("Supabase credentials detected! Initializing Supabase repositories.");
       this.orders = new SupabaseOrderRepository();
+      this.inquiries = new SupabaseInquiryRepository();
       this.categories = new SupabaseCategoryRepository();
       this.services = new SupabaseServiceRepository();
       this.faqs = new SupabaseFaqRepository();
@@ -518,6 +697,7 @@ export class DatabaseService {
     } else {
       console.log("No Supabase configuration. Initializing LocalStorage repositories.");
       this.orders = new LocalOrderRepository();
+      this.inquiries = new LocalInquiryRepository();
       this.categories = new LocalCategoryRepository();
       this.services = new LocalServiceRepository();
       this.faqs = new LocalFaqRepository();

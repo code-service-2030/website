@@ -124,8 +124,59 @@ CREATE TABLE IF NOT EXISTS admin_users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create helpful Indexes for optimized production lookups
 CREATE INDEX IF NOT EXISTS idx_services_category ON services(category_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_faq_order ON faq("order");
+
+-- 11. Create INQUIRIES table (Contact messages)
+CREATE TABLE IF NOT EXISTS inquiries (
+    id VARCHAR(100) PRIMARY KEY, -- e.g. KD-2026-000125
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NULL,
+    service VARCHAR(100) NULL,
+    message TEXT NOT NULL,
+    appointment_date VARCHAR(50) NULL,
+    appointment_time VARCHAR(50) NULL,
+    status VARCHAR(50) DEFAULT 'pending', -- pending, completed
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_inquiries_status ON inquiries(status);
+
+-- Enable RLS and Create Policies for Public Access
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE faq ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gallery ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inquiries ENABLE ROW LEVEL SECURITY;
+
+-- Allow public operations for clients & admin dashboard
+CREATE POLICY "Allow public insert on customers" ON customers FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select on customers" ON customers FOR SELECT USING (true);
+
+CREATE POLICY "Allow public select on categories" ON categories FOR SELECT USING (true);
+CREATE POLICY "Allow public select on services" ON services FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert on orders" ON orders FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select on orders" ON orders FOR SELECT USING (true);
+CREATE POLICY "Allow public update on orders" ON orders FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete on orders" ON orders FOR DELETE USING (true);
+
+CREATE POLICY "Allow public insert on order_items" ON order_items FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select on order_items" ON order_items FOR SELECT USING (true);
+
+CREATE POLICY "Allow public select on faq" ON faq FOR SELECT USING (true);
+CREATE POLICY "Allow public select on announcements" ON announcements FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert on inquiries" ON inquiries FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select on inquiries" ON inquiries FOR SELECT USING (true);
+CREATE POLICY "Allow public update on inquiries" ON inquiries FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete on inquiries" ON inquiries FOR DELETE USING (true);
+

@@ -178,9 +178,11 @@ export default function AdminDashboard() {
 
     const loadData = async () => {
       // inquiries
-      const savedInq = localStorage.getItem("code_services_inquiries");
-      if (savedInq) {
-        try { setInquiries(JSON.parse(savedInq)); } catch {}
+      try {
+        const inqs = await db.inquiries.getInquiries();
+        setInquiries(inqs);
+      } catch (e) {
+        console.error("Error loading inquiries:", e);
       }
 
       // categories
@@ -274,14 +276,23 @@ export default function AdminDashboard() {
       } catch (e) {}
     };
 
+    const reloadInquiries = async () => {
+      try {
+        const inqs = await db.inquiries.getInquiries();
+        setInquiries(inqs);
+      } catch (e) {}
+    };
+
     window.addEventListener("catalog_updated", reloadCatalog);
     window.addEventListener("faqs_updated", reloadFaqs);
     window.addEventListener("announcement_updated", reloadAnnouncement);
+    window.addEventListener("inquiries_updated", reloadInquiries);
 
     return () => {
       window.removeEventListener("catalog_updated", reloadCatalog);
       window.removeEventListener("faqs_updated", reloadFaqs);
       window.removeEventListener("announcement_updated", reloadAnnouncement);
+      window.removeEventListener("inquiries_updated", reloadInquiries);
     };
   }, [authenticated]);
 
@@ -297,16 +308,26 @@ export default function AdminDashboard() {
         console.error("Error loading requests:", e);
       }
     };
+
+    const loadInquiries = async () => {
+      try {
+        const inqs = await db.inquiries.getInquiries();
+        setInquiries(inqs);
+      } catch (e) {
+        console.error("Error loading inquiries:", e);
+      }
+    };
     
     loadRequests();
     window.addEventListener("requests_updated", loadRequests);
     
     // Realtime Supabase updates if keys present
-    let channel: any = null;
+    let channelOrders: any = null;
+    let channelInquiries: any = null;
     const useSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (useSupabase) {
-      channel = supabase
-        .channel("schema-db-changes")
+      channelOrders = supabase
+        .channel("orders-db-changes")
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "orders" },
@@ -315,13 +336,23 @@ export default function AdminDashboard() {
           }
         )
         .subscribe();
+
+      channelInquiries = supabase
+        .channel("inquiries-db-changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "inquiries" },
+          () => {
+            loadInquiries();
+          }
+        )
+        .subscribe();
     }
 
     return () => {
       window.removeEventListener("requests_updated", loadRequests);
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      if (channelOrders) supabase.removeChannel(channelOrders);
+      if (channelInquiries) supabase.removeChannel(channelInquiries);
     };
   }, [authenticated]);
 
@@ -331,46 +362,46 @@ export default function AdminDashboard() {
   };
 
   // Inquiry actions
-  const toggleInquiryStatus = (id: string) => {
-    const updated = inquiries.map((inq) => {
-      if (inq.id === id) {
-        return { ...inq, status: (inq.status === "pending" ? "completed" : "pending") as "pending" | "completed" };
-      }
-      return inq;
-    });
-    setInquiries(updated);
-    localStorage.setItem("code_services_inquiries", JSON.stringify(updated));
+  // Inquiry actions
+  const toggleInquiryStatus = async (id: string) => {
+    const inquiry = inquiries.find(i => i.id === id);
+    if (!inquiry) return;
+    const newStatus = inquiry.status === "pending" ? "completed" : "pending";
+    try {
+      await db.inquiries.updateInquiryStatus(id, newStatus);
+    } catch (e) {
+      console.error("Failed to update inquiry status:", e);
+    }
   };
 
-  const deleteInquiry = (id: string) => {
+  const deleteInquiry = async (id: string) => {
     if (window.confirm(locale === "ar" ? "هل أنت متأكد من حذف هذا الاستفسار؟" : "Delete this inquiry?")) {
-      const updated = inquiries.filter((inq) => inq.id !== id);
-      setInquiries(updated);
-      localStorage.setItem("code_services_inquiries", JSON.stringify(updated));
+      try {
+        await db.inquiries.deleteInquiry(id);
+      } catch (e) {
+        console.error("Failed to delete inquiry:", e);
+      }
     }
   };
 
   // Requests Action Handlers
-  const updateRequestStatus = (id: string, newStatus: any) => {
-    const updated = requests.map((req) => {
-      if (req.id === id) {
-        return { ...req, status: newStatus };
-      }
-      return req;
-    });
-    setRequests(updated);
-    localStorage.setItem("code_services_requests", JSON.stringify(updated));
-    window.dispatchEvent(new Event("requests_updated"));
+  const updateRequestStatus = async (id: string, newStatus: any) => {
+    try {
+      await db.orders.updateOrderStatus(id, newStatus);
+    } catch (e) {
+      console.error("Failed to update request status:", e);
+    }
   };
 
-  const deleteRequest = (id: string) => {
+  const deleteRequest = async (id: string) => {
     if (window.confirm(locale === "ar" ? "هل أنت متأكد من حذف هذا الطلب؟" : "Delete this request?")) {
-      const updated = requests.filter((req) => req.id !== id);
-      setRequests(updated);
-      localStorage.setItem("code_services_requests", JSON.stringify(updated));
-      window.dispatchEvent(new Event("requests_updated"));
-      if (selectedRequest && selectedRequest.id === id) {
-        setSelectedRequest(null);
+      try {
+        const success = await db.orders.deleteOrder(id);
+        if (success && selectedRequest && selectedRequest.id === id) {
+          setSelectedRequest(null);
+        }
+      } catch (e) {
+        console.error("Failed to delete request:", e);
       }
     }
   };
@@ -473,6 +504,7 @@ export default function AdminDashboard() {
     const updated = [...categories, added];
     setCategories(updated);
     localStorage.setItem("code_services_categories", JSON.stringify(updated));
+    db.categories.saveCategories(updated).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
 
     // Reset
@@ -487,6 +519,7 @@ export default function AdminDashboard() {
     const updated = categories.map((cat) => (cat.id === editingCategory.id ? editingCategory : cat));
     setCategories(updated);
     localStorage.setItem("code_services_categories", JSON.stringify(updated));
+    db.categories.saveCategories(updated).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
     setEditingCategory(null);
   };
@@ -504,6 +537,7 @@ export default function AdminDashboard() {
       const updated = categories.filter((cat) => cat.id !== id).map((cat, idx) => ({ ...cat, order: idx + 1 }));
       setCategories(updated);
       localStorage.setItem("code_services_categories", JSON.stringify(updated));
+      db.categories.saveCategories(updated).catch(console.error);
       window.dispatchEvent(new Event("catalog_updated"));
     }
   };
@@ -539,6 +573,7 @@ export default function AdminDashboard() {
     const updated = [...services, added];
     setServices(updated);
     localStorage.setItem("code_services_catalog", JSON.stringify(updated));
+    db.services.saveServices(updated).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
 
     // Reset
@@ -557,6 +592,7 @@ export default function AdminDashboard() {
     const updated = services.map((s) => (s.id === editingService.id ? editingService : s));
     setServices(updated);
     localStorage.setItem("code_services_catalog", JSON.stringify(updated));
+    db.services.saveServices(updated).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
     setEditingService(null);
   };
@@ -566,6 +602,7 @@ export default function AdminDashboard() {
       const updated = services.filter((s) => s.id !== id).map((s, idx) => ({ ...s, order: idx + 1 }));
       setServices(updated);
       localStorage.setItem("code_services_catalog", JSON.stringify(updated));
+      db.services.saveServices(updated).catch(console.error);
       window.dispatchEvent(new Event("catalog_updated"));
     }
   };
@@ -583,6 +620,7 @@ export default function AdminDashboard() {
     const updated = [...services, duplicated];
     setServices(updated);
     localStorage.setItem("code_services_catalog", JSON.stringify(updated));
+    db.services.saveServices(updated).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
   };
 
@@ -604,6 +642,7 @@ export default function AdminDashboard() {
     const updated = [...faqs, added];
     setFaqs(updated);
     localStorage.setItem("code_services_faqs", JSON.stringify(updated));
+    db.faqs.saveFaqs(updated).catch(console.error);
     window.dispatchEvent(new Event("faqs_updated"));
 
     setNewFAQ({ qAr: "", qEn: "", aAr: "", aEn: "", visible: true });
@@ -617,6 +656,7 @@ export default function AdminDashboard() {
     const updated = faqs.map((f) => (f.id === editingFAQ.id ? editingFAQ : f));
     setFaqs(updated);
     localStorage.setItem("code_services_faqs", JSON.stringify(updated));
+    db.faqs.saveFaqs(updated).catch(console.error);
     window.dispatchEvent(new Event("faqs_updated"));
     setEditingFAQ(null);
   };
@@ -626,6 +666,7 @@ export default function AdminDashboard() {
       const updated = faqs.filter((f) => f.id !== id).map((f, idx) => ({ ...f, order: idx + 1 }));
       setFaqs(updated);
       localStorage.setItem("code_services_faqs", JSON.stringify(updated));
+      db.faqs.saveFaqs(updated).catch(console.error);
       window.dispatchEvent(new Event("faqs_updated"));
     }
   };
@@ -634,6 +675,7 @@ export default function AdminDashboard() {
   const handleSaveAnnouncement = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem("code_services_announcement", JSON.stringify(announcement));
+    db.announcements.saveAnnouncement(announcement).catch(console.error);
     window.dispatchEvent(new Event("announcement_updated"));
     alert(locale === "ar" ? "تم حفظ التنبيه بنجاح!" : "Announcement saved successfully!");
   };
@@ -667,6 +709,7 @@ export default function AdminDashboard() {
     const reordered = list.map((cat, idx) => ({ ...cat, order: idx + 1 }));
     setCategories(reordered);
     localStorage.setItem("code_services_categories", JSON.stringify(reordered));
+    db.categories.saveCategories(reordered).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
     setDraggedCatIdx(null);
   };
@@ -683,6 +726,7 @@ export default function AdminDashboard() {
     const reordered = list.map((cat, idx) => ({ ...cat, order: idx + 1 }));
     setCategories(reordered);
     localStorage.setItem("code_services_categories", JSON.stringify(reordered));
+    db.categories.saveCategories(reordered).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
   };
 
@@ -705,6 +749,7 @@ export default function AdminDashboard() {
     const reordered = list.map((s, idx) => ({ ...s, order: idx + 1 }));
     setServices(reordered);
     localStorage.setItem("code_services_catalog", JSON.stringify(reordered));
+    db.services.saveServices(reordered).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
     setDraggedServiceIdx(null);
   };
@@ -721,6 +766,7 @@ export default function AdminDashboard() {
     const reordered = list.map((s, idx) => ({ ...s, order: idx + 1 }));
     setServices(reordered);
     localStorage.setItem("code_services_catalog", JSON.stringify(reordered));
+    db.services.saveServices(reordered).catch(console.error);
     window.dispatchEvent(new Event("catalog_updated"));
   };
 
@@ -1503,6 +1549,7 @@ export default function AdminDashboard() {
                                     const updated = services.map(s => s.id === service.id ? { ...s, featured: !s.featured } : s);
                                     setServices(updated);
                                     localStorage.setItem("code_services_catalog", JSON.stringify(updated));
+                                    db.services.saveServices(updated).catch(console.error);
                                     window.dispatchEvent(new Event("catalog_updated"));
                                   }}
                                   className={`px-2 py-0.5 rounded-full text-xxs font-black cursor-pointer ${
@@ -1522,6 +1569,7 @@ export default function AdminDashboard() {
                                     const updated = services.map(s => s.id === service.id ? { ...s, visible: !s.visible } : s);
                                     setServices(updated);
                                     localStorage.setItem("code_services_catalog", JSON.stringify(updated));
+                                    db.services.saveServices(updated).catch(console.error);
                                     window.dispatchEvent(new Event("catalog_updated"));
                                   }}
                                   className={`px-2 py-0.5 rounded text-xxs font-black cursor-pointer ${
@@ -1722,6 +1770,7 @@ export default function AdminDashboard() {
                               const reorder = list.map((f, i) => ({ ...f, order: i + 1 }));
                               setFaqs(reorder);
                               localStorage.setItem("code_services_faqs", JSON.stringify(reorder));
+                              db.faqs.saveFaqs(reorder).catch(console.error);
                               window.dispatchEvent(new Event("faqs_updated"));
                             }}
                             className="p-1 rounded bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray disabled:opacity-20 cursor-pointer text-gray-505"
@@ -1739,6 +1788,7 @@ export default function AdminDashboard() {
                               const reorder = list.map((f, i) => ({ ...f, order: i + 1 }));
                               setFaqs(reorder);
                               localStorage.setItem("code_services_faqs", JSON.stringify(reorder));
+                              db.faqs.saveFaqs(reorder).catch(console.error);
                               window.dispatchEvent(new Event("faqs_updated"));
                             }}
                             className="p-1 rounded bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray disabled:opacity-20 cursor-pointer text-gray-550"
