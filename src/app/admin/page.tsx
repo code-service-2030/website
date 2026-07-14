@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
 import { db } from "@/services/db";
 import { supabase } from "@/services/supabaseClient";
+import { exportRequestsToExcel } from "@/services/excelExport";
 import { 
   defaultCategories, 
   defaultServices, 
@@ -49,7 +50,16 @@ import {
   Megaphone,
   Copy,
   Star,
-  ShoppingCart
+  ShoppingCart,
+  Users,
+  FileEdit,
+  Send,
+  History,
+  UserPlus,
+  ToggleLeft,
+  ToggleRight,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -82,7 +92,7 @@ export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"inquiries" | "requests" | "categories" | "services" | "announcements" | "faqs" | "stats">("requests");
+  const [activeTab, setActiveTab] = useState<"inquiries" | "requests" | "categories" | "services" | "announcements" | "faqs" | "stats" | "staff" | "templates">("requests");
 
   // Database States (loaded from localStorage)
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -98,6 +108,28 @@ export default function AdminDashboard() {
     googleRating: "4.9★"
   });
   const [featuredLimit, setFeaturedLimit] = useState(6);
+
+  // Staff Management States
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [newStaff, setNewStaff] = useState({ fullName: '', jobTitle: '', phone: '', whatsapp: '', email: '', photoUrl: '', active: true, signature: '' });
+
+  // Message Templates States
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [showAddTemplateModal, setShowAddTemplateModal] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [newTemplate, setNewTemplate] = useState({ id: '', name: '', body: '' });
+
+  // WhatsApp Contact Dialog States
+  const [showWhatsAppDialog, setShowWhatsAppDialog] = useState(false);
+  const [whatsAppRequest, setWhatsAppRequest] = useState<any>(null);
+  const [selectedStaffForMessage, setSelectedStaffForMessage] = useState('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState('welcome');
+  const [whatsAppPreview, setWhatsAppPreview] = useState('');
+
+  // Request History States
+  const [requestHistory, setRequestHistory] = useState<any[]>([]);
 
   // Search & Filter state
   const [searchInquiries, setSearchInquiries] = useState("");
@@ -248,6 +280,39 @@ export default function AdminDashboard() {
       if (savedLimit) {
         setFeaturedLimit(parseInt(savedLimit) || 6);
       }
+
+      // Staff
+      try {
+        const staff = await db.staff.getStaff();
+        setStaffMembers(staff);
+      } catch (e) {
+        console.error('Error loading staff:', e);
+      }
+
+      // Message Templates (with default seeding)
+      try {
+        const loadedTemplates = await db.templates.getTemplates();
+        if (loadedTemplates && loadedTemplates.length > 0) {
+          setTemplates(loadedTemplates);
+        } else {
+          // Seed default templates
+          const defaultTemplates = [
+            { id: 'welcome', name: 'ترحيب / Welcome', body: 'السلام عليكم أستاذ/ة {Customer Name}\n\nنرحب بك في كود خدمات.\nأنا {Staff Name} وسأكون المسؤول عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n{Request ID}\n\nالخدمة المطلوبة:\n{Requested Services}\n\nإذا احتجتم أي استفسار فأنا في خدمتكم.\n\nشكراً لاختياركم كود خدمات.\n\n{Staff Signature}' },
+            { id: 'received', name: 'تم الاستلام / Request Received', body: 'السلام عليكم {Customer Name}\n\nتم استلام طلبكم بنجاح.\nرقم الطلب: {Request ID}\nالخدمة: {Requested Services}\n\nسيتم البدء في معالجته في أقرب وقت.\n\n{Staff Signature}' },
+            { id: 'missing_docs', name: 'مستندات ناقصة / Missing Documents', body: 'السلام عليكم {Customer Name}\n\nبخصوص طلبكم رقم {Request ID}\nنحتاج منكم المستندات التالية:\n\n[أضف المستندات هنا]\n\nيرجى إرسالها في أقرب وقت.\n\n{Staff Signature}' },
+            { id: 'payment', name: 'تذكير بالدفع / Payment Reminder', body: 'السلام عليكم {Customer Name}\n\nنود تذكيركم بسداد رسوم الخدمة لطلبكم رقم {Request ID}.\n\nالخدمة: {Requested Services}\n\nيرجى التواصل معنا لإتمام عملية الدفع.\n\n{Staff Signature}' },
+            { id: 'completed', name: 'تم الإنجاز / Request Completed', body: 'السلام عليكم {Customer Name}\n\nيسرنا إبلاغكم بأن طلبكم رقم {Request ID} قد تم إنجازه بنجاح.\n\nالخدمة: {Requested Services}\n\nشكراً لثقتكم بكود خدمات.\n\n{Staff Signature}' },
+            { id: 'ready', name: 'جاهز للاستلام / Ready for Collection', body: 'السلام عليكم {Customer Name}\n\nطلبكم رقم {Request ID} جاهز للاستلام.\n\nيرجى التواصل معنا لتحديد موعد الاستلام.\n\n{Staff Signature}' },
+            { id: 'info_needed', name: 'نحتاج معلومات / Need More Info', body: 'السلام عليكم {Customer Name}\n\nبخصوص طلبكم رقم {Request ID}\nنحتاج منكم بعض المعلومات الإضافية:\n\n[أضف الأسئلة هنا]\n\nيرجى الرد في أقرب وقت.\n\n{Staff Signature}' }
+          ];
+          for (const tmpl of defaultTemplates) {
+            try { await db.templates.createTemplate(tmpl); } catch {}
+          }
+          setTemplates(defaultTemplates as any[]);
+        }
+      } catch (e) {
+        console.error('Error loading templates:', e);
+      }
     };
 
     loadData();
@@ -283,16 +348,34 @@ export default function AdminDashboard() {
       } catch (e) {}
     };
 
+    const reloadStaff = async () => {
+      try {
+        const staff = await db.staff.getStaff();
+        setStaffMembers(staff);
+      } catch (e) {}
+    };
+
+    const reloadTemplates = async () => {
+      try {
+        const tmpls = await db.templates.getTemplates();
+        if (tmpls && tmpls.length > 0) setTemplates(tmpls);
+      } catch (e) {}
+    };
+
     window.addEventListener("catalog_updated", reloadCatalog);
     window.addEventListener("faqs_updated", reloadFaqs);
     window.addEventListener("announcement_updated", reloadAnnouncement);
     window.addEventListener("inquiries_updated", reloadInquiries);
+    window.addEventListener("staff_updated", reloadStaff);
+    window.addEventListener("templates_updated", reloadTemplates);
 
     return () => {
       window.removeEventListener("catalog_updated", reloadCatalog);
       window.removeEventListener("faqs_updated", reloadFaqs);
       window.removeEventListener("announcement_updated", reloadAnnouncement);
       window.removeEventListener("inquiries_updated", reloadInquiries);
+      window.removeEventListener("staff_updated", reloadStaff);
+      window.removeEventListener("templates_updated", reloadTemplates);
     };
   }, [authenticated]);
 
@@ -484,6 +567,155 @@ export default function AdminDashboard() {
   const triggerPrintPDF = () => {
     window.print();
   };
+
+  // ===== STAFF CRUD HANDLERS =====
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStaff.fullName || !newStaff.jobTitle) return;
+    try {
+      const created = await db.staff.createStaffMember(newStaff);
+      setStaffMembers(prev => [...prev, created]);
+      setNewStaff({ fullName: '', jobTitle: '', phone: '', whatsapp: '', email: '', photoUrl: '', active: true, signature: '' });
+      setShowAddStaffModal(false);
+    } catch (e) {
+      console.error('Failed to create staff:', e);
+    }
+  };
+
+  const handleEditStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    try {
+      const updated = await db.staff.updateStaffMember(editingStaff.id, editingStaff);
+      if (updated) {
+        setStaffMembers(prev => prev.map(s => s.id === editingStaff.id ? { ...s, ...editingStaff } : s));
+      }
+      setEditingStaff(null);
+    } catch (e) {
+      console.error('Failed to update staff:', e);
+    }
+  };
+
+  const deleteStaff = async (id: string) => {
+    if (window.confirm(locale === 'ar' ? 'هل أنت متأكد من حذف هذا الموظف؟' : 'Delete this staff member?')) {
+      try {
+        const success = await db.staff.deleteStaffMember(id);
+        if (success) {
+          setStaffMembers(prev => prev.filter(s => s.id !== id));
+        }
+      } catch (e) {
+        console.error('Failed to delete staff:', e);
+      }
+    }
+  };
+
+  const toggleStaffActive = async (staff: any) => {
+    try {
+      const updated = await db.staff.updateStaffMember(staff.id, { active: !staff.active });
+      if (updated) {
+        setStaffMembers(prev => prev.map(s => s.id === staff.id ? { ...s, active: !staff.active } : s));
+      }
+    } catch (e) {
+      console.error('Failed to toggle staff active:', e);
+    }
+  };
+
+  // ===== MESSAGE TEMPLATE CRUD HANDLERS =====
+  const handleAddTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTemplate.id || !newTemplate.name || !newTemplate.body) return;
+    try {
+      const created = await db.templates.createTemplate(newTemplate);
+      setTemplates(prev => [...prev, created]);
+      setNewTemplate({ id: '', name: '', body: '' });
+      setShowAddTemplateModal(false);
+    } catch (e) {
+      console.error('Failed to create template:', e);
+    }
+  };
+
+  const handleEditTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTemplate) return;
+    try {
+      const updated = await db.templates.updateTemplate(editingTemplate.id, editingTemplate.name, editingTemplate.body);
+      if (updated) {
+        setTemplates(prev => prev.map(t => t.id === editingTemplate.id ? { ...t, name: editingTemplate.name, body: editingTemplate.body } : t));
+      }
+      setEditingTemplate(null);
+    } catch (e) {
+      console.error('Failed to update template:', e);
+    }
+  };
+
+  const deleteTemplate = async (id: string) => {
+    if (window.confirm(locale === 'ar' ? 'هل أنت متأكد من حذف هذا القالب؟' : 'Delete this template?')) {
+      try {
+        const success = await db.templates.deleteTemplate(id);
+        if (success) {
+          setTemplates(prev => prev.filter(t => t.id !== id));
+        }
+      } catch (e) {
+        console.error('Failed to delete template:', e);
+      }
+    }
+  };
+
+  // ===== WHATSAPP DIALOG HELPERS =====
+  const resolveTemplate = (template: any, request: any, staff: any) => {
+    if (!template || !request) return '';
+    let text = template.body || '';
+    text = text.replace(/\{Customer Name\}/g, request.customerName || '');
+    text = text.replace(/\{Staff Name\}/g, staff?.fullName || '');
+    text = text.replace(/\{Request ID\}/g, request.id || '');
+    text = text.replace(/\{Requested Services\}/g,
+      request.services?.map((s: any) => s.titleAr || s.titleEn).join(', ') || ''
+    );
+    text = text.replace(/\{Staff Signature\}/g, staff?.signature || '');
+    return text;
+  };
+
+  const openWhatsAppDialog = (request: any) => {
+    setWhatsAppRequest(request);
+    setSelectedStaffForMessage('');
+    setSelectedTemplateId('welcome');
+    setWhatsAppPreview('');
+    setShowWhatsAppDialog(true);
+  };
+
+  // ===== ASSIGN STAFF TO REQUEST =====
+  const handleAssignStaff = async (requestId: string, staffId: string) => {
+    try {
+      const success = await db.orders.assignStaff(requestId, staffId || null);
+      if (success) {
+        setRequests(prev => prev.map(r => r.id === requestId ? { ...r, assignedStaffId: staffId || undefined } : r));
+        if (selectedRequest && selectedRequest.id === requestId) {
+          setSelectedRequest({ ...selectedRequest, assignedStaffId: staffId || undefined });
+        }
+      }
+    } catch (e) {
+      console.error('Failed to assign staff:', e);
+    }
+  };
+
+  // ===== REQUEST HISTORY LOADING =====
+  useEffect(() => {
+    if (selectedRequest) {
+      db.history.getHistory(selectedRequest.id).then(setRequestHistory).catch(console.error);
+    } else {
+      setRequestHistory([]);
+    }
+  }, [selectedRequest]);
+
+  // ===== WHATSAPP PREVIEW UPDATE =====
+  useEffect(() => {
+    if (showWhatsAppDialog && whatsAppRequest) {
+      const template = templates.find(t => t.id === selectedTemplateId);
+      const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
+      setWhatsAppPreview(resolveTemplate(template, whatsAppRequest, staff));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showWhatsAppDialog, whatsAppRequest, selectedTemplateId, selectedStaffForMessage, templates, staffMembers]);
 
   // CATEGORIES CRUD handlers
   const handleAddCategory = (e: React.FormEvent) => {
@@ -952,7 +1184,9 @@ export default function AdminDashboard() {
             { id: "services", labelAr: "🛠️ إدارة الخدمات", labelEn: "🛠️ Services Catalog", icon: <Settings size={15} /> },
             { id: "announcements", labelAr: "📢 شريط الإعلانات", labelEn: "📢 Announcements", icon: <Megaphone size={15} /> },
             { id: "faqs", labelAr: "❓ الأسئلة الشائعة", labelEn: "❓ FAQs Manager", icon: <HelpCircle size={15} /> },
-            { id: "stats", labelAr: "📊 إحصائيات وعدادات", labelEn: "📊 Statistics/Counters", icon: <BarChart size={15} /> }
+            { id: "stats", labelAr: "📊 إحصائيات وعدادات", labelEn: "📊 Statistics/Counters", icon: <BarChart size={15} /> },
+            { id: "staff", labelAr: "👥 إدارة الموظفين", labelEn: "👥 Staff Management", icon: <Users size={15} /> },
+            { id: "templates", labelAr: "📝 قوالب الرسائل", labelEn: "📝 Message Templates", icon: <FileEdit size={15} /> }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1004,12 +1238,12 @@ export default function AdminDashboard() {
                   </select>
 
                   <button
-                    onClick={exportRequestsToCSV}
+                    onClick={() => exportRequestsToExcel(requests, staffMembers)}
                     className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer ml-auto"
-                    title="Export CSV"
+                    title="Export Excel"
                   >
                     <Download size={15} />
-                    <span className="hidden md:inline">{locale === "ar" ? "تصدير Excel" : "Export CSV"}</span>
+                    <span className="hidden md:inline">{locale === "ar" ? "تصدير Excel" : "Export Excel"}</span>
                   </button>
 
                   <button
@@ -1071,7 +1305,7 @@ export default function AdminDashboard() {
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-xs font-mono select-all">
-                                {req.customerPhone}
+                                {(req.customerCountryCode || '+966') + ' ' + req.customerPhone}
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex flex-wrap gap-1 max-w-xs">
@@ -1915,6 +2149,168 @@ export default function AdminDashboard() {
                 </button>
 
               </form>
+            </div>
+          )}
+
+          {/* TAB 7: Staff Management */}
+          {activeTab === "staff" && (
+            <div className="space-y-6">
+              {/* Header Action */}
+              <div className="flex justify-between items-center select-none">
+                <h3 className="text-lg font-black">
+                  {locale === "ar" ? "إدارة الموظفين" : "Staff Management"}
+                </h3>
+                <button
+                  onClick={() => setShowAddStaffModal(true)}
+                  className="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark font-bold text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <UserPlus size={16} />
+                  <span>{locale === "ar" ? "إضافة موظف" : "Add Staff"}</span>
+                </button>
+              </div>
+
+              {/* Staff Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {staffMembers.length === 0 ? (
+                  <div className="col-span-full text-center py-12 text-gray-400 font-bold">
+                    {locale === "ar" ? "لا يوجد موظفين مسجلين بعد." : "No staff members yet."}
+                  </div>
+                ) : (
+                  staffMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className="glass p-6 rounded-2xl border border-primary/5 dark:border-white/5 shadow-sm text-start relative group hover:border-primary/20 transition-all"
+                    >
+                      {/* Active Badge */}
+                      <div className="flex items-center justify-between mb-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xxs font-black ${
+                          member.active
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "bg-red-500/10 text-red-500 dark:text-red-400"
+                        }`}>
+                          {member.active ? (locale === "ar" ? "نشط" : "Active") : (locale === "ar" ? "غير نشط" : "Inactive")}
+                        </span>
+                        <button
+                          onClick={() => toggleStaffActive(member)}
+                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-primary/10 dark:bg-medium-gray text-gray-500 cursor-pointer transition-colors"
+                          title={member.active ? "Deactivate" : "Activate"}
+                        >
+                          {member.active ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} />}
+                        </button>
+                      </div>
+
+                      {/* Name & Title */}
+                      <h4 className="text-lg font-black text-gray-900 dark:text-white">{member.fullName}</h4>
+                      <p className="text-xs font-bold text-primary dark:text-primary-light mt-0.5">{member.jobTitle}</p>
+
+                      {/* Contact Details */}
+                      <div className="mt-4 space-y-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        {member.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone size={12} />
+                            <span className="font-mono">{member.phone}</span>
+                          </div>
+                        )}
+                        {member.whatsapp && (
+                          <div className="flex items-center gap-2">
+                            <MessageSquare size={12} />
+                            <span className="font-mono">{member.whatsapp}</span>
+                          </div>
+                        )}
+                        {member.email && (
+                          <div className="flex items-center gap-2">
+                            <Globe size={12} />
+                            <span>{member.email}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5 mt-5 pt-4 border-t border-gray-100 dark:border-white/5">
+                        <button
+                          onClick={() => setEditingStaff(member)}
+                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-primary hover:text-white dark:bg-medium-gray text-gray-600 dark:text-gray-300 transition-colors flex items-center justify-center cursor-pointer"
+                          title="Edit Staff"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                        <button
+                          onClick={() => deleteStaff(member.id)}
+                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-red-500 hover:text-white dark:bg-medium-gray text-red-500 dark:text-red-400 transition-colors flex items-center justify-center cursor-pointer"
+                          title="Delete Staff"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 8: Message Templates */}
+          {activeTab === "templates" && (
+            <div className="space-y-6">
+              {/* Header Action */}
+              <div className="flex justify-between items-center select-none">
+                <h3 className="text-lg font-black">
+                  {locale === "ar" ? "قوالب الرسائل" : "Message Templates"}
+                </h3>
+                <button
+                  onClick={() => setShowAddTemplateModal(true)}
+                  className="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark font-bold text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus size={16} />
+                  <span>{locale === "ar" ? "إضافة قالب" : "Add Template"}</span>
+                </button>
+              </div>
+
+              {/* Templates List */}
+              <div className="grid grid-cols-1 gap-4 text-start">
+                {templates.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400 font-bold">
+                    {locale === "ar" ? "لا توجد قوالب مسجلة بعد." : "No templates yet."}
+                  </div>
+                ) : (
+                  templates.map((tmpl) => (
+                    <div
+                      key={tmpl.id}
+                      className="glass p-5 rounded-2xl border border-primary/5 dark:border-white/5 shadow-sm flex flex-col sm:flex-row justify-between items-start gap-4"
+                    >
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileEdit size={14} className="text-primary flex-shrink-0" />
+                          <h4 className="font-extrabold text-sm text-gray-900 dark:text-white truncate">{tmpl.name}</h4>
+                          <span className="text-xxs font-mono text-gray-400 bg-gray-100 dark:bg-medium-gray px-2 py-0.5 rounded flex-shrink-0">
+                            ID: {tmpl.id}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-medium-gray/20 border border-gray-100 dark:border-white/5 rounded-xl p-3 leading-relaxed font-medium whitespace-pre-line line-clamp-4">
+                          {tmpl.body}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-1.5 select-none flex-shrink-0">
+                        <button
+                          onClick={() => setEditingTemplate(tmpl)}
+                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-primary hover:text-white dark:bg-medium-gray text-gray-600 dark:text-gray-300 transition-colors flex items-center justify-center cursor-pointer"
+                          title="Edit Template"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                        <button
+                          onClick={() => deleteTemplate(tmpl.id)}
+                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-red-500 hover:text-white dark:bg-medium-gray text-red-500 dark:text-red-400 transition-colors flex items-center justify-center cursor-pointer"
+                          title="Delete Template"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
