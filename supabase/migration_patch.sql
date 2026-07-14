@@ -35,7 +35,27 @@ ALTER TABLE order_history ADD COLUMN IF NOT EXISTS staff_name TEXT DEFAULT '';
 ALTER TABLE order_history ADD COLUMN IF NOT EXISTS action_type TEXT DEFAULT '';
 ALTER TABLE order_history ADD COLUMN IF NOT EXISTS template_name TEXT DEFAULT '';
 
--- 6. Foreign Key References
+-- 6. Create system_settings Table (Communication settings editable from Admin Dashboard)
+CREATE TABLE IF NOT EXISTS system_settings (
+    id VARCHAR(100) PRIMARY KEY, -- e.g. 'communication'
+    company_email VARCHAR(255) DEFAULT 'eyadk0444@gmail.com',
+    primary_phone VARCHAR(50) DEFAULT '+966537073161',
+    whatsapp_number VARCHAR(50) DEFAULT '+966537073161',
+    support_name VARCHAR(100) DEFAULT 'Support Agent',
+    support_department VARCHAR(100) DEFAULT 'Customer Care',
+    office_hours VARCHAR(100) DEFAULT '9:00 AM - 5:00 PM',
+    email_subject VARCHAR(255) DEFAULT 'New Service Request - {Request ID}',
+    email_template TEXT DEFAULT 'Name: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}\nCategory: {Category}\nNotes: {Notes}\nContact Method: {Preferred Contact Method}\nRequest ID: {Request ID}',
+    whatsapp_template TEXT DEFAULT 'New Request: {Request ID}\nName: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed default settings row if not exists
+INSERT INTO system_settings (id, company_email, primary_phone, whatsapp_number, support_name, support_department, office_hours, email_subject, email_template, whatsapp_template)
+VALUES ('communication', 'eyadk0444@gmail.com', '+966537073161', '+966537073161', 'Support Agent', 'Customer Care', '9:00 AM - 5:00 PM', 'New Service Request - {Request ID}', 'Name: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}\nCategory: {Category}\nNotes: {Notes}\nContact Method: {Preferred Contact Method}\nRequest ID: {Request ID}', 'New Request: {Request ID}\nName: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}')
+ON CONFLICT (id) DO NOTHING;
+
+-- 7. Foreign Key References
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS fk_orders_assigned_staff;
 ALTER TABLE orders ADD CONSTRAINT fk_orders_assigned_staff 
   FOREIGN KEY (assigned_staff_id) REFERENCES staff(id) ON DELETE SET NULL;
@@ -44,7 +64,7 @@ ALTER TABLE inquiries DROP CONSTRAINT IF EXISTS fk_inquiries_assigned_staff;
 ALTER TABLE inquiries ADD CONSTRAINT fk_inquiries_assigned_staff 
   FOREIGN KEY (assigned_staff_id) REFERENCES staff(id) ON DELETE SET NULL;
 
--- 7. RLS Policies for New Tables
+-- 8. RLS Policies for New Tables
 -- Categories
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read categories" ON categories;
@@ -113,3 +133,10 @@ DROP POLICY IF EXISTS "Allow public read order_history" ON order_history;
 CREATE POLICY "Allow public read order_history" ON order_history FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow public write order_history" ON order_history;
 CREATE POLICY "Allow public write order_history" ON order_history FOR ALL USING (true) WITH CHECK (true);
+
+-- System Settings
+ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read system_settings" ON system_settings;
+CREATE POLICY "Allow public read system_settings" ON system_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow public write system_settings" ON system_settings;
+CREATE POLICY "Allow public write system_settings" ON system_settings FOR ALL USING (true) WITH CHECK (true);

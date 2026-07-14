@@ -5,8 +5,9 @@
 import React, { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { db } from "@/services/db";
+import { db, defaultSystemSettings } from "@/services/db";
 import { CountryPhoneInput } from "./CountryPhoneInput";
+import { CommunicationRouter } from "@/services/communication";
 import { X, ShoppingBag, Trash2, Plus, Minus, Send, ArrowLeft, ArrowRight, CheckCircle, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -40,9 +41,12 @@ export const CartDrawer: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [systemSettings, setSystemSettings] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
+    // Fetch system settings from Supabase
+    db.settings.getSettings().then(setSystemSettings).catch(console.error);
   }, []);
 
   if (!mounted) return null;
@@ -136,7 +140,16 @@ export const CartDrawer: React.FC = () => {
 
     const requestId = createdOrder.id;
 
-    // Generate WhatsApp Message
+    // Compile variables for templates
+    const servicesSummary = cartItems
+      .map(item => `${locale === "ar" ? item.service.titleAr : item.service.titleEn} (x${item.quantity})`)
+      .join(", ");
+      
+    const categoriesSummary = cartItems
+      .map(item => item.service.categoryId || "general")
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .join(", ");
+
     const contactMethodLabel = 
       customerInfo.contactMethod === "whatsapp" ? (locale === "ar" ? "واتساب" : "WhatsApp") :
       customerInfo.contactMethod === "call" ? (locale === "ar" ? "اتصال هاتفي" : "Phone Call") :
@@ -147,78 +160,42 @@ export const CartDrawer: React.FC = () => {
       customerInfo.preferredTime === "afternoon" ? (locale === "ar" ? "بعد الظهر" : "Afternoon") :
       (locale === "ar" ? "مساءً" : "Evening");
 
-    let waMessage = "";
-    if (locale === "ar") {
-      waMessage = `السلام عليكم ورحمة الله وبركاته،\n\nأرغب بطلب الخدمات التالية من مكتب كود خدمات (رقم الطلب: ${requestId}):\n\n`;
-      
-      cartItems.forEach((item, idx) => {
-        waMessage += `${idx + 1}- ${item.service.titleAr} (العدد: ${item.quantity})`;
-        if (item.service.price) {
-          waMessage += ` - السعر المتوقع: ${item.service.price}`;
-        }
-        if (item.notes.trim()) {
-          waMessage += `\n   * ملاحظات: ${item.notes}`;
-        }
-        waMessage += "\n";
-      });
+    // Retrieve active settings
+    const activeSettings = systemSettings || defaultSystemSettings;
 
-      if (hasPrices) {
-        waMessage += `\nإجمالي السعر التقريبي: ${estimatedTotalPrice} ريال\n`;
-      }
-
-      waMessage += `\nمعلومات العميل:`;
-      waMessage += `\n- الاسم: ${customerInfo.name}`;
-      waMessage += `\n- الجوال: ${customerInfo.phone}`;
-      if (customerInfo.email.trim()) {
-        waMessage += `\n- البريد الإلكتروني: ${customerInfo.email}`;
-      }
-      waMessage += `\n- طريقة التواصل المفضلة: ${contactMethodLabel}`;
-      waMessage += `\n- وقت التواصل المفضل: ${preferredTimeLabel}`;
-      if (customerInfo.generalNotes.trim()) {
-        waMessage += `\n- ملاحظات إضافية: ${customerInfo.generalNotes}`;
-      }
-      waMessage += `\n\nشكراً لكم.`;
-    } else {
-      waMessage = `Hello, I'd like to request the following services from Code Services (Order ID: ${requestId}):\n\n`;
-
-      cartItems.forEach((item, idx) => {
-        waMessage += `${idx + 1}- ${item.service.titleEn} (Qty: ${item.quantity})`;
-        if (item.service.price) {
-          waMessage += ` - Price: ${item.service.price}`;
-        }
-        if (item.notes.trim()) {
-          waMessage += `\n   * Notes: ${item.notes}`;
-        }
-        waMessage += "\n";
-      });
-
-      if (hasPrices) {
-        waMessage += `\nEstimated Total Price: ${estimatedTotalPrice} SAR\n`;
-      }
-
-      waMessage += `\nCustomer Information:`;
-      waMessage += `\n- Name: ${customerInfo.name}`;
-      waMessage += `\n- Mobile: ${customerInfo.phone}`;
-      if (customerInfo.email.trim()) {
-        waMessage += `\n- Email: ${customerInfo.email}`;
-      }
-      waMessage += `\n- Preferred Contact: ${contactMethodLabel}`;
-      waMessage += `\n- Preferred Time: ${preferredTimeLabel}`;
-      if (customerInfo.generalNotes.trim()) {
-        waMessage += `\n- Additional Notes: ${customerInfo.generalNotes}`;
-      }
-      waMessage += `\n\nThank you.`;
-    }
-
-    const waUrl = `https://wa.me/966537073161?text=${encodeURIComponent(waMessage)}`;
+    // Run router
+    const routeRes = await CommunicationRouter.route(
+      customerInfo.contactMethod,
+      {
+        requestId,
+        customerName: customerInfo.name,
+        customerPhone: customerInfo.phone,
+        customerEmail: customerInfo.email,
+        preferredContact: contactMethodLabel,
+        preferredTime: preferredTimeLabel,
+        generalNotes: customerInfo.generalNotes,
+        servicesSummary,
+        categoriesSummary
+      },
+      activeSettings
+    );
 
     setIsSubmitting(false);
     clearCart();
     setStep(1);
     closeCart();
-    
-    // Redirect to WhatsApp
-    window.open(waUrl, "_blank");
+
+    if (routeRes.success && routeRes.redirectUrl) {
+      if (customerInfo.contactMethod === "call") {
+        // Dialers should be opened in self page to trigger native phone apps
+        window.open(routeRes.redirectUrl, "_self");
+      } else {
+        // WhatsApp and email can be opened in new tabs
+        window.open(routeRes.redirectUrl, "_blank");
+      }
+    } else if (routeRes.error) {
+      console.error("Communication routing error:", routeRes.error);
+    }
   };
 
   const isRtl = locale === "ar";

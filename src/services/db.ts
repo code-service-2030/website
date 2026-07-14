@@ -103,6 +103,23 @@ export interface OrderHistory {
   createdAt: number;
 }
 
+export interface SystemSettings {
+  companyEmail: string;
+  primaryPhone: string;
+  whatsappNumber: string;
+  supportName: string;
+  supportDepartment: string;
+  officeHours: string;
+  emailSubject: string;
+  emailTemplate: string;
+  whatsappTemplate: string;
+}
+
+export interface ISystemSettingsRepository {
+  getSettings(): Promise<SystemSettings>;
+  saveSettings(settings: SystemSettings): Promise<void>;
+}
+
 export interface StatsConfig {
   completedServices: string;
   availableServices: string;
@@ -1005,6 +1022,81 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
   }
 }
 
+export const defaultSystemSettings: SystemSettings = {
+  companyEmail: "eyadk0444@gmail.com",
+  primaryPhone: "+966537073161",
+  whatsappNumber: "+966537073161",
+  supportName: "Support Agent",
+  supportDepartment: "Customer Care",
+  officeHours: "9:00 AM - 5:00 PM",
+  emailSubject: "New Service Request - {Request ID}",
+  emailTemplate: "Name: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}\nCategory: {Category}\nNotes: {Notes}\nContact Method: {Preferred Contact Method}\nRequest ID: {Request ID}",
+  whatsappTemplate: "New Request: {Request ID}\nName: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}"
+};
+
+export class SupabaseSystemSettingsRepository implements ISystemSettingsRepository {
+  async getSettings(): Promise<SystemSettings> {
+    const { data, error } = await supabase
+      .from("system_settings")
+      .select("*")
+      .eq("id", "communication")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching system settings from Supabase:", error);
+      return defaultSystemSettings;
+    }
+
+    if (!data) {
+      // Seed default settings row if missing
+      try {
+        await this.saveSettings(defaultSystemSettings);
+      } catch (e) {
+        console.error("Failed to seed default settings:", e);
+      }
+      return defaultSystemSettings;
+    }
+
+    return {
+      companyEmail: data.company_email,
+      primaryPhone: data.primary_phone,
+      whatsappNumber: data.whatsapp_number,
+      supportName: data.support_name,
+      supportDepartment: data.support_department,
+      officeHours: data.office_hours,
+      emailSubject: data.email_subject,
+      emailTemplate: data.email_template,
+      whatsappTemplate: data.whatsapp_template
+    };
+  }
+
+  async saveSettings(settings: SystemSettings): Promise<void> {
+    const payload = {
+      id: "communication",
+      company_email: settings.companyEmail,
+      primary_phone: settings.primaryPhone,
+      whatsapp_number: settings.whatsappNumber,
+      support_name: settings.supportName,
+      support_department: settings.supportDepartment,
+      office_hours: settings.officeHours,
+      email_subject: settings.emailSubject,
+      email_template: settings.emailTemplate,
+      whatsapp_template: settings.whatsappTemplate,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase.from("system_settings").upsert(payload);
+    if (error) {
+      console.error("Error saving system settings to Supabase:", error);
+      throw error;
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("settings_updated"));
+    }
+  }
+}
+
 // ----------------------------------------------------
 // LOCALSTORAGE FALLBACK IMPLEMENTATION
 // ----------------------------------------------------
@@ -1457,6 +1549,21 @@ export class LocalAnnouncementRepository implements IAnnouncementRepository {
   }
 }
 
+export class LocalSystemSettingsRepository implements ISystemSettingsRepository {
+  async getSettings(): Promise<SystemSettings> {
+    if (typeof window === "undefined") return defaultSystemSettings;
+    const saved = localStorage.getItem("code_services_settings");
+    return saved ? JSON.parse(saved) : defaultSystemSettings;
+  }
+
+  async saveSettings(settings: SystemSettings): Promise<void> {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("code_services_settings", JSON.stringify(settings));
+      window.dispatchEvent(new Event("settings_updated"));
+    }
+  }
+}
+
 // ----------------------------------------------------
 // DATABASE SERVICE LAYER ABSTRACTION
 // ----------------------------------------------------
@@ -1473,6 +1580,7 @@ export class DatabaseService {
   public services: IServiceRepository;
   public faqs: IFaqRepository;
   public announcements: IAnnouncementRepository;
+  public settings: ISystemSettingsRepository;
 
   private constructor() {
     const useSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -1488,6 +1596,7 @@ export class DatabaseService {
       this.services = new SupabaseServiceRepository();
       this.faqs = new SupabaseFaqRepository();
       this.announcements = new SupabaseAnnouncementRepository();
+      this.settings = new SupabaseSystemSettingsRepository();
     } else {
       console.log("No Supabase configuration. Initializing LocalStorage repositories.");
       this.orders = new LocalOrderRepository();
@@ -1499,6 +1608,7 @@ export class DatabaseService {
       this.services = new LocalServiceRepository();
       this.faqs = new LocalFaqRepository();
       this.announcements = new LocalAnnouncementRepository();
+      this.settings = new LocalSystemSettingsRepository();
     }
   }
 

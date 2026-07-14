@@ -6,7 +6,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
-import { db } from "@/services/db";
+import { db, defaultSystemSettings, SystemSettings } from "@/services/db";
 import { supabase } from "@/services/supabaseClient";
 import { exportRequestsToExcel } from "@/services/excelExport";
 import { 
@@ -150,7 +150,11 @@ export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"inquiries" | "requests" | "categories" | "services" | "announcements" | "faqs" | "stats" | "staff" | "templates">("requests");
+  const [activeTab, setActiveTab] = useState<"inquiries" | "requests" | "categories" | "services" | "announcements" | "faqs" | "stats" | "staff" | "templates" | "settings">("requests");
+
+  // Communication Settings State
+  const [commSettings, setCommSettings] = useState<SystemSettings>(defaultSystemSettings);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Scroll active tab into view
   useEffect(() => {
@@ -385,6 +389,14 @@ export default function AdminDashboard() {
       } catch (e) {
         console.error('Error loading templates:', e);
       }
+
+      // Load System Settings
+      try {
+        const sysSettings = await db.settings.getSettings();
+        setCommSettings(sysSettings);
+      } catch (e) {
+        console.error('Error loading system settings:', e);
+      }
     };
 
     loadData();
@@ -434,12 +446,20 @@ export default function AdminDashboard() {
       } catch (e) {}
     };
 
+    const reloadSettings = async () => {
+      try {
+        const sysSettings = await db.settings.getSettings();
+        setCommSettings(sysSettings);
+      } catch (e) {}
+    };
+
     window.addEventListener("catalog_updated", reloadCatalog);
     window.addEventListener("faqs_updated", reloadFaqs);
     window.addEventListener("announcement_updated", reloadAnnouncement);
     window.addEventListener("inquiries_updated", reloadInquiries);
     window.addEventListener("staff_updated", reloadStaff);
     window.addEventListener("templates_updated", reloadTemplates);
+    window.addEventListener("settings_updated", reloadSettings);
 
     return () => {
       window.removeEventListener("catalog_updated", reloadCatalog);
@@ -448,6 +468,7 @@ export default function AdminDashboard() {
       window.removeEventListener("inquiries_updated", reloadInquiries);
       window.removeEventListener("staff_updated", reloadStaff);
       window.removeEventListener("templates_updated", reloadTemplates);
+      window.removeEventListener("settings_updated", reloadSettings);
     };
   }, [authenticated]);
 
@@ -1261,7 +1282,8 @@ export default function AdminDashboard() {
             { id: "faqs", labelAr: "❓ الأسئلة الشائعة", labelEn: "❓ FAQs Manager", icon: <HelpCircle size={15} /> },
             { id: "stats", labelAr: "📊 إحصائيات وعدادات", labelEn: "📊 Statistics/Counters", icon: <BarChart size={15} /> },
             { id: "staff", labelAr: "👥 إدارة الموظفين", labelEn: "👥 Staff Management", icon: <Users size={15} /> },
-            { id: "templates", labelAr: "📝 قوالب الرسائل", labelEn: "📝 Message Templates", icon: <FileEdit size={15} /> }
+            { id: "templates", labelAr: "📝 قوالب الرسائل", labelEn: "📝 Message Templates", icon: <FileEdit size={15} /> },
+            { id: "settings", labelAr: "⚙️ إعدادات التواصل", labelEn: "⚙️ Comm Settings", icon: <Settings size={15} /> }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -2386,6 +2408,173 @@ export default function AdminDashboard() {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: Communication Settings */}
+          {activeTab === "settings" && (
+            <div className="space-y-6 text-start">
+              <div className="flex justify-between items-center select-none">
+                <h3 className="text-lg font-black">
+                  {locale === "ar" ? "⚙️ إعدادات التواصل" : "⚙️ Communication Settings"}
+                </h3>
+              </div>
+
+              <div className="glass p-6 rounded-3xl border border-primary/5 dark:border-white/5 shadow-sm space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Company Email */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                      {locale === "ar" ? "البريد الإلكتروني للشركة" : "Company Email"}
+                    </label>
+                    <input
+                      type="email"
+                      value={commSettings.companyEmail}
+                      onChange={(e) => setCommSettings({ ...commSettings, companyEmail: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Primary Phone */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                      {locale === "ar" ? "رقم الهاتف الأساسي" : "Primary Phone Number"}
+                    </label>
+                    <input
+                      type="text"
+                      value={commSettings.primaryPhone}
+                      onChange={(e) => setCommSettings({ ...commSettings, primaryPhone: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* WhatsApp Number */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                      {locale === "ar" ? "رقم الواتساب" : "WhatsApp Number"}
+                    </label>
+                    <input
+                      type="text"
+                      value={commSettings.whatsappNumber}
+                      onChange={(e) => setCommSettings({ ...commSettings, whatsappNumber: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Support Name */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                      {locale === "ar" ? "اسم ممثل الدعم" : "Support Name"}
+                    </label>
+                    <input
+                      type="text"
+                      value={commSettings.supportName}
+                      onChange={(e) => setCommSettings({ ...commSettings, supportName: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Support Department */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                      {locale === "ar" ? "قسم الدعم" : "Support Department"}
+                    </label>
+                    <input
+                      type="text"
+                      value={commSettings.supportDepartment}
+                      onChange={(e) => setCommSettings({ ...commSettings, supportDepartment: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Office Hours */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                      {locale === "ar" ? "ساعات العمل المكتبية" : "Office Working Hours"}
+                    </label>
+                    <input
+                      type="text"
+                      value={commSettings.officeHours}
+                      onChange={(e) => setCommSettings({ ...commSettings, officeHours: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Email Subject */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                    {locale === "ar" ? "موضوع البريد الإلكتروني الافتراضي" : "Default Email Subject"}
+                  </label>
+                  <input
+                    type="text"
+                    value={commSettings.emailSubject}
+                    onChange={(e) => setCommSettings({ ...commSettings, emailSubject: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                  />
+                  <span className="text-xxs text-gray-400 mt-1 block">
+                    Placeholders: {`{Request ID}`}
+                  </span>
+                </div>
+
+                {/* Email Template */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                    {locale === "ar" ? "قالب البريد الإلكتروني الافتراضي" : "Default Email Template"}
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={commSettings.emailTemplate}
+                    onChange={(e) => setCommSettings({ ...commSettings, emailTemplate: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
+                  />
+                  <span className="text-xxs text-gray-400 mt-1 block">
+                    Placeholders: {`{Customer Name}`}, {`{Phone Number}`}, {`{Requested Services}`}, {`{Category}`}, {`{Notes}`}, {`{Preferred Contact Method}`}, {`{Request ID}`}
+                  </span>
+                </div>
+
+                {/* WhatsApp Template */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                    {locale === "ar" ? "قالب الواتساب الافتراضي" : "Default WhatsApp Template"}
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={commSettings.whatsappTemplate}
+                    onChange={(e) => setCommSettings({ ...commSettings, whatsappTemplate: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
+                  />
+                  <span className="text-xxs text-gray-400 mt-1 block">
+                    Placeholders: {`{Customer Name}`}, {`{Phone Number}`}, {`{Requested Services}`}, {`{Category}`}, {`{Notes}`}, {`{Preferred Contact Method}`}, {`{Request ID}`}
+                  </span>
+                </div>
+
+                {/* Submit Action */}
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={async () => {
+                      setIsSavingSettings(true);
+                      try {
+                        await db.settings.saveSettings(commSettings);
+                        alert(locale === "ar" ? "تم حفظ الإعدادات بنجاح!" : "Settings saved successfully!");
+                      } catch (e) {
+                        console.error(e);
+                        alert(locale === "ar" ? "فشل حفظ الإعدادات." : "Failed to save settings.");
+                      } finally {
+                        setIsSavingSettings(false);
+                      }
+                    }}
+                    disabled={isSavingSettings}
+                    className="px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary-dark font-extrabold text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-primary/20 disabled:opacity-50"
+                  >
+                    {isSavingSettings ? (
+                      <span>{locale === "ar" ? "جاري الحفظ..." : "Saving..."}</span>
+                    ) : (
+                      <span>{locale === "ar" ? "حفظ الإعدادات" : "Save Settings"}</span>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
