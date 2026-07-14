@@ -2552,20 +2552,149 @@ export default function AdminDashboard() {
 
           {/* TAB 8: Message Templates */}
           {activeTab === "templates" && (
-            <div className="space-y-6">
-              {/* Header Action */}
-              <div className="flex justify-between items-center select-none">
-                <h3 className="text-lg font-black">
-                  {locale === "ar" ? "قوالب الرسائل" : "Message Templates"}
-                </h3>
-                <button
-                  onClick={() => setShowAddTemplateModal(true)}
-                  className="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark font-bold text-xs flex items-center gap-1 cursor-pointer"
-                >
-                  <Plus size={16} />
-                  <span>{locale === "ar" ? "إضافة قالب" : "Add Template"}</span>
-                </button>
+            <div className="space-y-8">
+              {/* SECTION A: Customer Templates (Customer -> Company) */}
+              <div className="glass p-6 rounded-3xl border border-primary/5 dark:border-white/5 shadow-sm space-y-6 text-start">
+                <div className="border-b border-gray-100 dark:border-white/5 pb-3">
+                  <h4 className="text-md font-black text-gray-800 dark:text-gray-100">
+                    {locale === "ar" ? "🤖 قوالب العملاء (تلقائية عند تقديم الطلب)" : "🤖 Customer Templates (Auto on Submit)"}
+                  </h4>
+                  <p className="text-xxs text-gray-400 mt-1">
+                    {locale === "ar" ? "هذه القوالب تُستخدم عندما يقوم العميل بإرسال طلب جديد من الموقع." : "These templates are used when a customer submits a new request from the website."}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* WhatsApp Templates */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xxs font-bold text-gray-500 dark:text-gray-400 mb-1.5">
+                        {locale === "ar" ? "قالب الواتساب الافتراضي (عربي)" : "Default WhatsApp Template (Arabic)"}
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={commSettings.whatsappTemplate}
+                        onChange={(e) => setCommSettings({ ...commSettings, whatsappTemplate: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-medium outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xxs font-bold text-gray-500 dark:text-gray-400 mb-1.5">
+                        {locale === "ar" ? "قالب الواتساب الافتراضي (إنجليزي)" : "Default WhatsApp Template (English)"}
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={commSettings.whatsappTemplateEn || ""}
+                        onChange={(e) => setCommSettings({ ...commSettings, whatsappTemplateEn: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-medium outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                  <span className="text-xxs text-gray-400 block -mt-2">
+                    Placeholders: {`{CustomerName}`}, {`{PhoneNumber}`}, {`{ServicesList}`}, {`{TotalPrice}`}, {`{RequestID}`}
+                  </span>
+
+                  {/* Email Subjects */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block text-xxs font-bold text-gray-500 dark:text-gray-400 mb-1.5">
+                        {locale === "ar" ? "عنوان البريد الإلكتروني (عربي)" : "Email Subject (Arabic)"}
+                      </label>
+                      <input
+                        type="text"
+                        value={commSettings.emailSubject}
+                        onChange={(e) => setCommSettings({ ...commSettings, emailSubject: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xxs font-bold text-gray-500 dark:text-gray-400 mb-1.5">
+                        {locale === "ar" ? "عنوان البريد الإلكتروني (إنجليزي)" : "Email Subject (English)"}
+                      </label>
+                      <input
+                        type="text"
+                        value={commSettings.emailSubjectEn || ""}
+                        onChange={(e) => setCommSettings({ ...commSettings, emailSubjectEn: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email Templates */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block text-xxs font-bold text-gray-500 dark:text-gray-400 mb-1.5">
+                        {locale === "ar" ? "قالب البريد الإلكتروني (عربي)" : "Email Template (Arabic)"}
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={commSettings.emailTemplate}
+                        onChange={(e) => setCommSettings({ ...commSettings, emailTemplate: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-medium outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xxs font-bold text-gray-500 dark:text-gray-400 mb-1.5">
+                        {locale === "ar" ? "قالب البريد الإلكتروني (إنجليزي)" : "Email Template (English)"}
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={commSettings.emailTemplateEn || ""}
+                        onChange={(e) => setCommSettings({ ...commSettings, emailTemplateEn: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-medium outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                  <span className="text-xxs text-gray-400 block -mt-2">
+                    Placeholders: {`{CustomerName}`}, {`{PhoneNumber}`}, {`{ServicesList}`}, {`{TotalPrice}`}, {`{RequestID}`}
+                  </span>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={async () => {
+                        setIsSavingSettings(true);
+                        try {
+                          await db.settings.saveSettings(commSettings);
+                          alert(locale === "ar" ? "تم حفظ قوالب العملاء بنجاح!" : "Customer templates saved successfully!");
+                        } catch (e) {
+                          console.error(e);
+                          alert(locale === "ar" ? "فشل حفظ القوالب." : "Failed to save templates.");
+                        } finally {
+                          setIsSavingSettings(false);
+                        }
+                      }}
+                      disabled={isSavingSettings}
+                      className="px-5 py-2.5 rounded-xl bg-primary text-white hover:bg-primary-dark font-extrabold text-xs flex items-center gap-2 cursor-pointer shadow-lg shadow-primary/20 disabled:opacity-50"
+                    >
+                      {isSavingSettings ? (
+                        <span>{locale === "ar" ? "جاري الحفظ..." : "Saving..."}</span>
+                      ) : (
+                        <span>{locale === "ar" ? "حفظ قوالب العملاء" : "Save Customer Templates"}</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* SECTION B: Employee Templates (Staff -> Customer) */}
+              <div className="space-y-6">
+                <div className="flex justify-between items-center select-none border-b border-gray-100 dark:border-white/5 pb-3">
+                  <div>
+                    <h4 className="text-md font-black text-start text-gray-800 dark:text-gray-100">
+                      {locale === "ar" ? "💼 قوالب الموظفين (لمراسلة العملاء)" : "💼 Employee Templates (For Staff Contact)"}
+                    </h4>
+                    <p className="text-xxs text-gray-400 mt-1 text-start">
+                      {locale === "ar" ? "هذه القوالب يختارها الموظف يدوياً عند النقر على 'مراسلة العميل' وتحديث حالة الطلب." : "These templates are selected manually by staff members when contacting a customer."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowAddTemplateModal(true)}
+                    className="px-4 py-2 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 font-bold text-xs flex items-center gap-1 cursor-pointer select-none"
+                  >
+                    <Plus size={16} />
+                    <span>{locale === "ar" ? "إضافة قالب" : "Add Template"}</span>
+                  </button>
+                </div>
 
               {/* Templates List */}
               <div className="grid grid-cols-1 gap-4 text-start">
@@ -2613,6 +2742,7 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
+          </div>
           )}
 
           {/* TAB 9: Communication Settings */}
@@ -2704,131 +2834,35 @@ export default function AdminDashboard() {
                     />
                   </div>
                 </div>
-
-                {/* Email Subject */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "موضوع البريد الإلكتروني الافتراضي (عربي)" : "Default Email Subject (Arabic)"}
-                  </label>
-                  <input
-                    type="text"
-                    value={commSettings.emailSubject}
-                    onChange={(e) => setCommSettings({ ...commSettings, emailSubject: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xxs text-gray-400 mt-1 block">
-                    Placeholders: {`{Request ID}`}
-                  </span>
-                </div>
-
-                {/* Email Subject (English) */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "موضوع البريد الإلكتروني الافتراضي (إنجليزي)" : "Default Email Subject (English)"}
-                  </label>
-                  <input
-                    type="text"
-                    value={commSettings.emailSubjectEn || ""}
-                    onChange={(e) => setCommSettings({ ...commSettings, emailSubjectEn: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xxs text-gray-400 mt-1 block">
-                    Placeholders: {`{Request ID}`}
-                  </span>
-                </div>
-
-                {/* Email Template */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "قالب البريد الإلكتروني الافتراضي (عربي)" : "Default Email Template (Arabic)"}
-                  </label>
-                  <textarea
-                    rows={6}
-                    value={commSettings.emailTemplate}
-                    onChange={(e) => setCommSettings({ ...commSettings, emailTemplate: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xxs text-gray-400 mt-1 block">
-                    Placeholders: {`{Customer Name}`}, {`{Phone Number}`}, {`{Requested Services}`}, {`{Category}`}, {`{Notes}`}, {`{Preferred Contact Method}`}, {`{Request ID}`}
-                  </span>
-                </div>
-
-                {/* Email Template (English) */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "قالب البريد الإلكتروني الافتراضي (إنجليزي)" : "Default Email Template (English)"}
-                  </label>
-                  <textarea
-                    rows={6}
-                    value={commSettings.emailTemplateEn || ""}
-                    onChange={(e) => setCommSettings({ ...commSettings, emailTemplateEn: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xxs text-gray-400 mt-1 block">
-                    Placeholders: {`{Customer Name}`}, {`{Phone Number}`}, {`{Requested Services}`}, {`{Category}`}, {`{Notes}`}, {`{Preferred Contact Method}`}, {`{Request ID}`}
-                  </span>
-                </div>
-
-                {/* WhatsApp Template */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "قالب الواتساب الافتراضي (عربي)" : "Default WhatsApp Template (Arabic)"}
-                  </label>
-                  <textarea
-                    rows={6}
-                    value={commSettings.whatsappTemplate}
-                    onChange={(e) => setCommSettings({ ...commSettings, whatsappTemplate: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xxs text-gray-400 mt-1 block">
-                    Placeholders: {`{Customer Name}`}, {`{Phone Number}`}, {`{Requested Services}`}, {`{Category}`}, {`{Notes}`}, {`{Preferred Contact Method}`}, {`{Request ID}`}
-                  </span>
-                </div>
-
-                {/* WhatsApp Template (English) */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
-                    {locale === "ar" ? "قالب الواتساب الافتراضي (إنجليزي)" : "Default WhatsApp Template (English)"}
-                  </label>
-                  <textarea
-                    rows={6}
-                    value={commSettings.whatsappTemplateEn || ""}
-                    onChange={(e) => setCommSettings({ ...commSettings, whatsappTemplateEn: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs sm:text-sm font-semibold outline-none focus:border-primary font-mono leading-relaxed text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xxs text-gray-400 mt-1 block">
-                    Placeholders: {`{Customer Name}`}, {`{Phone Number}`}, {`{Requested Services}`}, {`{Category}`}, {`{Notes}`}, {`{Preferred Contact Method}`}, {`{Request ID}`}
-                  </span>
-                </div>
-
-                {/* Submit Action */}
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={async () => {
-                      setIsSavingSettings(true);
-                      try {
-                        await db.settings.saveSettings(commSettings);
-                        alert(locale === "ar" ? "تم حفظ الإعدادات بنجاح!" : "Settings saved successfully!");
-                      } catch (e) {
-                        console.error(e);
-                        alert(locale === "ar" ? "فشل حفظ الإعدادات." : "Failed to save settings.");
-                      } finally {
-                        setIsSavingSettings(false);
-                      }
-                    }}
-                    disabled={isSavingSettings}
-                    className="px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary-dark font-extrabold text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-primary/20 disabled:opacity-50"
-                  >
-                    {isSavingSettings ? (
-                      <span>{locale === "ar" ? "جاري الحفظ..." : "Saving..."}</span>
-                    ) : (
-                      <span>{locale === "ar" ? "حفظ الإعدادات" : "Save Settings"}</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+ 
+                 {/* Submit Action */}
+                 <div className="flex justify-end pt-4">
+                   <button
+                     onClick={async () => {
+                       setIsSavingSettings(true);
+                       try {
+                         await db.settings.saveSettings(commSettings);
+                         alert(locale === "ar" ? "تم حفظ الإعدادات بنجاح!" : "Settings saved successfully!");
+                       } catch (e) {
+                         console.error(e);
+                         alert(locale === "ar" ? "فشل حفظ الإعدادات." : "Failed to save settings.");
+                       } finally {
+                         setIsSavingSettings(false);
+                       }
+                     }}
+                     disabled={isSavingSettings}
+                     className="px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary-dark font-extrabold text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-primary/20 disabled:opacity-50"
+                   >
+                     {isSavingSettings ? (
+                       <span>{locale === "ar" ? "جاري الحفظ..." : "Saving..."}</span>
+                     ) : (
+                       <span>{locale === "ar" ? "حفظ الإعدادات" : "Save Settings"}</span>
+                     )}
+                   </button>
+                 </div>
+               </div>
+             </div>
+           )}
 
         </div>
 
@@ -4217,6 +4251,7 @@ export default function AdminDashboard() {
                     }
                     const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
                     const template = templates.find(t => t.id === selectedTemplateId);
+                    const contactMethod = whatsAppRequest.contactMethod || "whatsapp";
                     
                     // Log the contact action in order history
                     try {
@@ -4226,7 +4261,7 @@ export default function AdminDashboard() {
                         staffName: staff.fullName,
                         actionType: "contacted",
                         templateName: template?.name || "Custom",
-                        details: `Contacted customer via WhatsApp template: ${template?.name || "Custom"}`
+                        details: `Contacted customer via ${contactMethod === "email" ? "Email" : contactMethod === "call" ? "Phone Call" : "WhatsApp"} using template: ${template?.name || "Custom"}`
                       });
                       
                       // Refresh the local history timeline
@@ -4236,17 +4271,55 @@ export default function AdminDashboard() {
                       console.error("Failed to log order history:", e);
                     }
 
-                    // Format number correctly with country code
                     const phoneWithCode = (whatsAppRequest.customerCountryCode || "+966") + whatsAppRequest.customerPhone;
                     const cleanPhone = phoneWithCode.replace(/[\s+]/g, "");
-                    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsAppPreview)}`;
+
+                    if (contactMethod === "email") {
+                      if (!whatsAppRequest.customerEmail) {
+                        alert(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
+                        return;
+                      }
+                      const subject = `${template?.name || "Update"} - Request #${whatsAppRequest.id}`;
+                      const body = whatsAppPreview;
+                      const to = whatsAppRequest.customerEmail;
+                      
+                      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      
+                      // Device detection
+                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                      
+                      if (isMobile) {
+                        window.location.href = mailtoUrl;
+                      } else {
+                        const newTab = window.open(gmailUrl, "_blank");
+                        if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+                          window.location.href = mailtoUrl;
+                        }
+                      }
+                    } else if (contactMethod === "call") {
+                      window.location.href = `tel:${phoneWithCode}`;
+                    } else {
+                      // Default to WhatsApp
+                      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsAppPreview)}`;
+                      window.open(waUrl, "_blank");
+                    }
                     
-                    window.open(waUrl, "_blank");
                     setShowWhatsAppDialog(false);
                   }}
-                  className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs cursor-pointer shadow-md shadow-emerald-500/10 text-center"
+                  className={`flex-1 py-3 rounded-xl text-white font-bold text-xs cursor-pointer shadow-md text-center ${
+                    whatsAppRequest.contactMethod === "email"
+                      ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/10"
+                      : whatsAppRequest.contactMethod === "call"
+                      ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/10"
+                      : "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
+                  }`}
                 >
-                  {locale === "ar" ? "فتح واتساب" : "Open WhatsApp"}
+                  {whatsAppRequest.contactMethod === "email"
+                    ? (locale === "ar" ? "فتح البريد الإلكتروني" : "Open Email")
+                    : whatsAppRequest.contactMethod === "call"
+                    ? (locale === "ar" ? "الاتصال بالعميل" : "Call Customer")
+                    : (locale === "ar" ? "فتح واتساب" : "Open WhatsApp")}
                 </button>
               </div>
             </motion.div>
