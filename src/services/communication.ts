@@ -35,6 +35,31 @@ export interface ICommunicationHandler {
   handleRoute(payload: CommunicationPayload, settings: SystemSettings): Promise<RouteResponse>;
 }
 
+export function formatPrice(price: string, lang: string): string {
+  const cleanPrice = (price || "").trim();
+  if (!cleanPrice) {
+    return lang === "en" ? "Per agreement" : "حسب الاتفاق";
+  }
+  // Check if it is a non-numeric/custom text (e.g. "حسب الاتفاق" or "Per agreement")
+  // We clean up numbers and see if anything is left. If it contains arabic or non-digit chars that aren't dot/comma, it's non-numeric
+  const numOnly = cleanPrice.replace(/[^\d.,]/g, "");
+  if (!numOnly) {
+    return cleanPrice;
+  }
+  
+  // Check if it already contains currency keywords
+  const hasArCurrency = cleanPrice.includes("ريال") || cleanPrice.includes("ر.س");
+  const hasEnCurrency = cleanPrice.toUpperCase().includes("SAR") || cleanPrice.toUpperCase().includes("SR");
+  
+  if (lang === "en") {
+    if (hasEnCurrency) return cleanPrice;
+    return `${cleanPrice} SAR`;
+  } else {
+    if (hasArCurrency) return cleanPrice;
+    return `${cleanPrice} ريال`;
+  }
+}
+
 export function buildLocalizedMessage(
   payload: CommunicationPayload,
   lang: string,
@@ -53,10 +78,11 @@ export function buildLocalizedMessage(
   let servicesList = "";
   if (payload.items && payload.items.length > 0) {
     servicesList = payload.items.map((item, idx) => {
+      const formattedItemPrice = formatPrice(item.price || "", selectedLang);
       if (selectedLang === "ar") {
-        return `${idx + 1}- ${item.name}\nالكمية: ${item.quantity}\nالسعر المتوقع: ${item.price} ريال`;
+        return `${idx + 1}- ${item.name}\nالكمية: ${item.quantity}\nالسعر المتوقع: ${formattedItemPrice}`;
       } else {
-        return `${idx + 1}. ${item.name}\nQuantity: ${item.quantity}\nEstimated Price: ${item.price} SAR`;
+        return `${idx + 1}. ${item.name}\nQuantity: ${item.quantity}\nEstimated Price: ${formattedItemPrice}`;
       }
     }).join("\n\n");
   } else {
@@ -68,7 +94,7 @@ export function buildLocalizedMessage(
   let body = whatsappMessageTpl;
   body = body.replace(/\{RequestID\}/g, payload.requestId);
   body = body.replace(/\{ServicesList\}/g, servicesList);
-  body = body.replace(/\{TotalPrice\}/g, payload.totalPrice || "0");
+  body = body.replace(/\{TotalPrice\}/g, formatPrice(payload.totalPrice || "0", selectedLang));
   body = body.replace(/\{CustomerName\}/g, payload.customerName);
   body = body.replace(/\{PhoneNumber\}/g, payload.customerPhone);
   body = body.replace(/\{Email\}/g, payload.customerEmail || "-");
