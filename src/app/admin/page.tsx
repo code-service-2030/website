@@ -43,7 +43,7 @@ import {
   Download,
   Printer,
   ChevronUp,
-  ChevronDown,
+  ChevronDown, ChevronRight,
   Info,
   Layers,
   HelpCircle,
@@ -4196,131 +4196,245 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+              {/* Stepper Indicators */}
+              <div className="flex items-center justify-between mb-6 select-none bg-gray-50 dark:bg-medium-gray/30 p-3 rounded-2xl border border-gray-100 dark:border-white/5">
+                <div className={`flex items-center gap-1.5 ${selectedStaffForMessage ? "text-emerald-500 font-bold" : "text-primary font-black"}`}>
+                  <span className="w-5 h-5 rounded-full bg-current text-white flex items-center justify-center text-[10px] font-black">1</span>
+                  <span className="text-xxs">{locale === "ar" ? "الموظف" : "Staff"}</span>
+                </div>
+                <div className="w-8 h-0.5 bg-gray-200 dark:bg-white/10" />
+                <div className={`flex items-center gap-1.5 ${selectedTemplateId && selectedStaffForMessage ? "text-emerald-500 font-bold" : selectedStaffForMessage ? "text-primary font-black" : "text-gray-400 font-bold"}`}>
+                  <span className="w-5 h-5 rounded-full bg-current text-white flex items-center justify-center text-[10px] font-black">2</span>
+                  <span className="text-xxs">{locale === "ar" ? "القالب" : "Template"}</span>
+                </div>
+                <div className="w-8 h-0.5 bg-gray-200 dark:bg-white/10" />
+                <div className={`flex items-center gap-1.5 ${selectedTemplateId && selectedStaffForMessage ? "text-primary font-black" : "text-gray-400 font-bold"}`}>
+                  <span className="w-5 h-5 rounded-full bg-current text-white flex items-center justify-center text-[10px] font-black">3</span>
+                  <span className="text-xxs">{locale === "ar" ? "المعاينة والإرسال" : "Preview & Send"}</span>
+                </div>
+              </div>
+
               <div className="space-y-4 overflow-y-auto pr-1 flex-grow">
-                {/* Step 1: Select Staff Member */}
-                <div>
-                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "اختر الموظف المسؤول" : "Select Staff Member"}</label>
-                  <select
-                    value={selectedStaffForMessage}
-                    onChange={(e) => setSelectedStaffForMessage(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold cursor-pointer"
-                  >
-                    <option value="">{locale === "ar" ? "اختر موظف..." : "Choose staff..."}</option>
-                    {staffMembers.filter(s => s.active).map(s => (
-                      <option key={s.id} value={s.id}>{s.fullName} ({s.jobTitle})</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Step 2: Select Template */}
-                <div>
-                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "اختر قالب الرسالة" : "Select Message Template"}</label>
-                  <select
-                    value={selectedTemplateId}
-                    onChange={(e) => setSelectedTemplateId(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold cursor-pointer"
-                  >
-                    {templates.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Step 3: Message Preview */}
-                <div>
-                  <label className="block text-xxs font-bold text-gray-400 mb-1">{locale === "ar" ? "معاينة الرسالة" : "Message Preview"}</label>
-                  <div className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-medium whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto select-text font-sans">
-                    {whatsAppPreview || (locale === "ar" ? "الرجاء اختيار الموظف لمعاينة الرسالة." : "Please select a staff member to preview the message.")}
+                {/* STEP 1: Choose Staff Member */}
+                {!selectedStaffForMessage ? (
+                  <div className="space-y-3">
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400">{locale === "ar" ? "الخطوة 1: اختر الموظف المسؤول" : "Step 1: Select Staff Member"}</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
+                      {staffMembers.filter(s => s.active).map(s => (
+                        <div
+                          key={s.id}
+                          onClick={() => {
+                            setSelectedStaffForMessage(s.id);
+                          }}
+                          className="p-3 rounded-2xl border border-gray-200 dark:border-border-dark hover:border-primary dark:hover:border-primary bg-gray-50/50 dark:bg-medium-gray/20 hover:bg-primary/5 dark:hover:bg-primary/10 flex items-center gap-3 cursor-pointer transition-all"
+                        >
+                          <img
+                            src={s.photoUrl || "/img/default-avatar.png"}
+                            alt={s.fullName}
+                            className="w-10 h-10 rounded-full object-cover border border-primary/10 flex-shrink-0"
+                          />
+                          <div className="min-w-0 text-start">
+                            <p className="text-xs font-black text-gray-900 dark:text-white truncate">{s.fullName}</p>
+                            <p className="text-xxs text-gray-400 dark:text-gray-400 truncate">{s.jobTitle}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* Staff Selected Summary Header */
+                  <div className="p-3 rounded-2xl bg-gray-50 dark:bg-medium-gray/20 border border-gray-150 dark:border-white/5 flex justify-between items-center text-start">
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const s = staffMembers.find(st => st.id === selectedStaffForMessage);
+                        return (
+                          <>
+                            <img
+                              src={s?.photoUrl || "/img/default-avatar.png"}
+                              alt={s?.fullName}
+                              className="w-9 h-9 rounded-full object-cover border border-primary/10"
+                            />
+                            <div>
+                              <p className="text-xs font-black text-gray-900 dark:text-white">{s?.fullName}</p>
+                              <p className="text-xxs text-gray-400 dark:text-gray-400">{s?.jobTitle}</p>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedStaffForMessage('');
+                        setSelectedTemplateId('');
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-red-500 hover:text-white dark:bg-medium-gray dark:hover:bg-red-500 text-gray-500 dark:text-gray-400 transition-colors text-xxs font-bold cursor-pointer"
+                    >
+                      {locale === "ar" ? "تغيير" : "Change"}
+                    </button>
+                  </div>
+                )}
+
+                {/* STEP 2: Choose Message Template */}
+                {selectedStaffForMessage && (!selectedTemplateId ? (
+                  <div className="space-y-3 pt-2">
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400">{locale === "ar" ? "الخطوة 2: اختر قالب الرسالة" : "Step 2: Choose Message Template"}</label>
+                    <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto p-1">
+                      {templates.map(t => (
+                        <div
+                          key={t.id}
+                          onClick={() => setSelectedTemplateId(t.id)}
+                          className="p-3 rounded-xl border border-gray-200 dark:border-border-dark hover:border-primary dark:hover:border-primary bg-gray-50/50 dark:bg-medium-gray/20 hover:bg-primary/5 dark:hover:bg-primary/10 text-start cursor-pointer transition-all flex items-center justify-between"
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-gray-900 dark:text-white">{t.name}</p>
+                            <p className="text-xxs text-gray-400 dark:text-gray-400 truncate max-w-xs">{t.body}</p>
+                          </div>
+                          <ChevronRight size={14} className="text-gray-400 animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* Template Selected Summary Header */
+                  <div className="p-3 rounded-2xl bg-gray-50 dark:bg-medium-gray/20 border border-gray-150 dark:border-white/5 flex justify-between items-center text-start">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">
+                        {locale === "ar" ? "القالب المحدد:" : "Selected Template:"}
+                      </span>
+                      <span className="text-xs font-black text-primary">
+                        {templates.find(t => t.id === selectedTemplateId)?.name}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedTemplateId('')}
+                      className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-red-500 hover:text-white dark:bg-medium-gray dark:hover:bg-red-500 text-gray-500 dark:text-gray-400 transition-colors text-xxs font-bold cursor-pointer"
+                    >
+                      {locale === "ar" ? "تغيير" : "Change"}
+                    </button>
+                  </div>
+                ))}
+
+                {/* STEP 3 & 4: Preview and Send Options */}
+                {selectedStaffForMessage && selectedTemplateId && (
+                  <div className="space-y-4 pt-2">
+                    {/* Message Preview */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5 text-start">{locale === "ar" ? "الخطوة 3: معاينة وتعديل الرسالة" : "Step 3: Preview & Edit Message"}</label>
+                      <textarea
+                        rows={8}
+                        value={whatsAppPreview}
+                        onChange={(e) => setWhatsAppPreview(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-medium whitespace-pre-wrap leading-relaxed select-text font-sans outline-none focus:border-primary text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
               <div className="pt-4 border-t border-gray-150 dark:border-white/5 mt-4 flex gap-3">
                 <button
                   onClick={() => setShowWhatsAppDialog(false)}
-                  className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300 font-bold text-xs cursor-pointer text-center"
+                  className="py-3 px-4 rounded-xl bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300 font-bold text-xs cursor-pointer text-center flex-1"
                 >
                   {locale === "ar" ? "إلغاء" : "Cancel"}
                 </button>
-                <button
-                  onClick={async () => {
-                    if (!selectedStaffForMessage) {
-                      alert(locale === "ar" ? "الرجاء اختيار الموظف أولاً" : "Please select a staff member first");
-                      return;
-                    }
-                    const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
-                    const template = templates.find(t => t.id === selectedTemplateId);
-                    const contactMethod = whatsAppRequest.contactMethod || "whatsapp";
-                    
-                    // Log the contact action in order history
-                    try {
-                      await db.history.addHistoryEntry({
-                        orderId: whatsAppRequest.id,
-                        staffId: staff.id,
-                        staffName: staff.fullName,
-                        actionType: "contacted",
-                        templateName: template?.name || "Custom",
-                        details: `Contacted customer via ${contactMethod === "email" ? "Email" : contactMethod === "call" ? "Phone Call" : "WhatsApp"} using template: ${template?.name || "Custom"}`
-                      });
-                      
-                      // Refresh the local history timeline
-                      const history = await db.history.getHistory(whatsAppRequest.id);
-                      setRequestHistory(history);
-                    } catch (e) {
-                      console.error("Failed to log order history:", e);
-                    }
-
-                    const phoneWithCode = (whatsAppRequest.customerCountryCode || "+966") + whatsAppRequest.customerPhone;
-                    const cleanPhone = phoneWithCode.replace(/[\s+]/g, "");
-
-                    if (contactMethod === "email") {
-                      if (!whatsAppRequest.customerEmail) {
-                        alert(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
-                        return;
-                      }
-                      const subject = `${template?.name || "Update"} - Request #${whatsAppRequest.id}`;
-                      const body = whatsAppPreview;
-                      const to = whatsAppRequest.customerEmail;
-                      
-                      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                      const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                      
-                      // Device detection
-                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                      
-                      if (isMobile) {
-                        window.location.href = mailtoUrl;
-                      } else {
-                        const newTab = window.open(gmailUrl, "_blank");
-                        if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
-                          window.location.href = mailtoUrl;
+                
+                {selectedStaffForMessage && selectedTemplateId && (
+                  <>
+                    {/* Send via Email Button */}
+                    <button
+                      onClick={async () => {
+                        const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
+                        const template = templates.find(t => t.id === selectedTemplateId);
+                        
+                        try {
+                          await db.history.addHistoryEntry({
+                            orderId: whatsAppRequest.id,
+                            staffId: staff.id,
+                            staffName: staff.fullName,
+                            actionType: "contacted",
+                            templateName: template?.name || "Custom",
+                            details: `Contact Method: Email | Template: ${template?.name || "Custom"} | Contacted by: ${staff.fullName}`
+                          });
+                          
+                          const history = await db.history.getHistory(whatsAppRequest.id);
+                          setRequestHistory(history);
+                        } catch (e) {
+                          console.error("Failed to log order history:", e);
                         }
-                      }
-                    } else if (contactMethod === "call") {
-                      window.location.href = `tel:${phoneWithCode}`;
-                    } else {
-                      // Default to WhatsApp
-                      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsAppPreview)}`;
-                      window.open(waUrl, "_blank");
-                    }
-                    
-                    setShowWhatsAppDialog(false);
-                  }}
-                  className={`flex-1 py-3 rounded-xl text-white font-bold text-xs cursor-pointer shadow-md text-center ${
-                    whatsAppRequest.contactMethod === "email"
-                      ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/10"
-                      : whatsAppRequest.contactMethod === "call"
-                      ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/10"
-                      : "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
-                  }`}
-                >
-                  {whatsAppRequest.contactMethod === "email"
-                    ? (locale === "ar" ? "فتح البريد الإلكتروني" : "Open Email")
-                    : whatsAppRequest.contactMethod === "call"
-                    ? (locale === "ar" ? "الاتصال بالعميل" : "Call Customer")
-                    : (locale === "ar" ? "فتح واتساب" : "Open WhatsApp")}
-                </button>
+
+                        if (!whatsAppRequest.customerEmail) {
+                          alert(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
+                          return;
+                        }
+                        const subject = `${template?.name || "Update"} - Request #${whatsAppRequest.id}`;
+                        const body = whatsAppPreview;
+                        const to = whatsAppRequest.customerEmail;
+                        
+                        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                        const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                        
+                        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                        if (isMobile) {
+                          window.location.href = mailtoUrl;
+                        } else {
+                          const newTab = window.open(gmailUrl, "_blank");
+                          if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+                            window.location.href = mailtoUrl;
+                          }
+                        }
+                        setShowWhatsAppDialog(false);
+                      }}
+                      className={`py-3 px-4 rounded-xl font-bold text-xs cursor-pointer transition-all flex-1 text-center border ${
+                        whatsAppRequest.contactMethod === "email"
+                          ? "bg-blue-500 hover:bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
+                          : "bg-transparent hover:bg-blue-500/5 text-blue-500 border-blue-500/30"
+                      }`}
+                    >
+                      {locale === "ar" ? "إرسال عبر البريد" : "Send via Email"}
+                      {whatsAppRequest.contactMethod === "email" && ` (${locale === "ar" ? "مفضل" : "Preferred"})`}
+                    </button>
+
+                    {/* Send via WhatsApp Button */}
+                    <button
+                      onClick={async () => {
+                        const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
+                        const template = templates.find(t => t.id === selectedTemplateId);
+                        
+                        try {
+                          await db.history.addHistoryEntry({
+                            orderId: whatsAppRequest.id,
+                            staffId: staff.id,
+                            staffName: staff.fullName,
+                            actionType: "contacted",
+                            templateName: template?.name || "Custom",
+                            details: `Contact Method: WhatsApp | Template: ${template?.name || "Custom"} | Contacted by: ${staff.fullName}`
+                          });
+                          
+                          const history = await db.history.getHistory(whatsAppRequest.id);
+                          setRequestHistory(history);
+                        } catch (e) {
+                          console.error("Failed to log order history:", e);
+                        }
+
+                        const phoneWithCode = (whatsAppRequest.customerCountryCode || "+966") + whatsAppRequest.customerPhone;
+                        const cleanPhone = phoneWithCode.replace(/[\s+]/g, "");
+                        const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsAppPreview)}`;
+                        window.open(waUrl, "_blank");
+                        setShowWhatsAppDialog(false);
+                      }}
+                      className={`py-3 px-4 rounded-xl font-bold text-xs cursor-pointer transition-all flex-1 text-center border ${
+                        whatsAppRequest.contactMethod !== "email"
+                          ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20"
+                          : "bg-transparent hover:bg-emerald-500/5 text-emerald-500 border-emerald-500/30"
+                      }`}
+                    >
+                      {locale === "ar" ? "إرسال عبر واتساب" : "Send via WhatsApp"}
+                      {whatsAppRequest.contactMethod !== "email" && ` (${locale === "ar" ? "مفضل" : "Preferred"})`}
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
           </div>
