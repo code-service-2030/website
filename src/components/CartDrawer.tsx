@@ -123,6 +123,7 @@ export const CartDrawer: React.FC = () => {
           price: item.service.price || "",
           quantity: item.quantity,
           notes: item.notes,
+          categoryId: item.service.categoryId,
         }))
       });
     } catch (err) {

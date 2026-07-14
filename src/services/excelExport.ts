@@ -1,24 +1,38 @@
 import ExcelJS from "exceljs";
 
+const getCategoryLabel = (catId: string): string => {
+  const mapping: Record<string, string> = {
+    business: "Business Services / خدمات الأعمال",
+    absher: "Government Services (Absher) / خدمات أبشر",
+    hr: "HR & Recruitment / الموارد البشرية",
+    qiwa: "Qiwa Platform / منصة قوى",
+    student: "Student Services / خدمات الطلاب",
+    printing: "Printing & Translation / الطباعة والترجمة",
+    general: "General / عام"
+  };
+  return mapping[catId.toLowerCase()] || catId;
+};
+
 export const exportRequestsToExcel = async (requests: any[], staffList: any[]) => {
   try {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Service Requests");
 
-    // Define Columns with exact headers and widths
+    // Define 14 columns requested by the user
     worksheet.columns = [
-      { header: "الرقم / Request ID", key: "id", width: 20 },
-      { header: "الاسم / Customer Name", key: "name", width: 24 },
+      { header: "رقم الطلب / Request ID", key: "id", width: 20 },
+      { header: "اسم العميل / Customer Name", key: "name", width: 24 },
+      { header: "الدولة / Country", key: "country", width: 18 },
       { header: "رمز الدولة / Country Code", key: "countryCode", width: 15 },
       { header: "رقم الجوال / Phone Number", key: "phone", width: 18 },
-      { header: "البريد / Email", key: "email", width: 26 },
-      { header: "الخدمات / Requested Services", key: "services", width: 38 },
-      { header: "التصنيف / Category", key: "category", width: 18 },
-      { header: "الحالة / Status", key: "status", width: 15 },
-      { header: "الموظف المسؤول / Assigned Staff", key: "assignedStaff", width: 24 },
+      { header: "البريد الإلكتروني / Email", key: "email", width: 26 },
+      { header: "التصنيف / Category", key: "category", width: 28 },
+      { header: "الخدمة المطلوبة / Requested Service", key: "requestedService", width: 32 },
       { header: "حالة الدفع / Payment Status", key: "paymentStatus", width: 16 },
-      { header: "تاريخ الطلب / Date", key: "date", width: 16 },
-      { header: "الوقت / Time", key: "time", width: 14 },
+      { header: "الموظف المسؤول / Assigned Staff", key: "assignedStaff", width: 24 },
+      { header: "الحالة / Status", key: "status", width: 15 },
+      { header: "تاريخ الطلب / Request Date", key: "date", width: 16 },
+      { header: "وقت الطلب / Request Time", key: "time", width: 14 },
       { header: "ملاحظات العميل / Client Notes", key: "notes", width: 32 }
     ];
 
@@ -33,7 +47,7 @@ export const exportRequestsToExcel = async (requests: any[], staffList: any[]) =
     headerRow.alignment = { vertical: "middle", horizontal: "center" };
     headerRow.height = 28;
 
-    // Add Data Rows
+    // Add Data Rows (One row per requested service in each order)
     requests.forEach(req => {
       // Resolve assigned staff
       const staff = staffList.find(s => s.id === req.assignedStaffId);
@@ -44,31 +58,47 @@ export const exportRequestsToExcel = async (requests: any[], staffList: any[]) =
       const dateStr = isNaN(dt.getTime()) ? "" : dt.toISOString().split("T")[0];
       const timeStr = isNaN(dt.getTime()) ? "" : dt.toTimeString().split(" ")[0];
 
-      // Services text lists
-      const servicesStr = req.services && Array.isArray(req.services)
-        ? req.services.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(" | ")
-        : "";
+      const services = req.services && Array.isArray(req.services) ? req.services : [];
 
-      // Categories text lists
-      const categoriesStr = req.services && Array.isArray(req.services)
-        ? req.services.map((s: any) => s.categoryId || "General").filter((v: any, i: any, a: any) => a.indexOf(v) === i).join(", ")
-        : "General";
-
-      worksheet.addRow({
-        id: req.id,
-        name: req.customerName,
-        countryCode: req.customerCountryCode || "+966",
-        phone: req.customerPhone,
-        email: req.customerEmail || "",
-        services: servicesStr,
-        category: categoriesStr,
-        status: req.status ? req.status.toUpperCase() : "PENDING",
-        assignedStaff: staffName,
-        paymentStatus: req.paymentStatus ? req.paymentStatus.toUpperCase() : "UNPAID",
-        date: dateStr,
-        time: timeStr,
-        notes: req.generalNotes || ""
-      });
+      if (services.length === 0) {
+        // If no services are associated, output a blank service row to retain the request itself
+        worksheet.addRow({
+          id: req.id,
+          name: req.customerName,
+          country: req.customerCountry || "Saudi Arabia / المملكة العربية السعودية",
+          countryCode: req.customerCountryCode || "+966",
+          phone: req.customerPhone,
+          email: req.customerEmail || "",
+          category: "General / عام",
+          requestedService: "No Service Selected",
+          paymentStatus: req.paymentStatus ? req.paymentStatus.toUpperCase() : "UNPAID",
+          assignedStaff: staffName,
+          status: req.status ? req.status.toUpperCase() : "PENDING",
+          date: dateStr,
+          time: timeStr,
+          notes: req.generalNotes || ""
+        });
+      } else {
+        // Output one row per service item
+        services.forEach((s: any) => {
+          worksheet.addRow({
+            id: req.id,
+            name: req.customerName,
+            country: req.customerCountry || "Saudi Arabia / المملكة العربية السعودية",
+            countryCode: req.customerCountryCode || "+966",
+            phone: req.customerPhone,
+            email: req.customerEmail || "",
+            category: getCategoryLabel(s.categoryId || "general"),
+            requestedService: `${s.titleAr || s.titleEn} (x${s.quantity || 1})`,
+            paymentStatus: req.paymentStatus ? req.paymentStatus.toUpperCase() : "UNPAID",
+            assignedStaff: staffName,
+            status: req.status ? req.status.toUpperCase() : "PENDING",
+            date: dateStr,
+            time: timeStr,
+            notes: req.generalNotes || ""
+          });
+        });
+      }
     });
 
     // Style Data Rows
@@ -79,7 +109,7 @@ export const exportRequestsToExcel = async (requests: any[], staffList: any[]) =
       row.alignment = { vertical: "middle", horizontal: "left" };
       row.height = 22;
 
-      // Apply Zebra striping
+      // Apply Zebra striping based on row number
       if (rowNumber % 2 === 0) {
         row.fill = {
           type: "pattern",

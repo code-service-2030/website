@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
@@ -86,6 +86,64 @@ interface StatsData {
 export default function AdminDashboard() {
   const { locale, t, toggleLanguage, theme, toggleTheme } = useLanguage();
   const router = useRouter();
+  const navRef = useRef<HTMLDivElement | null>(null);
+
+  // Drag-to-scroll & Horizontal scroll variables
+  const isDown = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  useEffect(() => {
+    const slider = navRef.current;
+    if (!slider) return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDown.current = true;
+      startX.current = e.pageX - slider.offsetLeft;
+      scrollLeft.current = slider.scrollLeft;
+      slider.style.cursor = "grabbing";
+    };
+
+    const handleMouseLeave = () => {
+      isDown.current = false;
+      slider.style.cursor = "grab";
+    };
+
+    const handleMouseUp = () => {
+      isDown.current = false;
+      slider.style.cursor = "grab";
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDown.current) return;
+      e.preventDefault();
+      const x = e.pageX - slider.offsetLeft;
+      const walk = (x - startX.current) * 1.5; // multiplier for speed
+      slider.scrollLeft = scrollLeft.current - walk;
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        slider.scrollLeft += e.deltaY;
+      }
+    };
+
+    slider.addEventListener("mousedown", handleMouseDown);
+    slider.addEventListener("mouseleave", handleMouseLeave);
+    slider.addEventListener("mouseup", handleMouseUp);
+    slider.addEventListener("mousemove", handleMouseMove);
+    slider.addEventListener("wheel", handleWheel, { passive: false });
+    slider.style.cursor = "grab";
+
+    return () => {
+      slider.removeEventListener("mousedown", handleMouseDown);
+      slider.removeEventListener("mouseleave", handleMouseLeave);
+      slider.removeEventListener("mouseup", handleMouseUp);
+      slider.removeEventListener("mousemove", handleMouseMove);
+      slider.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
 
   // Authentication check
   const [authenticated, setAuthenticated] = useState(false);
@@ -93,6 +151,20 @@ export default function AdminDashboard() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"inquiries" | "requests" | "categories" | "services" | "announcements" | "faqs" | "stats" | "staff" | "templates">("requests");
+
+  // Scroll active tab into view
+  useEffect(() => {
+    const slider = navRef.current;
+    if (!slider) return;
+    const activeBtn = slider.querySelector('[data-active="true"]');
+    if (activeBtn) {
+      activeBtn.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center"
+      });
+    }
+  }, [activeTab]);
 
   // Database States (loaded from localStorage)
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -1176,7 +1248,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tab Selector Navigation Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-gray-200 dark:border-white/5 scrollbar-none select-none printing:hidden">
+        <div 
+          ref={navRef}
+          className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-gray-200 dark:border-white/5 scrollbar-none select-none printing:hidden"
+        >
           {[
             { id: "requests", labelAr: "🛒 طلبات الخدمات", labelEn: "🛒 Service Requests", icon: <ShoppingCart size={15} /> },
             { id: "inquiries", labelAr: "📨 رسائل الاتصال", labelEn: "📨 Contact Messages", icon: <Inbox size={15} /> },
@@ -1191,9 +1266,10 @@ export default function AdminDashboard() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer flex items-center gap-2 ${
+              data-active={activeTab === tab.id}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer flex items-center gap-2 select-none ${
                 activeTab === tab.id
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-white animate-pulse-slow"
                   : "bg-white hover:bg-gray-100 dark:bg-medium-gray/30 dark:hover:bg-primary/10 text-gray-600 dark:text-gray-300"
               }`}
             >

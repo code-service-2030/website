@@ -25,6 +25,7 @@ export interface OrderItem {
   price: string;
   quantity: number;
   notes?: string;
+  categoryId?: string;
 }
 
 export interface Order {
@@ -43,6 +44,13 @@ export interface Order {
   customerCountry?: string;
   customerCountryCode?: string;
   paymentStatus?: "paid" | "unpaid";
+  // Future Payment Integration Architecture fields
+  paymentMethod?: string;
+  transactionId?: string;
+  paymentDate?: string;
+  gatewayName?: string;
+  amountPaid?: number;
+  currency?: string;
 }
 
 export interface Inquiry {
@@ -180,7 +188,14 @@ export class SupabaseOrderRepository implements IOrderRepository {
       assigned_staff_id: orderData.assignedStaffId || null,
       customer_country: orderData.customerCountry || "Saudi Arabia",
       customer_country_code: orderData.customerCountryCode || "+966",
-      payment_status: orderData.paymentStatus || "unpaid"
+      payment_status: orderData.paymentStatus || "unpaid",
+      // Future Payment fields stubs
+      payment_method: orderData.paymentMethod || "",
+      transaction_id: orderData.transactionId || "",
+      payment_date: orderData.paymentDate || "",
+      gateway_name: orderData.gatewayName || "",
+      amount_paid: orderData.amountPaid || 0,
+      currency: orderData.currency || "SAR"
     });
 
     if (orderError) {
@@ -196,7 +211,8 @@ export class SupabaseOrderRepository implements IOrderRepository {
       title_en: s.titleEn,
       price: s.price,
       quantity: s.quantity,
-      notes: s.notes
+      notes: s.notes,
+      category_id: s.categoryId || "general"
     }));
 
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
@@ -260,6 +276,13 @@ export class SupabaseOrderRepository implements IOrderRepository {
       customerCountry: o.customer_country || "Saudi Arabia",
       customerCountryCode: o.customer_country_code || "+966",
       paymentStatus: o.payment_status || "unpaid",
+      // Payment Integration fields mapping
+      paymentMethod: o.payment_method || "",
+      transactionId: o.transaction_id || "",
+      paymentDate: o.payment_date || "",
+      gatewayName: o.gateway_name || "",
+      amountPaid: o.amount_paid !== undefined ? Number(o.amount_paid) : 0,
+      currency: o.currency || "SAR",
       services: (o.services || []).map((item: any) => ({
         id: item.id,
         serviceId: item.service_id,
@@ -267,7 +290,8 @@ export class SupabaseOrderRepository implements IOrderRepository {
         titleEn: item.title_en,
         price: item.price || "",
         quantity: item.quantity,
-        notes: item.notes || ""
+        notes: item.notes || "",
+        categoryId: item.category_id || "general"
       }))
     }));
   }

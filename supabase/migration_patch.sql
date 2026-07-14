@@ -2,30 +2,40 @@
 -- RUN THIS SQL IN YOUR SUPABASE SQL EDITOR TO FIX DATA FLOW
 -- ========================================================
 
--- 1. Fix orders (Requests) Table Columns
+-- 1. Fix orders (Requests) Table Columns (including Payment Integration columns)
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS assigned_staff_id UUID;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_country VARCHAR(100) DEFAULT 'Saudi Arabia';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_country_code VARCHAR(50) DEFAULT '+966';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'unpaid';
 
--- 2. Fix inquiries Table Columns
+-- Payment Integration Architecture Fields
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(100) DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS transaction_id VARCHAR(255) DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_date VARCHAR(100) DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gateway_name VARCHAR(100) DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS amount_paid NUMERIC DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'SAR';
+
+-- 2. Fix order_items Table Columns (including category_id for verification)
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS category_id VARCHAR(100) DEFAULT 'general';
+
+-- 3. Fix inquiries Table Columns
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS assigned_staff_id UUID;
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS country VARCHAR(100) DEFAULT 'Saudi Arabia';
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS country_code VARCHAR(50) DEFAULT '+966';
 
--- 3. Fix staff Table Columns
+-- 4. Fix staff Table Columns
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS photo_url TEXT DEFAULT '';
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS permissions TEXT[] DEFAULT '{}';
 
--- 4. Fix order_history Table Columns
+-- 5. Fix order_history Table Columns
 ALTER TABLE order_history ADD COLUMN IF NOT EXISTS staff_id UUID;
 ALTER TABLE order_history ADD COLUMN IF NOT EXISTS staff_name TEXT DEFAULT '';
 ALTER TABLE order_history ADD COLUMN IF NOT EXISTS action_type TEXT DEFAULT '';
 ALTER TABLE order_history ADD COLUMN IF NOT EXISTS template_name TEXT DEFAULT '';
 
--- 5. Foreign Key References (Optional but recommended for data integrity)
--- Let's make sure orders and inquiries assigned_staff_id reference the staff table
+-- 6. Foreign Key References
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS fk_orders_assigned_staff;
 ALTER TABLE orders ADD CONSTRAINT fk_orders_assigned_staff 
   FOREIGN KEY (assigned_staff_id) REFERENCES staff(id) ON DELETE SET NULL;
@@ -34,7 +44,7 @@ ALTER TABLE inquiries DROP CONSTRAINT IF EXISTS fk_inquiries_assigned_staff;
 ALTER TABLE inquiries ADD CONSTRAINT fk_inquiries_assigned_staff 
   FOREIGN KEY (assigned_staff_id) REFERENCES staff(id) ON DELETE SET NULL;
 
--- 6. RLS Policies for New Tables
+-- 7. RLS Policies for New Tables
 -- Categories
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read categories" ON categories;
