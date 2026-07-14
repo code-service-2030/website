@@ -15,6 +15,8 @@ export interface CommunicationPayload {
   generalNotes: string;
   servicesSummary: string;
   categoriesSummary: string;
+  items?: Array<{ name: string; quantity: number; price: string }>;
+  totalPrice?: string;
 }
 
 export interface RouteResponse {
@@ -22,11 +24,63 @@ export interface RouteResponse {
   actionTaken: string;
   redirectUrl?: string;
   error?: string;
+  gmailUrl?: string;
+  mailtoUrl?: string;
+  orderId?: string;
 }
 
 export interface ICommunicationHandler {
   channelName: string;
   handleRoute(payload: CommunicationPayload, settings: SystemSettings): Promise<RouteResponse>;
+}
+
+function buildCleanArabicMessage(payload: CommunicationPayload): string {
+  const servicesList = payload.items && payload.items.length > 0
+    ? payload.items.map((item, idx) => `${idx + 1}- ${item.name}\nالكمية: ${item.quantity}\nالسعر المتوقع: ${item.price}`).join("\n\n")
+    : payload.servicesSummary;
+
+  return `السلام عليكم ورحمة الله وبركاته،
+
+أرغب بطلب الخدمات التالية من مكتب كود خدمات.
+
+رقم الطلب:
+${payload.requestId}
+
+----------------------------------------
+
+الخدمات المطلوبة:
+
+${servicesList}
+
+----------------------------------------
+
+إجمالي السعر التقريبي:
+
+${payload.totalPrice || "0"} ريال سعودي
+
+----------------------------------------
+
+معلومات العميل:
+
+الاسم:
+${payload.customerName}
+
+الجوال:
+${payload.customerPhone}
+
+البريد الإلكتروني:
+${payload.customerEmail || "-"}
+
+طريقة التواصل المفضلة:
+${payload.preferredContact}
+
+وقت التواصل المفضل:
+${payload.preferredTime}
+
+----------------------------------------
+
+شكراً لكم،
+كود خدمات`;
 }
 
 /**
@@ -38,19 +92,7 @@ export class WhatsAppHandler implements ICommunicationHandler {
   async handleRoute(payload: CommunicationPayload, settings: SystemSettings): Promise<RouteResponse> {
     console.log("[WhatsAppHandler] Generating message using templates...");
     
-    let text = settings.whatsappTemplate || "";
-    // If template is empty, use a standard fallback
-    if (!text) {
-      text = `السلام عليكم ورحمة الله وبركاته،\nأرغب بطلب الخدمات التالية (رقم الطلب: {Request ID}):\n\n{Requested Services}\n\nطريقة التواصل: {Preferred Contact Method}`;
-    }
-
-    text = text.replace(/\{Customer Name\}/g, payload.customerName);
-    text = text.replace(/\{Phone Number\}/g, payload.customerPhone);
-    text = text.replace(/\{Request ID\}/g, payload.requestId);
-    text = text.replace(/\{Requested Services\}/g, payload.servicesSummary);
-    text = text.replace(/\{Category\}/g, payload.categoriesSummary);
-    text = text.replace(/\{Notes\}/g, payload.generalNotes || "-");
-    text = text.replace(/\{Preferred Contact Method\}/g, payload.preferredContact);
+    const text = buildCleanArabicMessage(payload);
 
     const whatsappPhone = settings.whatsappNumber.replace(/[\s+]/g, "");
     const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(text)}`;
@@ -58,7 +100,8 @@ export class WhatsAppHandler implements ICommunicationHandler {
     return {
       success: true,
       actionTaken: "Opened WhatsApp",
-      redirectUrl: waUrl
+      redirectUrl: waUrl,
+      orderId: payload.requestId
     };
   }
 }
@@ -75,27 +118,18 @@ export class EmailHandler implements ICommunicationHandler {
     let subject = settings.emailSubject || "New Service Request - {Request ID}";
     subject = subject.replace(/\{Request ID\}/g, payload.requestId);
 
-    let body = settings.emailTemplate || "";
-    if (!body) {
-      body = `Name: {Customer Name}\nPhone: {Phone Number}\nServices: {Requested Services}\nCategory: {Category}\nNotes: {Notes}\nContact Method: {Preferred Contact Method}\nRequest ID: {Request ID}`;
-    }
-
-    body = body.replace(/\{Customer Name\}/g, payload.customerName);
-    body = body.replace(/\{Phone Number\}/g, payload.customerPhone);
-    body = body.replace(/\{Request ID\}/g, payload.requestId);
-    body = body.replace(/\{Requested Services\}/g, payload.servicesSummary);
-    body = body.replace(/\{Category\}/g, payload.categoriesSummary);
-    body = body.replace(/\{Notes\}/g, payload.generalNotes || "-");
-    body = body.replace(/\{Preferred Contact Method\}/g, payload.preferredContact);
-
-    const bodyFormatted = `Customer Name:\n${payload.customerName}\n\nPhone:\n${payload.customerPhone}\n\nRequested Services:\n${payload.servicesSummary}\n\nCategory:\n${payload.categoriesSummary}\n\nNotes:\n${payload.generalNotes || "-"}\n\nPreferred Contact Method:\nEmail\n\nRequest Number:\n${payload.requestId}`;
+    const bodyFormatted = buildCleanArabicMessage(payload);
 
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(settings.companyEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyFormatted)}`;
+    const mailtoUrl = `mailto:${settings.companyEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyFormatted)}`;
 
     return {
       success: true,
       actionTaken: "Opened Gmail Compose",
-      redirectUrl: gmailUrl
+      redirectUrl: gmailUrl,
+      gmailUrl,
+      mailtoUrl,
+      orderId: payload.requestId
     };
   }
 }

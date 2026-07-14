@@ -850,29 +850,61 @@ export default function AdminDashboard() {
           window.dispatchEvent(new Event("history_updated"));
         }
 
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const mailtoUrl = `mailto:${request.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+        const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         if (isMobile) {
-          const appUrl = `googlegmail:///co?to=${encodeURIComponent(request.customerEmail)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+          // Mobile: Use mailto: with fallback alert if fails
+          let hasFocus = true;
+          const onBlur = () => { hasFocus = false; };
+          window.addEventListener("blur", onBlur);
           
-          const iframe = document.createElement("iframe");
-          iframe.style.display = "none";
-          iframe.src = appUrl;
-          document.body.appendChild(iframe);
+          window.location.href = mailtoUrl;
           
-          const start = Date.now();
           setTimeout(() => {
-            document.body.removeChild(iframe);
-            if (Date.now() - start < 1500) {
-              window.open(gmailUrl, "_blank");
+            window.removeEventListener("blur", onBlur);
+            if (hasFocus) {
+              alert(locale === "ar" 
+                ? "لم يتم العثور على تطبيق بريد إلكتروني مهيأ على جهازك لإرسال البريد." 
+                : "No email application is configured on your device to send emails.");
             }
-          }, 1000);
+          }, 1500);
         } else {
-          window.open(gmailUrl, "_blank");
+          // Desktop: Open Gmail Compose in new browser tab
+          const newTab = window.open(gmailUrl, "_blank");
+          
+          // Fallback to mailto: if Gmail cannot be opened or is blocked
+          if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
+            console.log("Gmail popup was blocked or failed to open. Falling back to mailto.");
+            window.location.href = mailtoUrl;
+          }
         }
 
       } else if (method === "call") {
-        const phoneVal = (request.customerCountryCode || "+966") + request.customerPhone;
-        const cleanPhone = phoneVal.replace(/[\s+]/g, "");
+        const countryCode = request.customerCountryCode || "+966";
+        const cleanCountryCode = countryCode.replace(/\D/g, "");
+        let rawPhone = request.customerPhone || "";
+        rawPhone = rawPhone.replace(/[\s()-]/g, "");
+        
+        let cleanPhone = "";
+        if (rawPhone.startsWith("+")) {
+          cleanPhone = rawPhone;
+        } else if (rawPhone.startsWith("00")) {
+          cleanPhone = "+" + rawPhone.substring(2);
+        } else {
+          let basePhone = rawPhone;
+          if (rawPhone.startsWith("0")) {
+            basePhone = rawPhone.substring(1);
+          }
+          if (basePhone.startsWith(cleanCountryCode)) {
+            cleanPhone = "+" + basePhone;
+          } else {
+            cleanPhone = countryCode + basePhone;
+          }
+        }
+        if (!cleanPhone.startsWith("+")) {
+          cleanPhone = "+" + cleanPhone;
+        }
         
         // Log action to history
         await db.history.addHistoryEntry({

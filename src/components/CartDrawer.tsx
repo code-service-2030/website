@@ -168,6 +168,16 @@ export const CartDrawer: React.FC = () => {
     // Retrieve active settings
     const activeSettings = systemSettings || defaultSystemSettings;
 
+    // Prepare items list and total price
+    const checkoutItems = cartItems.map(item => ({
+      name: locale === "ar" ? item.service.titleAr : item.service.titleEn,
+      quantity: item.quantity,
+      price: item.service.price || (locale === "ar" ? "حسب الاتفاق" : "Per agreement")
+    }));
+    const checkoutTotalPrice = estimatedTotalPrice > 0 
+      ? estimatedTotalPrice.toString() 
+      : (locale === "ar" ? "حسب الاتفاق" : "Per agreement");
+
     // Run router
     const routeRes = await CommunicationRouter.route(
       customerInfo.contactMethod,
@@ -180,7 +190,9 @@ export const CartDrawer: React.FC = () => {
         preferredTime: preferredTimeLabel,
         generalNotes: customerInfo.generalNotes,
         servicesSummary,
-        categoriesSummary
+        categoriesSummary,
+        items: checkoutItems,
+        totalPrice: checkoutTotalPrice
       },
       activeSettings
     );
@@ -195,35 +207,37 @@ export const CartDrawer: React.FC = () => {
         // Dialers should be opened in self page to trigger native phone apps
         window.open(routeRes.redirectUrl, "_self");
       } else if (customerInfo.contactMethod === "email") {
-        // Handle Gmail compose with mobile app fallback
-        try {
-          const parsedUrl = new URL(routeRes.redirectUrl);
-          const to = parsedUrl.searchParams.get("to") || "";
-          const subject = parsedUrl.searchParams.get("su") || "";
-          const body = parsedUrl.searchParams.get("body") || "";
+        // Handle Gmail compose with mobile/desktop smart routing & fallbacks
+        const gmailUrl = routeRes.gmailUrl || routeRes.redirectUrl || "";
+        const mailtoUrl = routeRes.mailtoUrl || "";
+        
+        const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+          // Mobile: Use mailto: with a fallback message if it cannot be handled
+          let hasFocus = true;
+          const onBlur = () => { hasFocus = false; };
+          window.addEventListener("blur", onBlur);
           
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          if (isMobile) {
-            const appUrl = `googlegmail:///co?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            
-            const iframe = document.createElement("iframe");
-            iframe.style.display = "none";
-            iframe.src = appUrl;
-            document.body.appendChild(iframe);
-            
-            const start = Date.now();
-            setTimeout(() => {
-              document.body.removeChild(iframe);
-              if (Date.now() - start < 1500) {
-                window.open(routeRes.redirectUrl, "_blank");
-              }
-            }, 1000);
-          } else {
-            window.open(routeRes.redirectUrl, "_blank");
+          window.location.href = mailtoUrl;
+          
+          setTimeout(() => {
+            window.removeEventListener("blur", onBlur);
+            if (hasFocus) {
+              alert(locale === "ar" 
+                ? "لم يتم العثور على تطبيق بريد إلكتروني مهيأ على جهازك لإرسال الطلب." 
+                : "No email application is configured on your device to send the request.");
+            }
+          }, 1500);
+        } else {
+          // Desktop: Open Gmail Compose in a new browser tab
+          const newTab = window.open(gmailUrl, "_blank");
+          
+          // Fallback to mailto: if Gmail cannot be opened or is blocked
+          if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
+            console.log("Gmail popup was blocked or failed to open. Falling back to mailto.");
+            window.location.href = mailtoUrl;
           }
-        } catch (e) {
-          console.error("Failed to parse Gmail compose URL:", e);
-          window.open(routeRes.redirectUrl, "_blank");
         }
       } else {
         // WhatsApp opened in new tab
