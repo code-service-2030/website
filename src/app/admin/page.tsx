@@ -784,187 +784,67 @@ export default function AdminDashboard() {
 
   // ===== SMART CUSTOMER CONTACT PROCESSOR =====
   const handleContactCustomerSmart = async (request: any) => {
+    const staffId = request.assignedStaffId;
+    if (!staffId) {
+      alert(locale === "ar" ? "الرجاء تعيين موظف مسؤول للطلب أولاً." : "Please assign a staff member to the request first.");
+      return;
+    }
+    const staff = staffMembers.find(s => s.id === staffId);
+    const template = templates.find(t => t.id === selectedTemplateId);
+    if (!template) {
+      alert(locale === "ar" ? "الرجاء اختيار قالب الرسالة أولاً." : "Please select a message template first.");
+      return;
+    }
+
+    const bodyText = resolveTemplate(template, request, staff);
+    const method = request.contactMethod || "whatsapp";
+
+    // Log the contact action in order history
     try {
-      const method = request.contactMethod || "whatsapp";
-      const staff = staffMembers.find(s => s.id === request.assignedStaffId);
-      const staffName = staff ? staff.fullName : (commSettings.supportName || "Support Agent");
-      const department = staff ? (staff.jobTitle || "Customer Care") : (commSettings.supportDepartment || "Customer Care");
-      const statusLabel = request.status ? request.status.toUpperCase() : "PENDING";
-      const servicesText = request.services?.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(", ") || "";
+      await db.history.addHistoryEntry({
+        orderId: request.id,
+        staffId: staff.id,
+        staffName: staff.fullName,
+        actionType: "contacted",
+        templateName: template.name,
+        details: `Contact Method: ${method === "email" ? "Email" : method === "call" ? "Phone Call" : "WhatsApp"} | Template: ${template.name} | Contacted by: ${staff.fullName}`
+      });
+      
+      // Refresh the local history timeline
+      const history = await db.history.getHistory(request.id);
+      setRequestHistory(history);
+    } catch (e) {
+      console.error("Failed to log order history:", e);
+    }
 
-      const customerLang = request.language || "ar";
+    const phoneWithCode = (request.customerCountryCode || "+966") + request.customerPhone;
+    const cleanPhone = phoneWithCode.replace(/[\s+]/g, "");
 
-      if (method === "whatsapp") {
-        const checkoutItems = request.services?.map((s: any) => ({
-          name: customerLang === "ar" ? (s.titleAr || s.titleEn) : (s.titleEn || s.titleAr),
-          quantity: s.quantity || 1,
-          price: s.price || (customerLang === "ar" ? "حسب الاتفاق" : "Per agreement")
-        })) || [];
-        
-        const estTotalPrice = request.services?.reduce((acc: number, s: any) => {
-          const match = (s.price || "").match(/\d+/);
-          const unitPrice = match ? parseInt(match[0], 10) : 0;
-          return acc + unitPrice * (s.quantity || 1);
-        }, 0) || 0;
-        
-        const checkoutTotalPrice = estTotalPrice > 0 
-          ? estTotalPrice.toString() 
-          : (customerLang === "ar" ? "حسب الاتفاق" : "Per agreement");
-
-        const contactMethodLabel = request.contactMethod === "whatsapp" ? (customerLang === "ar" ? "واتساب" : "WhatsApp") :
-                                   request.contactMethod === "call" ? (customerLang === "ar" ? "اتصال هاتفي" : "Phone Call") :
-                                   (customerLang === "ar" ? "بريد إلكتروني" : "Email");
-
-        const preferredTimeLabel = request.preferredTime === "morning" ? (customerLang === "ar" ? "صباحاً" : "Morning") :
-                                   request.preferredTime === "afternoon" ? (customerLang === "ar" ? "بعد الظهر" : "Afternoon") :
-                                   (customerLang === "ar" ? "مساءً" : "Evening");
-
-        const payload = {
-          requestId: request.id,
-          customerName: request.customerName,
-          customerPhone: (request.customerCountryCode || "+966") + request.customerPhone,
-          customerEmail: request.customerEmail || "",
-          preferredContact: contactMethodLabel,
-          preferredTime: preferredTimeLabel,
-          generalNotes: request.generalNotes || "",
-          servicesSummary: request.services?.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(", ") || "",
-          categoriesSummary: "",
-          items: checkoutItems,
-          totalPrice: checkoutTotalPrice,
-          language: customerLang
-        };
-        
-        const { body } = buildLocalizedMessage(payload, customerLang, commSettings);
-
-        const phoneVal = (request.customerCountryCode || "+966") + request.customerPhone;
-        const cleanPhone = phoneVal.replace(/[\s+]/g, "");
-        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(body)}`;
-        
-        // Log action to history
-        await db.history.addHistoryEntry({
-          orderId: request.id,
-          staffId: staff?.id || undefined,
-          staffName,
-          actionType: "contacted",
-          templateName: "welcome",
-          details: `Sent welcome message to customer via WhatsApp.`
-        });
-
-        // Trigger event
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("history_updated"));
-        }
-
-        window.open(url, "_blank");
-
-      } else if (method === "email") {
-        // Generate prefilled email
-        if (!request.customerEmail) {
-          setOverrideErrorMsg(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
-          setShowOverrideContactModal(true);
-          return;
-        }
-        
-        const subject = customerLang === "ar" 
-          ? `طلب جديد - رقم الطلب ${request.id}`
-          : `New Request - ${request.id}`;
-
-        const body = customerLang === "ar"
-          ? `عزيزي/ة ${request.customerName || ""}،\n\nنشكرك على اختيارك كود خدمات.\n\nاسمي هو ${staffName} وسأكون المسؤول شخصياً عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n${request.id}\n\nالخدمات المطلوبة:\n${servicesText}\n\nحالة الطلب الحالية:\n${statusLabel}\n\nإذا كان لديك أي استفسار، يمكنك ببساطة الرد على هذا البريد الإلكتروني.\n\nمع خالص التحية،\n\n${staffName}\n${department}\nكود خدمات`
-          : `Dear ${request.customerName || ""},\n\nThank you for choosing Code Services.\n\nMy name is ${staffName} and I will personally handle your request until completion.\n\nRequest Number:\n${request.id}\n\nRequested Services:\n${servicesText}\n\nCurrent Status:\n${statusLabel}\n\nIf you have any questions, simply reply to this email.\n\nBest regards,\n\n${staffName}\n${department}\nCode Services`;
-
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(request.customerEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-        // Log action to history
-        await db.history.addHistoryEntry({
-          orderId: request.id,
-          staffId: staff?.id || undefined,
-          staffName,
-          actionType: "contacted",
-          templateName: "email_template",
-          details: `Opened Gmail compose for customer.`
-        });
-
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("history_updated"));
-        }
-
-        const mailtoUrl = `mailto:${request.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-        const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobile) {
-          // Mobile: Use mailto: with fallback alert if fails
-          let hasFocus = true;
-          const onBlur = () => { hasFocus = false; };
-          window.addEventListener("blur", onBlur);
-          
-          window.location.href = mailtoUrl;
-          
-          setTimeout(() => {
-            window.removeEventListener("blur", onBlur);
-            if (hasFocus) {
-              alert(locale === "ar" 
-                ? "لم يتم العثور على تطبيق بريد إلكتروني مهيأ على جهازك لإرسال البريد." 
-                : "No email application is configured on your device to send emails.");
-            }
-          }, 1500);
-        } else {
-          // Desktop: Open Gmail Compose in new browser tab
-          const newTab = window.open(gmailUrl, "_blank");
-          
-          // Fallback to mailto: if Gmail cannot be opened or is blocked
-          if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
-            console.log("Gmail popup was blocked or failed to open. Falling back to mailto.");
-            window.location.href = mailtoUrl;
-          }
-        }
-
-      } else if (method === "call") {
-        const countryCode = request.customerCountryCode || "+966";
-        const cleanCountryCode = countryCode.replace(/\D/g, "");
-        let rawPhone = request.customerPhone || "";
-        rawPhone = rawPhone.replace(/[\s()-]/g, "");
-        
-        let cleanPhone = "";
-        if (rawPhone.startsWith("+")) {
-          cleanPhone = rawPhone;
-        } else if (rawPhone.startsWith("00")) {
-          cleanPhone = "+" + rawPhone.substring(2);
-        } else {
-          let basePhone = rawPhone;
-          if (rawPhone.startsWith("0")) {
-            basePhone = rawPhone.substring(1);
-          }
-          if (basePhone.startsWith(cleanCountryCode)) {
-            cleanPhone = "+" + basePhone;
-          } else {
-            cleanPhone = countryCode + basePhone;
-          }
-        }
-        if (!cleanPhone.startsWith("+")) {
-          cleanPhone = "+" + cleanPhone;
-        }
-        
-        // Log action to history
-        await db.history.addHistoryEntry({
-          orderId: request.id,
-          staffId: staff?.id || undefined,
-          staffName,
-          actionType: "contacted",
-          templateName: "phone_call",
-          details: `Initiated phone call to customer.`
-        });
-
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("history_updated"));
-        }
-
-        window.open(`tel:${cleanPhone}`, "_self");
+    if (method === "email") {
+      if (!request.customerEmail) {
+        alert(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
+        return;
       }
-    } catch (err: any) {
-      console.error(err);
-      setOverrideErrorMsg(err.message || String(err));
-      setShowOverrideContactModal(true);
+      const subject = `${template.name} - Request #${request.id}`;
+      
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(request.customerEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+      const mailtoUrl = `mailto:${request.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+      
+      const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = mailtoUrl;
+      } else {
+        const newTab = window.open(gmailUrl, "_blank");
+        if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
+          window.location.href = mailtoUrl;
+        }
+      }
+    } else if (method === "call") {
+      window.open(`tel:${phoneWithCode}`, "_self");
+    } else {
+      // WhatsApp
+      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(bodyText)}`;
+      window.open(url, "_blank");
     }
   };
 
@@ -3777,7 +3657,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Status update & Call-to-actions */}
-                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-medium-gray/40 border border-gray-100 dark:border-border-dark grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-medium-gray/40 border border-gray-100 dark:border-border-dark grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="font-sans">
                     <span className="text-xxs font-black text-gray-400 block mb-1">
                       {locale === "ar" ? "تعديل حالة الطلب" : "Update Request Status"}
@@ -3785,7 +3665,7 @@ export default function AdminDashboard() {
                     <select
                       value={selectedRequest.status}
                       onChange={(e) => updateRequestStatus(selectedRequest.id, e.target.value as any)}
-                      className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary"
+                      className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary text-gray-900 dark:text-white"
                     >
                       <option value="pending">{locale === "ar" ? "معلق (Pending)" : "Pending"}</option>
                       <option value="in_progress">{locale === "ar" ? "قيد الإنجاز (In Progress)" : "In Progress"}</option>
@@ -3801,11 +3681,26 @@ export default function AdminDashboard() {
                     <select
                       value={selectedRequest.assignedStaffId || ""}
                       onChange={(e) => handleAssignStaff(selectedRequest.id, e.target.value)}
-                      className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary"
+                      className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary text-gray-900 dark:text-white"
                     >
                       <option value="">{locale === "ar" ? "غير معين" : "Unassigned"}</option>
                       {staffMembers.filter(s => s.active).map(s => (
                         <option key={s.id} value={s.id}>{s.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="font-sans">
+                    <span className="text-xxs font-black text-gray-400 block mb-1">
+                      {locale === "ar" ? "قالب الرسالة" : "Message Template"}
+                    </span>
+                    <select
+                      value={selectedTemplateId}
+                      onChange={(e) => setSelectedTemplateId(e.target.value)}
+                      className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary text-gray-900 dark:text-white"
+                    >
+                      {templates.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
                     </select>
                   </div>
@@ -4179,267 +4074,7 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
 
-      {/* MODAL 11: WHATSAPP CONTACT DIALOG */}
-      <AnimatePresence>
-        {showWhatsAppDialog && whatsAppRequest && (
-          <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-dark-gray max-w-lg w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-primary/15 text-start flex flex-col max-h-[90vh]"
-            >
-              <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-white/5 mb-4">
-                <h3 className="text-lg font-black">{locale === "ar" ? "مراسلة العميل" : "Contact Customer"}</h3>
-                <button onClick={() => setShowWhatsAppDialog(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 cursor-pointer">
-                  <X size={18} />
-                </button>
-              </div>
 
-              {/* Stepper Indicators */}
-              <div className="flex items-center justify-between mb-6 select-none bg-gray-50 dark:bg-medium-gray/30 p-3 rounded-2xl border border-gray-100 dark:border-white/5">
-                <div className={`flex items-center gap-1.5 ${selectedStaffForMessage ? "text-emerald-500 font-bold" : "text-primary font-black"}`}>
-                  <span className="w-5 h-5 rounded-full bg-current text-white flex items-center justify-center text-[10px] font-black">1</span>
-                  <span className="text-xxs">{locale === "ar" ? "الموظف" : "Staff"}</span>
-                </div>
-                <div className="w-8 h-0.5 bg-gray-200 dark:bg-white/10" />
-                <div className={`flex items-center gap-1.5 ${selectedTemplateId && selectedStaffForMessage ? "text-emerald-500 font-bold" : selectedStaffForMessage ? "text-primary font-black" : "text-gray-400 font-bold"}`}>
-                  <span className="w-5 h-5 rounded-full bg-current text-white flex items-center justify-center text-[10px] font-black">2</span>
-                  <span className="text-xxs">{locale === "ar" ? "القالب" : "Template"}</span>
-                </div>
-                <div className="w-8 h-0.5 bg-gray-200 dark:bg-white/10" />
-                <div className={`flex items-center gap-1.5 ${selectedTemplateId && selectedStaffForMessage ? "text-primary font-black" : "text-gray-400 font-bold"}`}>
-                  <span className="w-5 h-5 rounded-full bg-current text-white flex items-center justify-center text-[10px] font-black">3</span>
-                  <span className="text-xxs">{locale === "ar" ? "المعاينة والإرسال" : "Preview & Send"}</span>
-                </div>
-              </div>
-
-              <div className="space-y-4 overflow-y-auto pr-1 flex-grow">
-                {/* STEP 1: Choose Staff Member */}
-                {!selectedStaffForMessage ? (
-                  <div className="space-y-3">
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400">{locale === "ar" ? "الخطوة 1: اختر الموظف المسؤول" : "Step 1: Select Staff Member"}</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
-                      {staffMembers.filter(s => s.active).map(s => (
-                        <div
-                          key={s.id}
-                          onClick={() => {
-                            setSelectedStaffForMessage(s.id);
-                          }}
-                          className="p-3 rounded-2xl border border-gray-200 dark:border-border-dark hover:border-primary dark:hover:border-primary bg-gray-50/50 dark:bg-medium-gray/20 hover:bg-primary/5 dark:hover:bg-primary/10 flex items-center gap-3 cursor-pointer transition-all"
-                        >
-                          <img
-                            src={s.photoUrl || "/img/default-avatar.png"}
-                            alt={s.fullName}
-                            className="w-10 h-10 rounded-full object-cover border border-primary/10 flex-shrink-0"
-                          />
-                          <div className="min-w-0 text-start">
-                            <p className="text-xs font-black text-gray-900 dark:text-white truncate">{s.fullName}</p>
-                            <p className="text-xxs text-gray-400 dark:text-gray-400 truncate">{s.jobTitle}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  /* Staff Selected Summary Header */
-                  <div className="p-3 rounded-2xl bg-gray-50 dark:bg-medium-gray/20 border border-gray-150 dark:border-white/5 flex justify-between items-center text-start">
-                    <div className="flex items-center gap-3">
-                      {(() => {
-                        const s = staffMembers.find(st => st.id === selectedStaffForMessage);
-                        return (
-                          <>
-                            <img
-                              src={s?.photoUrl || "/img/default-avatar.png"}
-                              alt={s?.fullName}
-                              className="w-9 h-9 rounded-full object-cover border border-primary/10"
-                            />
-                            <div>
-                              <p className="text-xs font-black text-gray-900 dark:text-white">{s?.fullName}</p>
-                              <p className="text-xxs text-gray-400 dark:text-gray-400">{s?.jobTitle}</p>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedStaffForMessage('');
-                        setSelectedTemplateId('');
-                      }}
-                      className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-red-500 hover:text-white dark:bg-medium-gray dark:hover:bg-red-500 text-gray-500 dark:text-gray-400 transition-colors text-xxs font-bold cursor-pointer"
-                    >
-                      {locale === "ar" ? "تغيير" : "Change"}
-                    </button>
-                  </div>
-                )}
-
-                {/* STEP 2: Choose Message Template */}
-                {selectedStaffForMessage && (!selectedTemplateId ? (
-                  <div className="space-y-3 pt-2">
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400">{locale === "ar" ? "الخطوة 2: اختر قالب الرسالة" : "Step 2: Choose Message Template"}</label>
-                    <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto p-1">
-                      {templates.map(t => (
-                        <div
-                          key={t.id}
-                          onClick={() => setSelectedTemplateId(t.id)}
-                          className="p-3 rounded-xl border border-gray-200 dark:border-border-dark hover:border-primary dark:hover:border-primary bg-gray-50/50 dark:bg-medium-gray/20 hover:bg-primary/5 dark:hover:bg-primary/10 text-start cursor-pointer transition-all flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="text-xs font-bold text-gray-900 dark:text-white">{t.name}</p>
-                            <p className="text-xxs text-gray-400 dark:text-gray-400 truncate max-w-xs">{t.body}</p>
-                          </div>
-                          <ChevronRight size={14} className="text-gray-400 animate-pulse" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  /* Template Selected Summary Header */
-                  <div className="p-3 rounded-2xl bg-gray-50 dark:bg-medium-gray/20 border border-gray-150 dark:border-white/5 flex justify-between items-center text-start">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        {locale === "ar" ? "القالب المحدد:" : "Selected Template:"}
-                      </span>
-                      <span className="text-xs font-black text-primary">
-                        {templates.find(t => t.id === selectedTemplateId)?.name}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setSelectedTemplateId('')}
-                      className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-red-500 hover:text-white dark:bg-medium-gray dark:hover:bg-red-500 text-gray-500 dark:text-gray-400 transition-colors text-xxs font-bold cursor-pointer"
-                    >
-                      {locale === "ar" ? "تغيير" : "Change"}
-                    </button>
-                  </div>
-                ))}
-
-                {/* STEP 3 & 4: Preview and Send Options */}
-                {selectedStaffForMessage && selectedTemplateId && (
-                  <div className="space-y-4 pt-2">
-                    {/* Message Preview */}
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5 text-start">{locale === "ar" ? "الخطوة 3: معاينة وتعديل الرسالة" : "Step 3: Preview & Edit Message"}</label>
-                      <textarea
-                        rows={8}
-                        value={whatsAppPreview}
-                        onChange={(e) => setWhatsAppPreview(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-medium whitespace-pre-wrap leading-relaxed select-text font-sans outline-none focus:border-primary text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-4 border-t border-gray-150 dark:border-white/5 mt-4 flex gap-3">
-                <button
-                  onClick={() => setShowWhatsAppDialog(false)}
-                  className="py-3 px-4 rounded-xl bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300 font-bold text-xs cursor-pointer text-center flex-1"
-                >
-                  {locale === "ar" ? "إلغاء" : "Cancel"}
-                </button>
-                
-                {selectedStaffForMessage && selectedTemplateId && (
-                  <>
-                    {/* Send via Email Button */}
-                    <button
-                      onClick={async () => {
-                        const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
-                        const template = templates.find(t => t.id === selectedTemplateId);
-                        
-                        try {
-                          await db.history.addHistoryEntry({
-                            orderId: whatsAppRequest.id,
-                            staffId: staff.id,
-                            staffName: staff.fullName,
-                            actionType: "contacted",
-                            templateName: template?.name || "Custom",
-                            details: `Contact Method: Email | Template: ${template?.name || "Custom"} | Contacted by: ${staff.fullName}`
-                          });
-                          
-                          const history = await db.history.getHistory(whatsAppRequest.id);
-                          setRequestHistory(history);
-                        } catch (e) {
-                          console.error("Failed to log order history:", e);
-                        }
-
-                        if (!whatsAppRequest.customerEmail) {
-                          alert(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
-                          return;
-                        }
-                        const subject = `${template?.name || "Update"} - Request #${whatsAppRequest.id}`;
-                        const body = whatsAppPreview;
-                        const to = whatsAppRequest.customerEmail;
-                        
-                        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                        const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                        
-                        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                        if (isMobile) {
-                          window.location.href = mailtoUrl;
-                        } else {
-                          const newTab = window.open(gmailUrl, "_blank");
-                          if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
-                            window.location.href = mailtoUrl;
-                          }
-                        }
-                        setShowWhatsAppDialog(false);
-                      }}
-                      className={`py-3 px-4 rounded-xl font-bold text-xs cursor-pointer transition-all flex-1 text-center border ${
-                        whatsAppRequest.contactMethod === "email"
-                          ? "bg-blue-500 hover:bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
-                          : "bg-transparent hover:bg-blue-500/5 text-blue-500 border-blue-500/30"
-                      }`}
-                    >
-                      {locale === "ar" ? "إرسال عبر البريد" : "Send via Email"}
-                      {whatsAppRequest.contactMethod === "email" && ` (${locale === "ar" ? "مفضل" : "Preferred"})`}
-                    </button>
-
-                    {/* Send via WhatsApp Button */}
-                    <button
-                      onClick={async () => {
-                        const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
-                        const template = templates.find(t => t.id === selectedTemplateId);
-                        
-                        try {
-                          await db.history.addHistoryEntry({
-                            orderId: whatsAppRequest.id,
-                            staffId: staff.id,
-                            staffName: staff.fullName,
-                            actionType: "contacted",
-                            templateName: template?.name || "Custom",
-                            details: `Contact Method: WhatsApp | Template: ${template?.name || "Custom"} | Contacted by: ${staff.fullName}`
-                          });
-                          
-                          const history = await db.history.getHistory(whatsAppRequest.id);
-                          setRequestHistory(history);
-                        } catch (e) {
-                          console.error("Failed to log order history:", e);
-                        }
-
-                        const phoneWithCode = (whatsAppRequest.customerCountryCode || "+966") + whatsAppRequest.customerPhone;
-                        const cleanPhone = phoneWithCode.replace(/[\s+]/g, "");
-                        const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsAppPreview)}`;
-                        window.open(waUrl, "_blank");
-                        setShowWhatsAppDialog(false);
-                      }}
-                      className={`py-3 px-4 rounded-xl font-bold text-xs cursor-pointer transition-all flex-1 text-center border ${
-                        whatsAppRequest.contactMethod !== "email"
-                          ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20"
-                          : "bg-transparent hover:bg-emerald-500/5 text-emerald-500 border-emerald-500/30"
-                      }`}
-                    >
-                      {locale === "ar" ? "إرسال عبر واتساب" : "Send via WhatsApp"}
-                      {whatsAppRequest.contactMethod !== "email" && ` (${locale === "ar" ? "مفضل" : "Preferred"})`}
-                    </button>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* MODAL 12: SMART CONTACT OVERRIDE DIALOG */}
       <AnimatePresence>
