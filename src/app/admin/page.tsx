@@ -9,7 +9,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { db, defaultSystemSettings, SystemSettings } from "@/services/db";
 import { supabase } from "@/services/supabaseClient";
 import { exportRequestsToExcel } from "@/services/excelExport";
-import { buildLocalizedMessage } from "@/services/communication";
+import { buildLocalizedMessage, formatPrice } from "@/services/communication";
 import { 
   defaultCategories, 
   defaultServices, 
@@ -764,13 +764,44 @@ export default function AdminDashboard() {
   const resolveTemplate = (template: any, request: any, staff: any) => {
     if (!template || !request) return '';
     let text = template.body || '';
-    text = text.replace(/\{Customer Name\}/g, request.customerName || '');
-    text = text.replace(/\{Staff Name\}/g, staff?.fullName || '');
-    text = text.replace(/\{Request ID\}/g, request.id || '');
-    text = text.replace(/\{Requested Services\}/g,
-      request.services?.map((s: any) => s.titleAr || s.titleEn).join(', ') || ''
-    );
-    text = text.replace(/\{Staff Signature\}/g, staff?.signature || '');
+    
+    // Services list string format
+    const servicesText = request.services?.map((s: any) => s.titleAr || s.titleEn).join(', ') || '';
+    
+    // Total price formatting using our helper
+    const estTotalPrice = request.services?.reduce((acc: number, s: any) => {
+      const match = (s.price || "").match(/\d+/);
+      const unitPrice = match ? parseInt(match[0], 10) : 0;
+      return acc + unitPrice * (s.quantity || 1);
+    }, 0) || 0;
+    
+    const rawPriceLabel = estTotalPrice > 0 ? `${estTotalPrice} ريال` : (locale === "ar" ? "حسب الاتفاق" : "Per agreement");
+    const formattedPrice = formatPrice(rawPriceLabel, locale);
+
+    // Resolve Customer Name / CustomerName
+    text = text.replace(/\{Customer\s*Name\}/gi, request.customerName || '');
+    // Resolve Staff Name / StaffName
+    text = text.replace(/\{Staff\s*Name\}/gi, staff?.fullName || '');
+    // Resolve Request ID / RequestID
+    text = text.replace(/\{Request\s*ID\}/gi, request.id || '');
+    // Resolve Services List / ServicesList / Requested Services / RequestedServices
+    text = text.replace(/\{Services\s*List\}/gi, servicesText);
+    text = text.replace(/\{Requested\s*Services\}/gi, servicesText);
+    text = text.replace(/\{ServicesList\}/gi, servicesText);
+    // Resolve Total Price / TotalPrice
+    text = text.replace(/\{Total\s*Price\}/gi, formattedPrice);
+    text = text.replace(/\{TotalPrice\}/gi, formattedPrice);
+    // Resolve Staff Signature / StaffSignature
+    text = text.replace(/\{Staff\s*Signature\}/gi, staff?.signature || '');
+    // Resolve Phone Number / PhoneNumber
+    text = text.replace(/\{Phone\s*Number\}/gi, (request.customerCountryCode || "+966") + request.customerPhone || '');
+    text = text.replace(/\{PhoneNumber\}/gi, (request.customerCountryCode || "+966") + request.customerPhone || '');
+    // Resolve Email
+    text = text.replace(/\{Email\}/gi, request.customerEmail || '');
+    // Resolve Current Status / CurrentStatus
+    text = text.replace(/\{Current\s*Status\}/gi, request.status || 'pending');
+    text = text.replace(/\{CurrentStatus\}/gi, request.status || 'pending');
+
     return text;
   };
 
@@ -874,24 +905,41 @@ export default function AdminDashboard() {
     }
   };
 
-  // ===== REQUEST HISTORY LOADING =====
+  // ===== REQUEST HISTORY LOADING & DEFAULT TEMPLATE SETUP =====
   useEffect(() => {
     if (selectedRequest) {
       db.history.getHistory(selectedRequest.id).then(setRequestHistory).catch(console.error);
+      
+      // Default to "Welcome Message" when details opens
+      const welcomeTmplId = "00000000-0000-0000-0000-000000000001";
+      setSelectedTemplateId(welcomeTmplId);
+      
+      const staff = staffMembers.find(s => s.id === selectedRequest.assignedStaffId);
+      const template = templates.find(t => t.id === welcomeTmplId);
+      if (template) {
+        setWhatsAppPreview(resolveTemplate(template, selectedRequest, staff));
+      } else {
+        setWhatsAppPreview("");
+      }
     } else {
       setRequestHistory([]);
-    }
-  }, [selectedRequest]);
-
-  // ===== WHATSAPP PREVIEW UPDATE =====
-  useEffect(() => {
-    if (showWhatsAppDialog && whatsAppRequest) {
-      const template = templates.find(t => t.id === selectedTemplateId);
-      const staff = staffMembers.find(s => s.id === selectedStaffForMessage);
-      setWhatsAppPreview(resolveTemplate(template, whatsAppRequest, staff));
+      setSelectedTemplateId("");
+      setWhatsAppPreview("");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showWhatsAppDialog, whatsAppRequest, selectedTemplateId, selectedStaffForMessage, templates, staffMembers]);
+  }, [selectedRequest]);
+
+  // ===== TEMPLATE PREVIEW RESOLUTION =====
+  useEffect(() => {
+    if (selectedRequest && selectedTemplateId && selectedTemplateId !== "custom") {
+      const staff = staffMembers.find(s => s.id === selectedRequest.assignedStaffId);
+      const template = templates.find(t => t.id === selectedTemplateId);
+      if (template) {
+        setWhatsAppPreview(resolveTemplate(template, selectedRequest, staff));
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTemplateId, selectedRequest?.assignedStaffId, templates, staffMembers]);
 
   // CATEGORIES CRUD handlers
   const handleAddCategory = (e: React.FormEvent) => {
@@ -3699,11 +3747,28 @@ export default function AdminDashboard() {
                       onChange={(e) => setSelectedTemplateId(e.target.value)}
                       className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary text-gray-900 dark:text-white"
                     >
+                      <option value="custom">{locale === "ar" ? "✍️ رسالة مخصصة" : "✍️ Custom Message"}</option>
                       {templates.map(t => (
                         <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
                     </select>
                   </div>
+                </div>
+
+                {/* Message preview / edit area (always visible) */}
+                <div className="space-y-1.5 text-start font-sans">
+                  <span className="text-xxs font-black text-gray-400 block mb-1">
+                    {selectedTemplateId === "custom" 
+                      ? (locale === "ar" ? "نص الرسالة المخصصة" : "Custom Message Text") 
+                      : (locale === "ar" ? "معاينة وتعديل نص الرسالة" : "Preview & Edit Message Text")}
+                  </span>
+                  <textarea
+                    rows={6}
+                    value={whatsAppPreview}
+                    onChange={(e) => setWhatsAppPreview(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark text-xs font-semibold whitespace-pre-wrap leading-relaxed select-text font-sans outline-none focus:border-primary text-gray-900 dark:text-white"
+                    placeholder={selectedTemplateId === "custom" ? (locale === "ar" ? "اكتب رسالتك هنا..." : "Type your message here...") : ""}
+                  />
                 </div>
 
                 <div className="flex gap-2 w-full mt-2">
