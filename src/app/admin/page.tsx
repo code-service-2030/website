@@ -377,26 +377,28 @@ export default function AdminDashboard() {
 
   const exportRequestsToCSV = () => {
     const headers = [
-      "Request ID",
-      "Customer Name",
-      "Customer Phone",
-      "Email",
-      "Contact Method",
-      "Preferred Time",
-      "Status",
-      "Date",
-      "Services requested"
+      "الاسم / Customer Name",
+      "الجوال / Phone Number",
+      "البريد الإلكتروني / Email",
+      "رقم الطلب / Request ID",
+      "التاريخ / Date",
+      "الحالة / Status",
+      "طريقة التواصل / Contact Method",
+      "الوقت المفضل / Preferred Time",
+      "الخدمات المطلوبة / Requested Services",
+      "ملاحظات إضافية / General Notes"
     ];
     const rows = requests.map((req) => [
-      req.id,
       req.customerName,
       `'${req.customerPhone}`,
       req.customerEmail || "",
+      req.id,
+      req.date,
+      req.status,
       req.contactMethod,
       req.preferredTime,
-      req.status,
-      req.date,
-      req.services.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join("; ")
+      req.services.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(" | "),
+      req.generalNotes ? req.generalNotes.replace(/\n/g, " ") : ""
     ]);
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
@@ -412,12 +414,23 @@ export default function AdminDashboard() {
 
   // Export functions
   const exportToCSV = () => {
-    const headers = ["ID", "Name", "Phone", "Email", "Service Category", "Message", "Appointment Date", "Appointment Time", "Date Submitted", "Status"];
+    const headers = [
+      "الاسم / Customer Name",
+      "الجوال / Phone Number",
+      "البريد الإلكتروني / Email",
+      "الرقم / ID",
+      "القسم / Service Category",
+      "الرسالة / Message",
+      "تاريخ الموعد / Appointment Date",
+      "وقت الموعد / Appointment Time",
+      "تاريخ التقديم / Date Submitted",
+      "الحالة / Status"
+    ];
     const rows = inquiries.map((inq) => [
-      inq.id,
       inq.name,
-      `'${inq.phone}`, // Escaping phone number strings for Excel
-      inq.email,
+      `'${inq.phone}`,
+      inq.email || "",
+      inq.id,
       inq.service,
       inq.message.replace(/\n/g, " "),
       inq.appointmentDate || "",

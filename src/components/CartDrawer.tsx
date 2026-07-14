@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { db } from "@/services/db";
 import { X, ShoppingBag, Trash2, Plus, Minus, Send, ArrowLeft, ArrowRight, CheckCircle, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -85,42 +86,35 @@ export const CartDrawer: React.FC = () => {
 
     setIsSubmitting(true);
 
-    const requestId = "REQ-" + Math.floor(100000 + Math.random() * 900000);
-
-    const newRequest = {
-      id: requestId,
-      customerName: customerInfo.name,
-      customerPhone: customerInfo.phone,
-      customerEmail: customerInfo.email,
-      contactMethod: customerInfo.contactMethod,
-      preferredTime: customerInfo.preferredTime,
-      generalNotes: customerInfo.generalNotes,
-      status: "pending",
-      date: new Date().toLocaleString(locale === "ar" ? "ar-EG" : "en-US"),
-      timestamp: Date.now(),
-      services: cartItems.map((item) => ({
-        id: item.service.id,
-        titleAr: item.service.titleAr,
-        titleEn: item.service.titleEn,
-        categoryId: item.service.categoryId,
-        price: item.service.price || "",
-        quantity: item.quantity,
-        notes: item.notes,
-      })),
-    };
-
-    // Save request to database service (localStorage fallback)
+    let createdOrder;
     try {
-      const existing = localStorage.getItem("code_services_requests");
-      const list = existing ? JSON.parse(existing) : [];
-      list.unshift(newRequest);
-      localStorage.setItem("code_services_requests", JSON.stringify(list));
-
-      // Dispatch event to refresh admin panels if open
-      window.dispatchEvent(new Event("requests_updated"));
+      createdOrder = await db.orders.createOrder({
+        customerName: customerInfo.name,
+        customerPhone: customerInfo.phone,
+        customerEmail: customerInfo.email,
+        contactMethod: customerInfo.contactMethod,
+        preferredTime: customerInfo.preferredTime,
+        generalNotes: customerInfo.generalNotes,
+        status: "pending",
+        services: cartItems.map((item) => ({
+          id: "",
+          serviceId: item.service.id,
+          titleAr: item.service.titleAr,
+          titleEn: item.service.titleEn,
+          price: item.service.price || "",
+          quantity: item.quantity,
+          notes: item.notes,
+        }))
+      });
     } catch (err) {
       console.error("Failed to save request:", err);
+      // Fail-safe fallback ID for WhatsApp template if creation fails
+      createdOrder = {
+        id: "REQ-" + Math.floor(100000 + Math.random() * 900000)
+      };
     }
+
+    const requestId = createdOrder.id;
 
     // Generate WhatsApp Message
     const contactMethodLabel = 

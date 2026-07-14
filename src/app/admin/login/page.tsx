@@ -141,10 +141,7 @@ export default function AdminLogin() {
             </div>
           </div>
 
-          {/* Info Details */}
-          <div className="p-3.5 rounded-xl bg-primary/5 text-gray-500 dark:text-gray-400 text-xs font-semibold text-start border border-primary/5">
-            💡 {locale === "ar" ? "تجربة لوحة التحكم: استخدم اسم المستخدم admin وكلمة المرور code966 للولوج." : "Demo credentials: use admin as username and code966 as password."}
-          </div>
+
 
           {/* Submit */}
           <button
