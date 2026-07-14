@@ -44,6 +44,7 @@ export interface Order {
   customerCountry?: string;
   customerCountryCode?: string;
   paymentStatus?: "paid" | "unpaid";
+  language?: string;
   // Future Payment Integration Architecture fields
   paymentMethod?: string;
   transactionId?: string;
@@ -206,6 +207,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
       customer_country: orderData.customerCountry || "Saudi Arabia",
       customer_country_code: orderData.customerCountryCode || "+966",
       payment_status: orderData.paymentStatus || "unpaid",
+      language: orderData.language || "ar",
       // Future Payment fields stubs
       payment_method: orderData.paymentMethod || "",
       transaction_id: orderData.transactionId || "",
@@ -293,6 +295,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
       customerCountry: o.customer_country || "Saudi Arabia",
       customerCountryCode: o.customer_country_code || "+966",
       paymentStatus: o.payment_status || "unpaid",
+      language: o.language || "ar",
       // Payment Integration fields mapping
       paymentMethod: o.payment_method || "",
       transactionId: o.transaction_id || "",

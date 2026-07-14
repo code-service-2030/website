@@ -78,6 +78,7 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS assigned_staff_id UUID;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_country VARCHAR(100) DEFAULT 'Saudi Arabia';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_country_code VARCHAR(50) DEFAULT '+966';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'unpaid';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'ar';
 
 -- Payment Integration Architecture Fields
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(100) DEFAULT '';

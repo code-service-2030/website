@@ -17,6 +17,7 @@ export interface CommunicationPayload {
   categoriesSummary: string;
   items?: Array<{ name: string; quantity: number; price: string }>;
   totalPrice?: string;
+  language?: string;
 }
 
 export interface RouteResponse {
@@ -34,53 +35,135 @@ export interface ICommunicationHandler {
   handleRoute(payload: CommunicationPayload, settings: SystemSettings): Promise<RouteResponse>;
 }
 
-function buildCleanArabicMessage(payload: CommunicationPayload): string {
-  const servicesList = payload.items && payload.items.length > 0
-    ? payload.items.map((item, idx) => `${idx + 1}- ${item.name}\nالكمية: ${item.quantity}\nالسعر المتوقع: ${item.price}`).join("\n\n")
-    : payload.servicesSummary;
-
-  return `السلام عليكم ورحمة الله وبركاته،
+// Future-ready template dictionary supporting multiple languages
+const LOCALIZED_TEMPLATES: Record<string, {
+  emailSubject: string;
+  whatsappMessage: string;
+}> = {
+  ar: {
+    emailSubject: "طلب جديد - رقم الطلب {RequestID}",
+    whatsappMessage: `السلام عليكم ورحمة الله وبركاته،
 
 أرغب بطلب الخدمات التالية من مكتب كود خدمات.
 
 رقم الطلب:
-${payload.requestId}
+{RequestID}
 
 ----------------------------------------
 
 الخدمات المطلوبة:
 
-${servicesList}
+{ServicesList}
 
 ----------------------------------------
 
 إجمالي السعر التقريبي:
 
-${payload.totalPrice || "0"} ريال سعودي
+{TotalPrice} ريال سعودي
 
 ----------------------------------------
 
 معلومات العميل:
 
 الاسم:
-${payload.customerName}
+{CustomerName}
 
 الجوال:
-${payload.customerPhone}
+{PhoneNumber}
 
 البريد الإلكتروني:
-${payload.customerEmail || "-"}
+{Email}
 
 طريقة التواصل المفضلة:
-${payload.preferredContact}
+{PreferredContactMethod}
 
 وقت التواصل المفضل:
-${payload.preferredTime}
+{PreferredContactTime}
 
 ----------------------------------------
 
 شكراً لكم،
-كود خدمات`;
+
+كود خدمات`
+  },
+  en: {
+    emailSubject: "New Request - {RequestID}",
+    whatsappMessage: `Hello,
+
+I would like to request the following services from Code Services.
+
+Request Number:
+{RequestID}
+
+----------------------------------------
+
+Requested Services:
+
+{ServicesList}
+
+----------------------------------------
+
+Estimated Total:
+
+{TotalPrice} SAR
+
+----------------------------------------
+
+Customer Information:
+
+Name:
+{CustomerName}
+
+Phone:
+{PhoneNumber}
+
+Email:
+{Email}
+
+Preferred Contact Method:
+{PreferredContactMethod}
+
+Preferred Contact Time:
+{PreferredContactTime}
+
+----------------------------------------
+
+Thank you.
+
+Code Services`
+  }
+};
+
+export function buildLocalizedMessage(payload: CommunicationPayload, lang: string): { subject: string; body: string } {
+  const selectedLang = LOCALIZED_TEMPLATES[lang] ? lang : "ar";
+  const tpl = LOCALIZED_TEMPLATES[selectedLang];
+
+  let servicesList = "";
+  if (payload.items && payload.items.length > 0) {
+    servicesList = payload.items.map((item, idx) => {
+      if (selectedLang === "ar") {
+        return `${idx + 1}- ${item.name}\nالكمية: ${item.quantity}\nالسعر المتوقع: ${item.price} ريال`;
+      } else {
+        return `${idx + 1}. ${item.name}\nQuantity: ${item.quantity}\nEstimated Price: ${item.price} SAR`;
+      }
+    }).join("\n\n");
+  } else {
+    servicesList = payload.servicesSummary;
+  }
+
+  const subject = tpl.emailSubject.replace(/\{RequestID\}/g, payload.requestId);
+
+  let body = tpl.whatsappMessage;
+  body = body.replace(/\{RequestID\}/g, payload.requestId);
+  body = body.replace(/\{ServicesList\}/g, servicesList);
+  body = body.replace(/\{TotalPrice\}/g, payload.totalPrice || "0");
+  body = body.replace(/\{CustomerName\}/g, payload.customerName);
+  body = body.replace(/\{PhoneNumber\}/g, payload.customerPhone);
+  body = body.replace(/\{Email\}/g, payload.customerEmail || "-");
+  body = body.replace(/\{PreferredContactMethod\}/g, payload.preferredContact);
+  body = body.replace(/\{PreferredContactTime\}/g, payload.preferredTime);
+
+  return { subject, body };
 }
 
 /**
@@ -92,10 +175,11 @@ export class WhatsAppHandler implements ICommunicationHandler {
   async handleRoute(payload: CommunicationPayload, settings: SystemSettings): Promise<RouteResponse> {
     console.log("[WhatsAppHandler] Generating message using templates...");
     
-    const text = buildCleanArabicMessage(payload);
+    const lang = payload.language || "ar";
+    const { body } = buildLocalizedMessage(payload, lang);
 
     const whatsappPhone = settings.whatsappNumber.replace(/[\s+]/g, "");
-    const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(text)}`;
+    const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(body)}`;
     
     return {
       success: true,
@@ -115,13 +199,11 @@ export class EmailHandler implements ICommunicationHandler {
   async handleRoute(payload: CommunicationPayload, settings: SystemSettings): Promise<RouteResponse> {
     console.log("[EmailHandler] Resolving email template...");
 
-    let subject = settings.emailSubject || "New Service Request - {Request ID}";
-    subject = subject.replace(/\{Request ID\}/g, payload.requestId);
+    const lang = payload.language || "ar";
+    const { subject, body } = buildLocalizedMessage(payload, lang);
 
-    const bodyFormatted = buildCleanArabicMessage(payload);
-
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(settings.companyEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyFormatted)}`;
-    const mailtoUrl = `mailto:${settings.companyEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyFormatted)}`;
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(settings.companyEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoUrl = `mailto:${settings.companyEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
     return {
       success: true,

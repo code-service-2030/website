@@ -9,6 +9,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { db, defaultSystemSettings, SystemSettings } from "@/services/db";
 import { supabase } from "@/services/supabaseClient";
 import { exportRequestsToExcel } from "@/services/excelExport";
+import { buildLocalizedMessage } from "@/services/communication";
 import { 
   defaultCategories, 
   defaultServices, 
@@ -791,16 +792,49 @@ export default function AdminDashboard() {
       const statusLabel = request.status ? request.status.toUpperCase() : "PENDING";
       const servicesText = request.services?.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(", ") || "";
 
+      const customerLang = request.language || "ar";
+
       if (method === "whatsapp") {
-        // Resolve welcome template or default template
-        const welcomeTemplate = templates.find(t => t.id === "welcome");
-        let body = welcomeTemplate ? welcomeTemplate.body : "السلام عليكم أستاذ/ة {Customer Name}\n\nنرحب بك في كود خدمات.\nأنا {Staff Name} وسأكون المسؤول عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n{Request ID}\n\nالخدمة المطلوبة:\n{Requested Services}\n\nشكراً لاختياركم كود خدمات.";
+        const checkoutItems = request.services?.map((s: any) => ({
+          name: customerLang === "ar" ? (s.titleAr || s.titleEn) : (s.titleEn || s.titleAr),
+          quantity: s.quantity || 1,
+          price: s.price || (customerLang === "ar" ? "حسب الاتفاق" : "Per agreement")
+        })) || [];
         
-        body = body.replace(/\{Customer Name\}/g, request.customerName || "");
-        body = body.replace(/\{Staff Name\}/g, staffName);
-        body = body.replace(/\{Request ID\}/g, request.id || "");
-        body = body.replace(/\{Requested Services\}/g, servicesText);
-        body = body.replace(/\{Staff Signature\}/g, staff?.signature || "");
+        const estTotalPrice = request.services?.reduce((acc: number, s: any) => {
+          const match = (s.price || "").match(/\d+/);
+          const unitPrice = match ? parseInt(match[0], 10) : 0;
+          return acc + unitPrice * (s.quantity || 1);
+        }, 0) || 0;
+        
+        const checkoutTotalPrice = estTotalPrice > 0 
+          ? estTotalPrice.toString() 
+          : (customerLang === "ar" ? "حسب الاتفاق" : "Per agreement");
+
+        const contactMethodLabel = request.contactMethod === "whatsapp" ? (customerLang === "ar" ? "واتساب" : "WhatsApp") :
+                                   request.contactMethod === "call" ? (customerLang === "ar" ? "اتصال هاتفي" : "Phone Call") :
+                                   (customerLang === "ar" ? "بريد إلكتروني" : "Email");
+
+        const preferredTimeLabel = request.preferredTime === "morning" ? (customerLang === "ar" ? "صباحاً" : "Morning") :
+                                   request.preferredTime === "afternoon" ? (customerLang === "ar" ? "بعد الظهر" : "Afternoon") :
+                                   (customerLang === "ar" ? "مساءً" : "Evening");
+
+        const payload = {
+          requestId: request.id,
+          customerName: request.customerName,
+          customerPhone: (request.customerCountryCode || "+966") + request.customerPhone,
+          customerEmail: request.customerEmail || "",
+          preferredContact: contactMethodLabel,
+          preferredTime: preferredTimeLabel,
+          generalNotes: request.generalNotes || "",
+          servicesSummary: request.services?.map((s: any) => `${s.titleAr || s.titleEn} (x${s.quantity || 1})`).join(", ") || "",
+          categoriesSummary: "",
+          items: checkoutItems,
+          totalPrice: checkoutTotalPrice,
+          language: customerLang
+        };
+
+        const { body } = buildLocalizedMessage(payload, customerLang);
 
         const phoneVal = (request.customerCountryCode || "+966") + request.customerPhone;
         const cleanPhone = phoneVal.replace(/[\s+]/g, "");
@@ -831,8 +865,13 @@ export default function AdminDashboard() {
           return;
         }
         
-        const subject = `Request #${request.id} - Code Services`;
-        const body = `Dear ${request.customerName || ""},\n\nThank you for choosing Code Services.\n\nMy name is ${staffName} and I will personally handle your request until completion.\n\nRequest Number:\n${request.id}\n\nRequested Services:\n${servicesText}\n\nCurrent Status:\n${statusLabel}\n\nIf you have any questions, simply reply to this email.\n\nBest regards,\n\n${staffName}\n${department}\nCode Services`;
+        const subject = customerLang === "ar" 
+          ? `طلب جديد - رقم الطلب ${request.id}`
+          : `New Request - ${request.id}`;
+
+        const body = customerLang === "ar"
+          ? `عزيزي/ة ${request.customerName || ""}،\n\nنشكرك على اختيارك كود خدمات.\n\nاسمي هو ${staffName} وسأكون المسؤول شخصياً عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n${request.id}\n\nالخدمات المطلوبة:\n${servicesText}\n\nحالة الطلب الحالية:\n${statusLabel}\n\nإذا كان لديك أي استفسار، يمكنك ببساطة الرد على هذا البريد الإلكتروني.\n\nمع خالص التحية،\n\n${staffName}\n${department}\nكود خدمات`
+          : `Dear ${request.customerName || ""},\n\nThank you for choosing Code Services.\n\nMy name is ${staffName} and I will personally handle your request until completion.\n\nRequest Number:\n${request.id}\n\nRequested Services:\n${servicesText}\n\nCurrent Status:\n${statusLabel}\n\nIf you have any questions, simply reply to this email.\n\nBest regards,\n\n${staffName}\n${department}\nCode Services`;
 
         const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(request.customerEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 

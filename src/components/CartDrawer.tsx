@@ -119,6 +119,7 @@ export const CartDrawer: React.FC = () => {
         status: "pending",
         customerCountry: customerInfo.country,
         customerCountryCode: customerInfo.countryCode,
+        language: locale,
         services: cartItems.map((item) => ({
           id: "",
           serviceId: item.service.id,
@@ -192,7 +193,8 @@ export const CartDrawer: React.FC = () => {
         servicesSummary,
         categoriesSummary,
         items: checkoutItems,
-        totalPrice: checkoutTotalPrice
+        totalPrice: checkoutTotalPrice,
+        language: locale
       },
       activeSettings
     );
