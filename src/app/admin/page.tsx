@@ -821,13 +821,27 @@ export default function AdminDashboard() {
       return;
     }
     const staff = staffMembers.find(s => s.id === staffId);
-    const template = templates.find(t => t.id === selectedTemplateId);
-    if (!template) {
-      alert(locale === "ar" ? "الرجاء اختيار قالب الرسالة أولاً." : "Please select a message template first.");
+    
+    // Validate only if a template is selected
+    if (selectedTemplateId !== "custom") {
+      const template = templates.find(t => t.id === selectedTemplateId);
+      if (!template) {
+        alert(locale === "ar" ? "الرجاء اختيار قالب الرسالة أولاً." : "Please select a message template first.");
+        return;
+      }
+    }
+
+    // Always use current textarea value (whatsAppPreview)
+    const bodyText = whatsAppPreview || "";
+    if (!bodyText.trim()) {
+      alert(locale === "ar" ? "الرجاء إدخال نص الرسالة أولاً." : "Please enter message text first.");
       return;
     }
 
-    const bodyText = resolveTemplate(template, request, staff);
+    const templateName = selectedTemplateId === "custom"
+      ? (locale === "ar" ? "رسالة مخصصة" : "Custom Message")
+      : (templates.find(t => t.id === selectedTemplateId)?.name || "Template");
+
     const method = request.contactMethod || "whatsapp";
 
     // Log the contact action in order history
@@ -837,8 +851,8 @@ export default function AdminDashboard() {
         staffId: staff.id,
         staffName: staff.fullName,
         actionType: "contacted",
-        templateName: template.name,
-        details: `Contact Method: ${method === "email" ? "Email" : method === "call" ? "Phone Call" : "WhatsApp"} | Template: ${template.name} | Contacted by: ${staff.fullName}`
+        templateName: templateName,
+        details: `Contact Method: ${method === "email" ? "Email" : method === "call" ? "Phone Call" : "WhatsApp"} | Template: ${templateName} | Contacted by: ${staff.fullName}`
       });
       
       // Refresh the local history timeline
@@ -856,7 +870,7 @@ export default function AdminDashboard() {
         alert(locale === "ar" ? "العميل لم يقم بإدخال بريد إلكتروني." : "No email address provided by customer.");
         return;
       }
-      const subject = `${template.name} - Request #${request.id}`;
+      const subject = `${templateName} - Request #${request.id}`;
       
       const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(request.customerEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
       const mailtoUrl = `mailto:${request.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
@@ -3744,7 +3758,12 @@ export default function AdminDashboard() {
                     </span>
                     <select
                       value={selectedTemplateId}
-                      onChange={(e) => setSelectedTemplateId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedTemplateId(e.target.value);
+                        if (e.target.value === "custom") {
+                          setWhatsAppPreview("");
+                        }
+                      }}
                       className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary text-gray-900 dark:text-white"
                     >
                       <option value="custom">{locale === "ar" ? "✍️ رسالة مخصصة" : "✍️ Custom Message"}</option>
