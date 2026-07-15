@@ -249,14 +249,6 @@ export const FeaturedServices: React.FC = () => {
                     >
                       <Icons.MessageCircle size={18} fill="currentColor" />
                     </a>
-
-                    <a
-                      href="tel:+966537073161"
-                      className="p-3.5 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray text-gray-700 dark:text-gray-200 transition-colors cursor-pointer flex items-center justify-center border border-gray-200 dark:border-border-dark"
-                      title="Call Office"
-                    >
-                      <Icons.Phone size={18} />
-                    </a>
                   </div>
                 </div>
               </motion.div>

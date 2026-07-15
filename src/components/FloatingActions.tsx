@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
-import { MessageCircle, Phone, ArrowUp } from "lucide-react";
+import { MessageCircle, ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import WhatsAppPopup from "@/components/WhatsAppPopup";
 
@@ -50,14 +50,7 @@ export const FloatingActions: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Sticky Call Button */}
-        <a
-          href="tel:+966537073161"
-          className="p-4 rounded-full bg-primary text-white shadow-xl hover:scale-105 transition-transform flex items-center justify-center border border-white/20 cursor-pointer"
-          aria-label="Call Code Services"
-        >
-          <Phone size={24} />
-        </a>
+
 
         {/* Sticky WhatsApp Button */}
         <button

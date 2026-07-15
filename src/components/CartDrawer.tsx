@@ -462,7 +462,6 @@ export const CartDrawer: React.FC = () => {
                         className="w-full bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark focus:border-primary rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-all cursor-pointer"
                       >
                         <option value="whatsapp">{locale === "ar" ? "واتساب (WhatsApp)" : "WhatsApp"}</option>
-                        <option value="call">{locale === "ar" ? "اتصال هاتفي (Call)" : "Phone Call"}</option>
                         <option value="email">{locale === "ar" ? "بريد إلكتروني (Email)" : "Email"}</option>
                       </select>
                     </div>
@@ -504,7 +503,7 @@ export const CartDrawer: React.FC = () => {
 
               {/* Footer */}
               {cartItems.length > 0 && (
-                <div className="p-6 border-t border-gray-100 dark:border-border-dark bg-gray-50 dark:bg-medium-gray/20">
+                <div className="p-6 border-t border-gray-150 dark:border-border-dark bg-gray-50 dark:bg-medium-gray/20">
                   {/* Summary rows */}
                   <div className="space-y-2 mb-6">
                     <div className="flex justify-between items-center text-xs font-bold text-gray-500 dark:text-gray-400">
@@ -537,29 +536,23 @@ export const CartDrawer: React.FC = () => {
                         onClick={handleSubmit}
                         disabled={isSubmitting}
                         className={`w-full py-4 text-white rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 ${
-                          customerInfo.contactMethod === "whatsapp"
-                            ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
-                            : customerInfo.contactMethod === "email"
+                          customerInfo.contactMethod === "email"
                             ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/20"
-                            : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20"
+                            : "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
                         }`}
                       >
-                        {customerInfo.contactMethod === "whatsapp" ? (
-                          <MessageSquare size={16} fill="currentColor" />
-                        ) : customerInfo.contactMethod === "email" ? (
+                        {customerInfo.contactMethod === "email" ? (
                           <Mail size={16} />
                         ) : (
-                          <Phone size={16} />
+                          <MessageSquare size={16} fill="currentColor" />
                         )}
                         <span>
                           {isSubmitting ? (
                             locale === "ar" ? "جاري الإرسال..." : "Submitting..."
-                          ) : customerInfo.contactMethod === "whatsapp" ? (
-                            locale === "ar" ? "إرسال الطلب وفتح واتساب" : "Submit Request & Open WhatsApp"
                           ) : customerInfo.contactMethod === "email" ? (
                             locale === "ar" ? "إرسال الطلب وفتح البريد الإلكتروني" : "Submit Request & Open Email"
                           ) : (
-                            locale === "ar" ? "إرسال الطلب والاتصال بالشركة" : "Submit Request & Call Company"
+                            locale === "ar" ? "إرسال الطلب وفتح واتساب" : "Submit Request & Open WhatsApp"
                           )}
                         </span>
                       </button>

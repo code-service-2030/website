@@ -3,7 +3,7 @@
 import React from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import Image from "next/image";
-import { Phone, MapPin, MessageSquare, Clock, Heart } from "lucide-react";
+import { MapPin, MessageSquare, Clock, Heart } from "lucide-react";
 
 export const Footer: React.FC = () => {
   const { t, locale } = useLanguage();
@@ -48,13 +48,6 @@ export const Footer: React.FC = () => {
           </p>
 
           <div className="flex gap-4">
-            <a
-              href="tel:+966537073161"
-              className="p-3.5 rounded-xl bg-gray-800 text-white hover:bg-primary transition-colors cursor-pointer"
-              aria-label="Call Office"
-            >
-              <Phone size={18} />
-            </a>
             <a
               href="https://wa.me/966537073161"
               className="p-3.5 rounded-xl bg-gray-800 text-white hover:bg-emerald-600 transition-colors cursor-pointer"
@@ -126,10 +119,6 @@ export const Footer: React.FC = () => {
             <li className="flex items-start gap-3">
               <span className="text-primary dark:text-primary-light mt-0.5"><MapPin size={16} /></span>
               <span>{t("locationAddress")}</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="text-primary dark:text-primary-light"><Phone size={16} /></span>
-              <span>+966 53 707 3161</span>
             </li>
             <li className="flex items-center gap-3">
               <span className="text-primary dark:text-primary-light"><Clock size={16} /></span>

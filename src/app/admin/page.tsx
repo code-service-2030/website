@@ -3597,12 +3597,9 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <span className="text-gray-400 font-bold block">{locale === "ar" ? "الجوال" : "Phone"}:</span>
-                      <a 
-                        href={`tel:${(selectedRequest.customerCountryCode || "+966") + selectedRequest.customerPhone}`} 
-                        className="text-primary dark:text-primary-light hover:underline font-mono text-sm block mt-0.5 select-all"
-                      >
+                      <span className="text-gray-900 dark:text-white font-mono text-sm block mt-0.5 select-all">
                         {(selectedRequest.customerCountryCode || "+966") + " " + selectedRequest.customerPhone}
-                      </a>
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-400 font-bold block">{locale === "ar" ? "البريد الإلكتروني" : "Email"}:</span>
@@ -3610,7 +3607,11 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <span className="text-gray-400 font-bold block">{locale === "ar" ? "طريقة التواصل المفضلة" : "Preferred Contact"}:</span>
-                      <span className="text-gray-900 dark:text-white font-extrabold capitalize">{selectedRequest.contactMethod}</span>
+                      <span className="text-gray-900 dark:text-white font-extrabold capitalize">
+                        {(selectedRequest.contactMethod === "call" || selectedRequest.contactMethod === "phone")
+                          ? (locale === "ar" ? "هاتف (سابق)" : "Phone (Legacy)")
+                          : selectedRequest.contactMethod}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-400 font-bold block">{locale === "ar" ? "وقت التواصل المفضل" : "Preferred Time"}:</span>
@@ -3794,26 +3795,20 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => handleContactCustomerSmart(selectedRequest)}
                     className={`flex-1 px-4 py-2.5 rounded-xl text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all ${
-                      (selectedRequest.contactMethod || "whatsapp") === "whatsapp"
-                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
-                        : (selectedRequest.contactMethod || "whatsapp") === "email"
+                      selectedRequest.contactMethod === "email"
                         ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/10"
-                        : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/10"
+                        : "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
                     }`}
                   >
-                    {(selectedRequest.contactMethod || "whatsapp") === "whatsapp" ? (
-                      <MessageSquare size={14} fill="currentColor" />
-                    ) : (selectedRequest.contactMethod || "whatsapp") === "email" ? (
+                    {selectedRequest.contactMethod === "email" ? (
                       <Mail size={14} />
                     ) : (
-                      <Phone size={14} />
+                      <MessageSquare size={14} fill="currentColor" />
                     )}
                     <span>
-                      {(selectedRequest.contactMethod || "whatsapp") === "whatsapp"
-                        ? (locale === "ar" ? "مراسلة عبر واتساب" : "Message via WhatsApp")
-                        : (selectedRequest.contactMethod || "whatsapp") === "email"
+                      {selectedRequest.contactMethod === "email"
                         ? (locale === "ar" ? "إرسال بريد إلكتروني" : "Send Email")
-                        : (locale === "ar" ? "اتصال بالعميل (هاتف)" : "Call Customer")}
+                        : (locale === "ar" ? "مراسلة عبر واتساب" : "Message via WhatsApp")}
                     </span>
                   </button>
                   
@@ -4213,18 +4208,6 @@ export default function AdminDashboard() {
                       <span>{locale === "ar" ? "إرسال بريد إلكتروني (Email)" : "Send Email"}</span>
                     </span>
                     <span className="text-xxs opacity-70">mailto</span>
-                  </button>
-
-                  {/* Option 3: Call */}
-                  <button
-                    onClick={() => handleManualContactOverride(selectedRequest, "call")}
-                    className="w-full p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 text-indigo-600 dark:text-indigo-400 transition-all font-bold text-xs flex items-center justify-between cursor-pointer border border-indigo-500/20"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Phone size={16} />
-                      <span>{locale === "ar" ? "الاتصال بالهاتف (Call)" : "Phone Call"}</span>
-                    </span>
-                    <span className="text-xxs opacity-70">tel</span>
                   </button>
                 </div>
               </div>

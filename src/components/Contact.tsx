@@ -128,13 +128,6 @@ export const Contact: React.FC = () => {
 
   const contactDetails = [
     {
-      icon: <Phone size={22} />,
-      label: t("contactPhone"),
-      value: "+966 53 707 3161",
-      link: "tel:+966537073161",
-      btnText: locale === "ar" ? "اتصال هاتفي" : "Direct Call",
-    },
-    {
       icon: <MessageSquare size={22} />,
       label: t("contactWhatsApp"),
       value: "+966 53 707 3161",
@@ -177,18 +170,7 @@ export const Contact: React.FC = () => {
         </div>
 
         {/* Quick Action Buttons Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16 max-w-4xl mx-auto select-none">
-          {/* Call */}
-          <a
-            href="tel:+966537073161"
-            className="flex flex-col items-center justify-center p-5 rounded-2xl bg-primary/5 hover:bg-primary dark:bg-white/5 dark:hover:bg-primary text-primary hover:text-white dark:text-primary-light dark:hover:text-white border border-primary/10 shadow-sm transition-all duration-300 group cursor-pointer"
-          >
-            <Phone size={24} className="mb-2 transition-transform group-hover:scale-110" />
-            <span className="font-extrabold text-xs sm:text-sm">
-              {locale === "ar" ? "اتصال مباشر" : "Direct Call"}
-            </span>
-          </a>
-
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16 max-w-3xl mx-auto select-none">
           {/* WhatsApp */}
           <a
             href="https://wa.me/966537073161"

@@ -155,23 +155,6 @@ export class EmailHandler implements ICommunicationHandler {
 }
 
 /**
- * 3. PHONE DIALER ROUTING HANDLER
- */
-export class PhoneHandler implements ICommunicationHandler {
-  channelName = "Phone";
-
-  async handleRoute(payload: CommunicationPayload, settings: SystemSettings): Promise<RouteResponse> {
-    console.log("[PhoneHandler] Generating tel dialer link...");
-    const telUrl = `tel:${settings.primaryPhone.replace(/[\s]/g, "")}`;
-    return {
-      success: true,
-      actionTaken: "Opened Phone Dialer",
-      redirectUrl: telUrl
-    };
-  }
-}
-
-/**
  * 4. FUTURE Live Chat INTEGRATION STUB
  */
 export class LiveChatHandler implements ICommunicationHandler {
@@ -222,7 +205,6 @@ export class CommunicationRouter {
   private static handlers: Record<string, ICommunicationHandler> = {
     whatsapp: new WhatsAppHandler(),
     email: new EmailHandler(),
-    call: new PhoneHandler(),
     livechat: new LiveChatHandler(),
     telegram: new TelegramHandler(),
     sms: new SMSHandler(),
