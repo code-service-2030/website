@@ -570,8 +570,22 @@ export default function AdminDashboard() {
   const updateRequestStatus = async (id: string, newStatus: any) => {
     try {
       await db.orders.updateOrderStatus(id, newStatus);
+      if (selectedRequest && selectedRequest.id === id) {
+        setSelectedRequest((prev: any) => prev ? { ...prev, status: newStatus } : null);
+      }
     } catch (e) {
       console.error("Failed to update request status:", e);
+    }
+  };
+
+  const handleUpdatePaymentStatus = async (id: string, newPaymentStatus: any) => {
+    try {
+      const success = await db.orders.updatePaymentStatus(id, newPaymentStatus);
+      if (success && selectedRequest && selectedRequest.id === id) {
+        setSelectedRequest((prev: any) => prev ? { ...prev, paymentStatus: newPaymentStatus } : null);
+      }
+    } catch (e) {
+      console.error("Failed to update request payment status:", e);
     }
   };
 
@@ -1512,25 +1526,28 @@ export default function AdminDashboard() {
                         <th className="px-6 py-4 text-xs uppercase tracking-wider">{locale === "ar" ? "الخدمات المطلوبة" : "Services"}</th>
                         <th className="px-6 py-4 text-xs uppercase tracking-wider">{locale === "ar" ? "التاريخ" : "Date"}</th>
                         <th className="px-6 py-4 text-xs uppercase tracking-wider">{locale === "ar" ? "الحالة" : "Status"}</th>
+                        <th className="px-6 py-4 text-xs uppercase tracking-wider">{locale === "ar" ? "الدفع" : "Payment"}</th>
                         <th className="px-6 py-4 text-xs uppercase tracking-wider printing:hidden">{locale === "ar" ? "الإجراءات" : "Actions"}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-border-dark">
                       {filteredRequestsList.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center text-gray-400 font-semibold">
+                          <td colSpan={8} className="px-6 py-12 text-center text-gray-400 font-semibold">
                             {locale === "ar" ? "لا توجد طلبات مطابقة للبحث." : "No requests found."}
                           </td>
                         </tr>
                       ) : (
                         filteredRequestsList.map((req) => {
                           const statusColors = 
+                            req.status === "awaiting_payment" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" :
                             req.status === "pending" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
                             req.status === "in_progress" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" :
                             req.status === "completed" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
                             "bg-red-500/10 text-red-600 dark:text-red-400";
 
                           const statusLabel = 
+                            req.status === "awaiting_payment" ? (locale === "ar" ? "بانتظار الدفع" : "Awaiting Payment") :
                             req.status === "pending" ? (locale === "ar" ? "معلق" : "Pending") :
                             req.status === "in_progress" ? (locale === "ar" ? "قيد الإنجاز" : "In Progress") :
                             req.status === "completed" ? (locale === "ar" ? "مكتمل" : "Completed") :
@@ -1568,6 +1585,17 @@ export default function AdminDashboard() {
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`px-2 py-1 rounded-lg text-xxs font-black ${statusColors}`}>
                                   {statusLabel}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 rounded-lg text-xxs font-black ${
+                                  req.paymentStatus === "paid" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+                                  req.paymentStatus === "pending" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
+                                  "bg-red-500/10 text-red-600 dark:text-red-400"
+                                }`}>
+                                  {req.paymentStatus === "paid" ? (locale === "ar" ? "🟢 مدفوع" : "Paid") :
+                                   req.paymentStatus === "pending" ? (locale === "ar" ? "🟡 معلق" : "Pending") :
+                                   (locale === "ar" ? "🔴 غير مدفوع" : "Unpaid")}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-xs font-bold space-x-1 space-x-reverse printing:hidden">
@@ -3730,6 +3758,7 @@ export default function AdminDashboard() {
                       onChange={(e) => updateRequestStatus(selectedRequest.id, e.target.value as any)}
                       className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary text-gray-900 dark:text-white"
                     >
+                      <option value="awaiting_payment">{locale === "ar" ? "بانتظار الدفع" : "Awaiting Payment"}</option>
                       <option value="pending">{locale === "ar" ? "معلق (Pending)" : "Pending"}</option>
                       <option value="in_progress">{locale === "ar" ? "قيد الإنجاز (In Progress)" : "In Progress"}</option>
                       <option value="completed">{locale === "ar" ? "مكتمل (Completed)" : "Completed"}</option>
@@ -3774,6 +3803,48 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                 </div>
+
+                {/* Stripe Payment Details */}
+                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-medium-gray/40 border border-gray-100 dark:border-border-dark font-sans text-xs space-y-2.5">
+                  <span className="text-xxs font-black text-gray-400 block mb-1">
+                    {locale === "ar" ? "تفاصيل الدفع الإلكتروني" : "Payment Information"}
+                  </span>
+                  <div className="grid grid-cols-2 gap-3 text-start">
+                    <div>
+                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "حالة الدفع" : "Payment Status"}:</span>
+                      <select
+                        value={selectedRequest.paymentStatus || "unpaid"}
+                        onChange={(e) => handleUpdatePaymentStatus(selectedRequest.id, e.target.value as any)}
+                        className="py-1 px-2 rounded-lg bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xxs font-extrabold cursor-pointer outline-none text-gray-900 dark:text-white mt-1"
+                      >
+                        <option value="unpaid">{locale === "ar" ? "غير مدفوع" : "Unpaid"}</option>
+                        <option value="pending">{locale === "ar" ? "معلق" : "Pending"}</option>
+                        <option value="paid">{locale === "ar" ? "مدفوع" : "Paid"}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "بوابة الدفع" : "Payment Gateway"}:</span>
+                      <span className="font-extrabold text-gray-900 dark:text-white block mt-1">{selectedRequest.gatewayName || "-"}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "معرف الجلسة (Stripe Session ID)" : "Stripe Session ID"}:</span>
+                      <span className="font-mono text-xxs text-gray-500 select-all block mt-1 break-all bg-white dark:bg-dark-gray p-1.5 rounded-lg border border-gray-100 dark:border-border-dark">{selectedRequest.transactionId || "-"}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "معرف المعاملة (Payment Intent ID)" : "Payment Intent ID"}:</span>
+                      <span className="font-mono text-xxs text-gray-500 select-all block mt-1 break-all bg-white dark:bg-dark-gray p-1.5 rounded-lg border border-gray-100 dark:border-border-dark">{selectedRequest.paymentIntentId || "-"}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "المبلغ المدفوع" : "Amount Paid"}:</span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400 block mt-1">{selectedRequest.amountPaid || 0} {selectedRequest.currency || "SAR"}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "تاريخ الدفع" : "Payment Date"}:</span>
+                      <span className="font-extrabold text-gray-900 dark:text-white block mt-1">{selectedRequest.paymentDate ? new Date(selectedRequest.paymentDate).toLocaleString(locale === "ar" ? "ar-SA" : "en-US") : "-"}</span>
+                    </div>
+                  </div>
+                </div>
+
 
                 {/* Message preview / edit area (always visible) */}
                 <div className="space-y-1.5 text-start font-sans">

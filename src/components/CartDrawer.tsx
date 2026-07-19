@@ -116,7 +116,8 @@ export const CartDrawer: React.FC = () => {
         contactMethod: customerInfo.contactMethod,
         preferredTime: customerInfo.preferredTime,
         generalNotes: customerInfo.generalNotes,
-        status: "pending",
+        status: "awaiting_payment",
+        paymentStatus: "pending",
         customerCountry: customerInfo.country,
         customerCountryCode: customerInfo.countryCode,
         language: locale,
@@ -140,113 +141,48 @@ export const CartDrawer: React.FC = () => {
 
     const requestId = createdOrder.id;
 
-    // Show success notification
-    alert(locale === "ar" 
-      ? `تم حفظ الطلب بنجاح! رقم طلبك هو: ${requestId}` 
-      : `Request saved successfully! Your request ID is: ${requestId}`
-    );
+    // Call Stripe checkout backend route
+    try {
+      const servicesSummary = cartItems
+        .map(item => `${locale === "ar" ? item.service.titleAr : item.service.titleEn} (x${item.quantity})`)
+        .join(", ");
 
-    // Compile variables for templates
-    const servicesSummary = cartItems
-      .map(item => `${locale === "ar" ? item.service.titleAr : item.service.titleEn} (x${item.quantity})`)
-      .join(", ");
-      
-    const categoriesSummary = cartItems
-      .map(item => item.service.categoryId || "general")
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .join(", ");
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          orderId: requestId,
+          customerName: customerInfo.name,
+          customerEmail: customerInfo.email,
+          amount: estimatedTotalPrice,
+          services: servicesSummary
+        })
+      });
 
-    const contactMethodLabel = 
-      customerInfo.contactMethod === "whatsapp" ? (locale === "ar" ? "واتساب" : "WhatsApp") :
-      customerInfo.contactMethod === "call" ? (locale === "ar" ? "اتصال هاتفي" : "Phone Call") :
-      (locale === "ar" ? "بريد إلكتروني" : "Email");
-
-    const preferredTimeLabel = 
-      customerInfo.preferredTime === "morning" ? (locale === "ar" ? "صباحاً" : "Morning") :
-      customerInfo.preferredTime === "afternoon" ? (locale === "ar" ? "بعد الظهر" : "Afternoon") :
-      (locale === "ar" ? "مساءً" : "Evening");
-
-    // Retrieve active settings
-    const activeSettings = systemSettings || defaultSystemSettings;
-
-    // Prepare items list and total price
-    const checkoutItems = cartItems.map(item => ({
-      name: locale === "ar" ? item.service.titleAr : item.service.titleEn,
-      quantity: item.quantity,
-      price: item.service.price || (locale === "ar" ? "حسب الاتفاق" : "Per agreement")
-    }));
-    const checkoutTotalPrice = estimatedTotalPrice > 0 
-      ? estimatedTotalPrice.toString() 
-      : (locale === "ar" ? "حسب الاتفاق" : "Per agreement");
-
-    // Run router
-    const routeRes = await CommunicationRouter.route(
-      customerInfo.contactMethod,
-      {
-        requestId,
-        customerName: customerInfo.name,
-        customerPhone: customerInfo.phone,
-        customerEmail: customerInfo.email,
-        preferredContact: contactMethodLabel,
-        preferredTime: preferredTimeLabel,
-        generalNotes: customerInfo.generalNotes,
-        servicesSummary,
-        categoriesSummary,
-        items: checkoutItems,
-        totalPrice: checkoutTotalPrice,
-        language: locale
-      },
-      activeSettings
-    );
-
-    setIsSubmitting(false);
-    clearCart();
-    setStep(1);
-    closeCart();
-
-    if (routeRes.success && routeRes.redirectUrl) {
-      if (customerInfo.contactMethod === "call") {
-        // Dialers should be opened in self page to trigger native phone apps
-        window.open(routeRes.redirectUrl, "_self");
-      } else if (customerInfo.contactMethod === "email") {
-        // Handle Gmail compose with mobile/desktop smart routing & fallbacks
-        const gmailUrl = routeRes.gmailUrl || routeRes.redirectUrl || "";
-        const mailtoUrl = routeRes.mailtoUrl || "";
-        
-        const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        
-        if (isMobile) {
-          // Mobile: Use mailto: with a fallback message if it cannot be handled
-          let hasFocus = true;
-          const onBlur = () => { hasFocus = false; };
-          window.addEventListener("blur", onBlur);
-          
-          window.location.href = mailtoUrl;
-          
-          setTimeout(() => {
-            window.removeEventListener("blur", onBlur);
-            if (hasFocus) {
-              alert(locale === "ar" 
-                ? "لم يتم العثور على تطبيق بريد إلكتروني مهيأ على جهازك لإرسال الطلب." 
-                : "No email application is configured on your device to send the request.");
-            }
-          }, 1500);
-        } else {
-          // Desktop: Open Gmail Compose in a new browser tab
-          const newTab = window.open(gmailUrl, "_blank");
-          
-          // Fallback to mailto: if Gmail cannot be opened or is blocked
-          if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
-            console.log("Gmail popup was blocked or failed to open. Falling back to mailto.");
-            window.location.href = mailtoUrl;
-          }
-        }
-      } else {
-        // WhatsApp opened in new tab
-        window.open(routeRes.redirectUrl, "_blank");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create checkout session");
       }
-    } else if (routeRes.error) {
-      console.error("Communication routing error:", routeRes.error);
+
+      const data = await response.json();
+
+      setIsSubmitting(false);
+      clearCart();
+      setStep(1);
+      closeCart();
+
+      // Redirect to Stripe Hosted Checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      console.error("Stripe Checkout Redirect Failed:", err);
+      alert(locale === "ar" 
+        ? "فشل الانتقال إلى بوابة الدفع. الرجاء المحاولة مرة أخرى." 
+        : "Failed to redirect to payment gateway. Please try again.");
+      setIsSubmitting(false);
     }
   };
 

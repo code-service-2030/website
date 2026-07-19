@@ -36,18 +36,19 @@ export interface Order {
   contactMethod: string;
   preferredTime: string;
   generalNotes?: string;
-  status: "pending" | "in_progress" | "completed" | "cancelled";
+  status: "pending" | "in_progress" | "completed" | "cancelled" | "awaiting_payment";
   date: string;
   timestamp: number;
   services: OrderItem[];
   assignedStaffId?: string;
   customerCountry?: string;
   customerCountryCode?: string;
-  paymentStatus?: "paid" | "unpaid";
+  paymentStatus?: "paid" | "pending" | "unpaid";
   language?: string;
   // Future Payment Integration Architecture fields
   paymentMethod?: string;
   transactionId?: string;
+  paymentIntentId?: string;
   paymentDate?: string;
   gatewayName?: string;
   amountPaid?: number;
@@ -137,7 +138,7 @@ export interface IOrderRepository {
   getOrders(): Promise<Order[]>;
   updateOrderStatus(orderId: string, status: Order["status"]): Promise<Order | null>;
   assignStaff(orderId: string, staffId: string | null): Promise<boolean>;
-  updatePaymentStatus(orderId: string, status: Order["paymentStatus"]): Promise<boolean>;
+  updatePaymentStatus(orderId: string, status: Order["paymentStatus"], details?: Partial<Order>): Promise<boolean>;
   deleteOrder(orderId: string): Promise<boolean>;
 }
 
@@ -388,10 +389,22 @@ export class SupabaseOrderRepository implements IOrderRepository {
     return true;
   }
 
-  async updatePaymentStatus(orderId: string, status: Order["paymentStatus"]): Promise<boolean> {
+  async updatePaymentStatus(orderId: string, status: Order["paymentStatus"], details?: Partial<Order>): Promise<boolean> {
+    const updatePayload: any = { payment_status: status };
+    if (details) {
+      if (details.paymentMethod !== undefined) updatePayload.payment_method = details.paymentMethod;
+      if (details.transactionId !== undefined) updatePayload.transaction_id = details.transactionId;
+      if (details.paymentIntentId !== undefined) updatePayload.payment_intent_id = details.paymentIntentId;
+      if (details.paymentDate !== undefined) updatePayload.payment_date = details.paymentDate;
+      if (details.gatewayName !== undefined) updatePayload.gateway_name = details.gatewayName;
+      if (details.amountPaid !== undefined) updatePayload.amount_paid = details.amountPaid;
+      if (details.currency !== undefined) updatePayload.currency = details.currency;
+      if (details.status !== undefined) updatePayload.status = details.status;
+    }
+
     const { error } = await supabase
       .from("orders")
-      .update({ payment_status: status })
+      .update(updatePayload)
       .eq("id", orderId);
 
     if (error) {
@@ -1382,13 +1395,23 @@ export class LocalOrderRepository implements IOrderRepository {
     return false;
   }
 
-  async updatePaymentStatus(orderId: string, status: Order["paymentStatus"]): Promise<boolean> {
+  async updatePaymentStatus(orderId: string, status: Order["paymentStatus"], details?: Partial<Order>): Promise<boolean> {
     if (typeof window === "undefined") return false;
     const existing = localStorage.getItem("code_services_requests");
     const list: Order[] = existing ? JSON.parse(existing) : [];
     const idx = list.findIndex(o => o.id === orderId);
     if (idx > -1) {
       list[idx].paymentStatus = status;
+      if (details) {
+        if (details.paymentMethod !== undefined) list[idx].paymentMethod = details.paymentMethod;
+        if (details.transactionId !== undefined) list[idx].transactionId = details.transactionId;
+        if (details.paymentIntentId !== undefined) list[idx].paymentIntentId = details.paymentIntentId;
+        if (details.paymentDate !== undefined) list[idx].paymentDate = details.paymentDate;
+        if (details.gatewayName !== undefined) list[idx].gatewayName = details.gatewayName;
+        if (details.amountPaid !== undefined) list[idx].amountPaid = details.amountPaid;
+        if (details.currency !== undefined) list[idx].currency = details.currency;
+        if (details.status !== undefined) list[idx].status = details.status;
+      }
       localStorage.setItem("code_services_requests", JSON.stringify(list));
       window.dispatchEvent(new Event("requests_updated"));
 
