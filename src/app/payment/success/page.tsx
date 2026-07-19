@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, MessageSquare, Loader2, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { CheckCircle, MessageSquare, Loader2, ArrowRight, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { db, defaultSystemSettings } from "@/services/db";
 import { buildLocalizedMessage } from "@/services/communication";
 
@@ -15,6 +15,10 @@ function SuccessPageContent() {
   const [order, setOrder] = useState<any>(null);
   const [locale, setLocale] = useState("ar");
   const [waLink, setWaLink] = useState("");
+  const [isOpen, setIsOpen] = useState(true);
+
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   const sessionId = searchParams.get("session_id");
   const orderId = searchParams.get("orderId");
@@ -26,6 +30,68 @@ function SuccessPageContent() {
       if (stored) setLocale(stored);
     }
   }, []);
+
+  // Trap focus inside modal
+  useEffect(() => {
+    if (loading || error || !isOpen) return;
+
+    const modalElement = modalRef.current;
+    if (!modalElement) return;
+
+    // Focus the close button initially for accessibility
+    setTimeout(() => {
+      closeBtnRef.current?.focus();
+    }, 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Tab") {
+        const focusableElements = modalElement.querySelectorAll(
+          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey) {
+          // Tab backwards
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          // Tab forwards
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [loading, error, isOpen]);
+
+  // Handle Escape Key & Prevent Background Scroll
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Prevent background scrolling
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!sessionId || !orderId) {
@@ -118,6 +184,13 @@ function SuccessPageContent() {
     verifyAndLoad();
   }, [sessionId, orderId, locale]);
 
+  const handleClose = () => {
+    setIsOpen(false);
+    setTimeout(() => {
+      router.push("/");
+    }, 250); // Wait for exit animation
+  };
+
   const handleContinue = () => {
     if (waLink) {
       window.open(waLink, "_blank");
@@ -163,65 +236,90 @@ function SuccessPageContent() {
   const subtotal = order.services.reduce((acc: number, item: any) => acc + (parseFloat(item.price) || 0) * (item.quantity || 1), 0);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-dark-gray p-4 sm:p-6 font-sans">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg bg-white dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark rounded-3xl p-6 sm:p-8 shadow-xl text-center"
-      >
-        <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-6">
-          <CheckCircle size={36} />
-        </div>
-
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-2">
-          {isAr ? "تم الدفع بنجاح!" : "Payment Successful!"}
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-6 font-semibold">
-          {isAr 
-            ? "شكراً لثقتكم بكود خدمات. تم استلام وتأكيد سداد الرسوم لطلبكم." 
-            : "Thank you for choosing Code Services. Your payment has been received."}
-        </p>
-
-        {/* Order details summary */}
-        <div className="bg-gray-50 dark:bg-dark-gray/50 rounded-2xl p-4 sm:p-5 text-start space-y-3.5 mb-6 border border-gray-100 dark:border-border-dark font-sans text-xs">
-          <div className="flex justify-between items-center pb-2.5 border-b border-gray-200 dark:border-border-dark">
-            <span className="text-gray-400 font-bold">{isAr ? "رقم الطلب" : "Request ID"}</span>
-            <span className="font-extrabold text-primary dark:text-primary-light select-all">{order.id}</span>
-          </div>
-
-          <div className="flex justify-between items-center pb-2.5 border-b border-gray-200 dark:border-border-dark">
-            <span className="text-gray-400 font-bold">{isAr ? "إجمالي المبلغ المدفوع" : "Amount Paid"}</span>
-            <span className="font-black text-emerald-600 dark:text-emerald-400">{subtotal} {isAr ? "ريال" : "SAR"}</span>
-          </div>
-
-          <div>
-            <span className="text-gray-400 font-bold block mb-2">{isAr ? "الخدمات المطلوبة" : "Requested Services"}</span>
-            <div className="flex flex-col gap-1.5">
-              {order.services.map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center bg-white dark:bg-medium-gray/20 px-3 py-2 rounded-lg border border-gray-100 dark:border-border-dark">
-                  <span className="font-bold text-gray-800 dark:text-gray-100">
-                    {isAr ? item.titleAr : item.titleEn}
-                  </span>
-                  <span className="text-xxs font-black text-primary bg-primary/5 px-2 py-0.5 rounded">
-                    x{item.quantity}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Action Button to Continue to WhatsApp */}
-        <button
-          onClick={handleContinue}
-          className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 relative group"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          onClick={handleClose}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm p-4 sm:p-6 font-sans cursor-pointer select-none"
         >
-          <span className="absolute -inset-1 rounded-2xl bg-emerald-500/30 animate-ping group-hover:hidden pointer-events-none" />
-          <MessageSquare size={16} fill="currentColor" />
-          <span>{isAr ? "الاستمرار إلى واتساب للمتابعة" : "Continue to WhatsApp to Follow Up"}</span>
-        </button>
-      </motion.div>
-    </div>
+          <motion.div
+            ref={modalRef}
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-white dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark rounded-3xl p-6 sm:p-8 shadow-2xl text-center cursor-default select-text"
+          >
+            {/* Top Corner Close Button */}
+            <button
+              ref={closeBtnRef}
+              onClick={handleClose}
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-medium-gray/50 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
+              aria-label={isAr ? "إغلاق" : "Close"}
+            >
+              <X size={20} />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle size={36} />
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-2">
+              {isAr ? "تم الدفع بنجاح!" : "Payment Successful!"}
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-6 font-semibold">
+              {isAr 
+                ? "شكراً لثقتكم بكود خدمات. تم استلام وتأكيد سداد الرسوم لطلبكم." 
+                : "Thank you for choosing Code Services. Your payment has been received."}
+            </p>
+
+            {/* Order details summary */}
+            <div className="bg-gray-50 dark:bg-dark-gray/50 rounded-2xl p-4 sm:p-5 text-start space-y-3.5 mb-6 border border-gray-100 dark:border-border-dark font-sans text-xs">
+              <div className="flex justify-between items-center pb-2.5 border-b border-gray-200 dark:border-border-dark">
+                <span className="text-gray-400 font-bold">{isAr ? "رقم الطلب" : "Request ID"}</span>
+                <span className="font-extrabold text-primary dark:text-primary-light select-all">{order.id}</span>
+              </div>
+
+              <div className="flex justify-between items-center pb-2.5 border-b border-gray-200 dark:border-border-dark">
+                <span className="text-gray-400 font-bold">{isAr ? "إجمالي المبلغ المدفوع" : "Amount Paid"}</span>
+                <span className="font-black text-emerald-600 dark:text-emerald-400">{subtotal} {isAr ? "ريال" : "SAR"}</span>
+              </div>
+
+              <div>
+                <span className="text-gray-400 font-bold block mb-2">{isAr ? "الخدمات المطلوبة" : "Requested Services"}</span>
+                <div className="flex flex-col gap-1.5">
+                  {order.services.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between items-center bg-white dark:bg-medium-gray/20 px-3 py-2 rounded-lg border border-gray-100 dark:border-border-dark">
+                      <span className="font-bold text-gray-800 dark:text-gray-100">
+                        {isAr ? item.titleAr : item.titleEn}
+                      </span>
+                      <span className="text-xxs font-black text-primary bg-primary/5 px-2 py-0.5 rounded">
+                        x{item.quantity}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button to Continue to WhatsApp */}
+            <button
+              onClick={handleContinue}
+              className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 relative group"
+            >
+              <span className="absolute -inset-1 rounded-2xl bg-emerald-500/30 animate-ping group-hover:hidden pointer-events-none" />
+              <MessageSquare size={16} fill="currentColor" />
+              <span>{isAr ? "الاستمرار إلى واتساب للمتابعة" : "Continue to WhatsApp to Follow Up"}</span>
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
