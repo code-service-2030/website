@@ -92,6 +92,9 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_date VARCHAR(100) DEFAULT ''
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS gateway_name VARCHAR(100) DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS amount_paid NUMERIC DEFAULT 0;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'SAR';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS failure_reason TEXT DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS failure_time VARCHAR(100) DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_error_code VARCHAR(100) DEFAULT '';
 
 -- 7. Fix order_items Table Columns (including category_id for verification)
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS category_id VARCHAR(100) DEFAULT 'general';

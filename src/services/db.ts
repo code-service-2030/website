@@ -43,7 +43,7 @@ export interface Order {
   assignedStaffId?: string;
   customerCountry?: string;
   customerCountryCode?: string;
-  paymentStatus?: "paid" | "pending" | "unpaid";
+  paymentStatus?: "paid" | "pending" | "unpaid" | "failed";
   language?: string;
   // Future Payment Integration Architecture fields
   paymentMethod?: string;
@@ -53,6 +53,9 @@ export interface Order {
   gatewayName?: string;
   amountPaid?: number;
   currency?: string;
+  failureReason?: string;
+  failureTime?: string;
+  stripeErrorCode?: string;
 }
 
 export interface Inquiry {
@@ -400,6 +403,9 @@ export class SupabaseOrderRepository implements IOrderRepository {
       if (details.amountPaid !== undefined) updatePayload.amount_paid = details.amountPaid;
       if (details.currency !== undefined) updatePayload.currency = details.currency;
       if (details.status !== undefined) updatePayload.status = details.status;
+      if (details.failureReason !== undefined) updatePayload.failure_reason = details.failureReason;
+      if (details.failureTime !== undefined) updatePayload.failure_time = details.failureTime;
+      if (details.stripeErrorCode !== undefined) updatePayload.stripe_error_code = details.stripeErrorCode;
     }
 
     const { error } = await supabase
@@ -1411,6 +1417,9 @@ export class LocalOrderRepository implements IOrderRepository {
         if (details.amountPaid !== undefined) list[idx].amountPaid = details.amountPaid;
         if (details.currency !== undefined) list[idx].currency = details.currency;
         if (details.status !== undefined) list[idx].status = details.status;
+        if (details.failureReason !== undefined) list[idx].failureReason = details.failureReason;
+        if (details.failureTime !== undefined) list[idx].failureTime = details.failureTime;
+        if (details.stripeErrorCode !== undefined) list[idx].stripeErrorCode = details.stripeErrorCode;
       }
       localStorage.setItem("code_services_requests", JSON.stringify(list));
       window.dispatchEvent(new Event("requests_updated"));

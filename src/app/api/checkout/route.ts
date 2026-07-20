@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       mode: "payment",
       customer_email: customerEmail || undefined,
       success_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`,
-      cancel_url: `${origin}/payment/cancel?orderId=${orderId}`,
+      cancel_url: `${origin}/payment/cancel?orderId=${orderId}&session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         orderId,
         customerName

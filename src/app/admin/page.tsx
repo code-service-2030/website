@@ -1591,10 +1591,12 @@ export default function AdminDashboard() {
                                 <span className={`px-2 py-1 rounded-lg text-xxs font-black ${
                                   req.paymentStatus === "paid" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
                                   req.paymentStatus === "pending" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
+                                  req.paymentStatus === "failed" ? "bg-red-500/10 text-red-600 dark:text-red-400" :
                                   "bg-red-500/10 text-red-600 dark:text-red-400"
                                 }`}>
                                   {req.paymentStatus === "paid" ? (locale === "ar" ? "🟢 مدفوع" : "Paid") :
                                    req.paymentStatus === "pending" ? (locale === "ar" ? "🟡 معلق" : "Pending") :
+                                   req.paymentStatus === "failed" ? (locale === "ar" ? "🔴 فشل الدفع" : "Failed") :
                                    (locale === "ar" ? "🔴 غير مدفوع" : "Unpaid")}
                                 </span>
                               </td>
@@ -3820,6 +3822,7 @@ export default function AdminDashboard() {
                         <option value="unpaid">{locale === "ar" ? "غير مدفوع" : "Unpaid"}</option>
                         <option value="pending">{locale === "ar" ? "معلق" : "Pending"}</option>
                         <option value="paid">{locale === "ar" ? "مدفوع" : "Paid"}</option>
+                        <option value="failed">{locale === "ar" ? "فشل الدفع" : "Failed"}</option>
                       </select>
                     </div>
                     <div>
@@ -3842,6 +3845,24 @@ export default function AdminDashboard() {
                       <span className="text-gray-400 font-bold block">{locale === "ar" ? "تاريخ الدفع" : "Payment Date"}:</span>
                       <span className="font-extrabold text-gray-900 dark:text-white block mt-1">{selectedRequest.paymentDate ? new Date(selectedRequest.paymentDate).toLocaleString(locale === "ar" ? "ar-SA" : "en-US") : "-"}</span>
                     </div>
+                    {selectedRequest.stripeErrorCode && (
+                      <div>
+                        <span className="text-gray-400 font-bold block">{locale === "ar" ? "رمز الخطأ (Error Code)" : "Stripe Error Code"}:</span>
+                        <span className="font-extrabold text-red-500 block mt-1">{selectedRequest.stripeErrorCode}</span>
+                      </div>
+                    )}
+                    {selectedRequest.failureTime && (
+                      <div>
+                        <span className="text-gray-400 font-bold block">{locale === "ar" ? "وقت الفشل" : "Failure Time"}:</span>
+                        <span className="font-extrabold text-gray-900 dark:text-white block mt-1">{new Date(selectedRequest.failureTime).toLocaleString(locale === "ar" ? "ar-SA" : "en-US")}</span>
+                      </div>
+                    )}
+                    {selectedRequest.failureReason && (
+                      <div className="col-span-2">
+                        <span className="text-gray-400 font-bold block">{locale === "ar" ? "سبب فشل الدفع" : "Failure Reason"}:</span>
+                        <span className="font-bold text-red-600 dark:text-red-400 block mt-1 bg-red-50/50 dark:bg-red-950/20 p-2 rounded-lg border border-red-100 dark:border-red-900/50">{selectedRequest.failureReason}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
