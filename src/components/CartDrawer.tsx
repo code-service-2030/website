@@ -485,10 +485,8 @@ export const CartDrawer: React.FC = () => {
                         <span>
                           {isSubmitting ? (
                             locale === "ar" ? "جاري الإرسال..." : "Submitting..."
-                          ) : customerInfo.contactMethod === "email" ? (
-                            locale === "ar" ? "إرسال الطلب وفتح البريد الإلكتروني" : "Submit Request & Open Email"
                           ) : (
-                            locale === "ar" ? "إرسال الطلب وفتح واتساب" : "Submit Request & Open WhatsApp"
+                            locale === "ar" ? "الانتقال إلى الدفع" : "Proceed to Payment"
                           )}
                         </span>
                       </button>

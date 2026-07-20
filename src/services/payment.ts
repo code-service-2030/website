@@ -132,12 +132,17 @@ export class MoyasarGateway implements IPaymentGateway {
     }
   }
 
-  async verifyPayment(invoiceId: string): Promise<VerificationResponse> {
-    console.log(`[Moyasar] Verifying payment status for invoice: ${invoiceId}`);
+  async verifyPayment(id: string): Promise<VerificationResponse> {
+    console.log(`[Moyasar] Verifying payment status for: ${id}`);
     try {
       const authHeader = 'Basic ' + Buffer.from(this.getSecretKey() + ':').toString('base64');
       
-      const response = await fetch(`https://api.moyasar.com/v1/invoices/${invoiceId}`, {
+      const isInvoice = id.startsWith("inv_");
+      const url = isInvoice 
+        ? `https://api.moyasar.com/v1/invoices/${id}`
+        : `https://api.moyasar.com/v1/payments/${id}`;
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           "Authorization": authHeader
@@ -145,15 +150,20 @@ export class MoyasarGateway implements IPaymentGateway {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch invoice ${invoiceId}`);
+        throw new Error(`Failed to fetch details for ${id}`);
       }
 
       const data = await response.json();
 
       const isPaid = data.status === "paid";
       let paymentMethod = "CreditCard";
-      if (data.payments && data.payments.length > 0) {
-        paymentMethod = data.payments[0].source.type || "Mada/Card";
+      
+      if (isInvoice) {
+        if (data.payments && data.payments.length > 0) {
+          paymentMethod = data.payments[0].source?.type || "Mada/Card";
+        }
+      } else {
+        paymentMethod = data.source?.type || "Mada/Card";
       }
 
       return {
@@ -171,7 +181,7 @@ export class MoyasarGateway implements IPaymentGateway {
       return {
         success: false,
         status: "pending",
-        transactionId: invoiceId,
+        transactionId: id,
         paymentMethod: "Unknown",
         paymentDate: new Date().toISOString(),
         amountPaid: 0,
