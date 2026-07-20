@@ -92,6 +92,7 @@ export class MoyasarGateway implements IPaymentGateway {
         amount: Math.round(details.amount * 100), // Moyasar expects Halalas
         currency: details.currency || "SAR",
         description: `Code Services Order #${details.orderId}`,
+        back_url: details.callbackUrl || `http://localhost:3000/payment/callback?orderId=${details.orderId}`,
         callback_url: details.callbackUrl || `http://localhost:3000/payment/callback?orderId=${details.orderId}`,
         metadata: {
           orderId: details.orderId,
