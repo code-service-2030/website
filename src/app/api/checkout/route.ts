@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       customerName: customerName || "Customer",
       customerEmail: customerEmail || "",
       customerPhone: "",
-      callbackUrl: `${origin}/payment/callback`
+      callbackUrl: `${origin}/checkout/result`
     });
 
     if (!result.success || !result.paymentUrl) {
