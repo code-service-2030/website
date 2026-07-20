@@ -80,7 +80,7 @@ export class MoyasarGateway implements IPaymentGateway {
   name = "Moyasar";
 
   private getSecretKey(): string {
-    return process.env.MOYASAR_SECRET_KEY || "";
+    return (process.env.MOYASAR_SECRET_KEY || "").trim();
   }
 
   async initiatePayment(details: PaymentDetails): Promise<PaymentResponse> {
