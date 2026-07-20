@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import { PaymentFactory } from "@/services/payment";
 import { db } from "@/services/db";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_mock_placeholder_key", {
-  apiVersion: "2025-01-27.acacia" as any
-});
 
 export async function POST(req: Request) {
   try {
@@ -15,24 +11,27 @@ export async function POST(req: Request) {
     }
 
     let failureReason = "Payment cancelled or declined by user";
-    let stripeErrorCode = "payment_cancelled";
+    let stripeErrorCode = "payment_cancelled"; // keep variable for compatibility, representing gateway error code
     let lastSessionId = sessionId || "";
 
-    if (sessionId && sessionId.startsWith("cs_")) {
+    if (sessionId && sessionId.startsWith("inv_")) {
       try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId, {
-          expand: ["payment_intent"]
-        });
-
-        if (session.payment_intent && typeof session.payment_intent !== "string") {
-          const pi = session.payment_intent as Stripe.PaymentIntent;
-          if (pi.last_payment_error) {
-            failureReason = pi.last_payment_error.message || failureReason;
-            stripeErrorCode = pi.last_payment_error.code || stripeErrorCode;
+        const gateway = PaymentFactory.getGateway("Moyasar");
+        const result = await gateway.verifyPayment(sessionId);
+        
+        if (result.gatewayRaw) {
+          // Extract error message or details from Moyasar raw invoice response
+          const raw = result.gatewayRaw;
+          if (raw.payments && raw.payments.length > 0) {
+            const lastPayment = raw.payments[0];
+            if (lastPayment.status === "failed") {
+              failureReason = lastPayment.source?.message || lastPayment.description || failureReason;
+              stripeErrorCode = lastPayment.source?.error_code || stripeErrorCode;
+            }
           }
         }
       } catch (sessionErr) {
-        console.error("Error retrieving Stripe session details:", sessionErr);
+        console.error("Error retrieving Moyasar invoice details:", sessionErr);
       }
     }
 
@@ -45,7 +44,7 @@ export async function POST(req: Request) {
       await db.orders.updatePaymentStatus(orderId, "failed", {
         transactionId: lastSessionId,
         paymentDate: new Date().toISOString(),
-        gatewayName: "Stripe",
+        gatewayName: "Moyasar",
         failureReason,
         failureTime: new Date().toISOString(),
         stripeErrorCode
@@ -60,7 +59,7 @@ export async function POST(req: Request) {
       order
     });
   } catch (err: any) {
-    console.error("Stripe verification failed:", err);
+    console.error("Moyasar cancellation handling failed:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

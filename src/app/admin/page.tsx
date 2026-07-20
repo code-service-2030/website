@@ -3830,11 +3830,11 @@ export default function AdminDashboard() {
                       <span className="font-extrabold text-gray-900 dark:text-white block mt-1">{selectedRequest.gatewayName || "-"}</span>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "معرف الجلسة (Stripe Session ID)" : "Stripe Session ID"}:</span>
+                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "معرف الفاتورة (Invoice/Session ID)" : "Invoice/Session ID"}:</span>
                       <span className="font-mono text-xxs text-gray-500 select-all block mt-1 break-all bg-white dark:bg-dark-gray p-1.5 rounded-lg border border-gray-100 dark:border-border-dark">{selectedRequest.transactionId || "-"}</span>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "معرف المعاملة (Payment Intent ID)" : "Payment Intent ID"}:</span>
+                      <span className="text-gray-400 font-bold block">{locale === "ar" ? "معرف الدفع (Payment ID)" : "Payment ID"}:</span>
                       <span className="font-mono text-xxs text-gray-500 select-all block mt-1 break-all bg-white dark:bg-dark-gray p-1.5 rounded-lg border border-gray-100 dark:border-border-dark">{selectedRequest.paymentIntentId || "-"}</span>
                     </div>
                     <div>
@@ -3847,7 +3847,7 @@ export default function AdminDashboard() {
                     </div>
                     {selectedRequest.stripeErrorCode && (
                       <div>
-                        <span className="text-gray-400 font-bold block">{locale === "ar" ? "رمز الخطأ (Error Code)" : "Stripe Error Code"}:</span>
+                        <span className="text-gray-400 font-bold block">{locale === "ar" ? "رمز الخطأ (Error Code)" : "Error Code"}:</span>
                         <span className="font-extrabold text-red-500 block mt-1">{selectedRequest.stripeErrorCode}</span>
                       </div>
                     )}

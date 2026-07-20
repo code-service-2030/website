@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import { PaymentFactory } from "@/services/payment";
 import { db } from "@/services/db";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_mock_placeholder_key", {
-  apiVersion: "2025-01-27.acacia" as any
-});
 
 export async function POST(req: Request) {
   try {
@@ -14,10 +10,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Retrieve Checkout Session
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    // Verify invoice payment status via Moyasar
+    const gateway = PaymentFactory.getGateway("Moyasar");
+    const result = await gateway.verifyPayment(sessionId);
 
-    if (session.payment_status === "paid") {
+    if (result.success && result.status === "paid") {
       // Fetch order details
       const orders = await db.orders.getOrders();
       const order = orders.find(o => o.id === orderId);
@@ -25,22 +22,21 @@ export async function POST(req: Request) {
       if (order) {
         // Update order status in Supabase securely on backend
         await db.orders.updatePaymentStatus(orderId, "paid", {
-          paymentMethod: session.payment_method_types?.[0] || "card",
-          transactionId: session.id,
-          paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : "",
-          paymentDate: new Date().toISOString(),
-          gatewayName: "Stripe",
-          amountPaid: session.amount_total ? session.amount_total / 100 : 0,
-          currency: session.currency?.toUpperCase() || "SAR"
+          paymentMethod: result.paymentMethod || "Mada/Card",
+          transactionId: result.transactionId,
+          paymentDate: result.paymentDate,
+          gatewayName: "Moyasar",
+          amountPaid: result.amountPaid,
+          currency: result.currency || "SAR"
         });
       }
 
       return NextResponse.json({ success: true, paymentStatus: "paid" });
     } else {
-      return NextResponse.json({ success: false, paymentStatus: session.payment_status });
+      return NextResponse.json({ success: false, paymentStatus: result.status });
     }
   } catch (err: any) {
-    console.error("Stripe verification failed:", err);
+    console.error("Moyasar verification failed:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

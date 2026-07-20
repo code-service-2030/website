@@ -10,6 +10,7 @@ export interface PaymentDetails {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  callbackUrl?: string;
   metadata?: Record<string, any>;
 }
 
@@ -78,32 +79,105 @@ export class HyperPayGateway implements IPaymentGateway {
 export class MoyasarGateway implements IPaymentGateway {
   name = "Moyasar";
 
-  async initiatePayment(details: PaymentDetails): Promise<PaymentResponse> {
-    console.log(`[Moyasar] Initiating payment request for order: ${details.orderId}`);
-    // FUTURE TODO:
-    // 1. Send request to https://api.moyasar.com/v1/payments
-    // 2. Set authorization: Basic (Base64 Secret Key)
-    // 3. Set callback_url in the request payload
-    // 4. Return invoice URL/payment url
-    return {
-      success: true,
-      transactionId: "moy_stub_" + Math.random().toString(36).substr(2, 9),
-      paymentUrl: `https://api.moyasar.com/v1/payments/stub/redirect`
-    };
+  private getSecretKey(): string {
+    return process.env.MOYASAR_SECRET_KEY || "";
   }
 
-  async verifyPayment(transactionId: string): Promise<VerificationResponse> {
-    console.log(`[Moyasar] Verifying payment status for: ${transactionId}`);
-    // FUTURE TODO: GET https://api.moyasar.com/v1/payments/{id}
-    return {
-      success: true,
-      status: "paid",
-      transactionId,
-      paymentMethod: "Mada",
-      paymentDate: new Date().toISOString(),
-      amountPaid: 0,
-      currency: "SAR"
-    };
+  async initiatePayment(details: PaymentDetails): Promise<PaymentResponse> {
+    console.log(`[Moyasar] Initiating payment request for order: ${details.orderId}`);
+    try {
+      const authHeader = 'Basic ' + Buffer.from(this.getSecretKey() + ':').toString('base64');
+      
+      const payload = {
+        amount: Math.round(details.amount * 100), // Moyasar expects Halalas
+        currency: details.currency || "SAR",
+        description: `Code Services Order #${details.orderId}`,
+        callback_url: details.callbackUrl || `http://localhost:3000/payment/callback?orderId=${details.orderId}`,
+        metadata: {
+          orderId: details.orderId,
+          customerName: details.customerName,
+          ...details.metadata
+        }
+      };
+
+      const response = await fetch("https://api.moyasar.com/v1/invoices", {
+        method: "POST",
+        headers: {
+          "Authorization": authHeader,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Moyasar API error: ${response.statusText} - ${errText}`);
+      }
+
+      const data = await response.json();
+
+      return {
+        success: true,
+        transactionId: data.id,
+        paymentUrl: data.url,
+        gatewayRaw: data
+      };
+    } catch (error: any) {
+      console.error("[Moyasar] Initiation failed:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to initiate payment with Moyasar"
+      };
+    }
+  }
+
+  async verifyPayment(invoiceId: string): Promise<VerificationResponse> {
+    console.log(`[Moyasar] Verifying payment status for invoice: ${invoiceId}`);
+    try {
+      const authHeader = 'Basic ' + Buffer.from(this.getSecretKey() + ':').toString('base64');
+      
+      const response = await fetch(`https://api.moyasar.com/v1/invoices/${invoiceId}`, {
+        method: "GET",
+        headers: {
+          "Authorization": authHeader
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch invoice ${invoiceId}`);
+      }
+
+      const data = await response.json();
+
+      const isPaid = data.status === "paid";
+      let paymentMethod = "CreditCard";
+      if (data.payments && data.payments.length > 0) {
+        paymentMethod = data.payments[0].source.type || "Mada/Card";
+      }
+
+      return {
+        success: isPaid,
+        status: isPaid ? "paid" : data.status === "failed" ? "failed" : "pending",
+        transactionId: data.id,
+        paymentMethod,
+        paymentDate: data.paid_at || new Date().toISOString(),
+        amountPaid: data.amount / 100, // Convert Halalas to SAR
+        currency: data.currency,
+        gatewayRaw: data
+      };
+    } catch (error: any) {
+      console.error("[Moyasar] Verification failed:", error);
+      return {
+        success: false,
+        status: "pending",
+        transactionId: invoiceId,
+        paymentMethod: "Unknown",
+        paymentDate: new Date().toISOString(),
+        amountPaid: 0,
+        currency: "SAR",
+        gatewayRaw: error
+      };
+    }
   }
 }
 

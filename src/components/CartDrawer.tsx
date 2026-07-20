@@ -141,7 +141,7 @@ export const CartDrawer: React.FC = () => {
 
     const requestId = createdOrder.id;
 
-    // Call Stripe checkout backend route
+    // Call Moyasar checkout backend route
     try {
       const servicesSummary = cartItems
         .map(item => `${locale === "ar" ? item.service.titleAr : item.service.titleEn} (x${item.quantity})`)
@@ -173,12 +173,12 @@ export const CartDrawer: React.FC = () => {
       setStep(1);
       closeCart();
 
-      // Redirect to Stripe Hosted Checkout
+      // Redirect to Moyasar Hosted Checkout
       if (data.url) {
         window.location.href = data.url;
       }
     } catch (err: any) {
-      console.error("Stripe Checkout Redirect Failed:", err);
+      console.error("Moyasar Checkout Redirect Failed:", err);
       alert(locale === "ar" 
         ? "فشل الانتقال إلى بوابة الدفع. الرجاء المحاولة مرة أخرى." 
         : "Failed to redirect to payment gateway. Please try again.");
