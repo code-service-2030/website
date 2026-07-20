@@ -10,8 +10,8 @@ function CallbackPageContent() {
   const [locale, setLocale] = useState("ar");
 
   const invoiceId = searchParams.get("id");
-  const orderId = searchParams.get("orderId");
   const statusParam = searchParams.get("status");
+  const orderIdParam = searchParams.get("orderId");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -21,7 +21,7 @@ function CallbackPageContent() {
   }, []);
 
   useEffect(() => {
-    if (!invoiceId || !orderId) {
+    if (!invoiceId) {
       router.push("/");
       return;
     }
@@ -35,36 +35,43 @@ function CallbackPageContent() {
             headers: {
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ sessionId: invoiceId, orderId })
+            body: JSON.stringify({ sessionId: invoiceId, orderId: orderIdParam })
           });
 
           if (verifyRes.ok) {
             const data = await verifyRes.json();
             if (data.success) {
-              router.push(`/payment/success?session_id=${invoiceId}&orderId=${orderId}`);
+              const finalOrderId = data.orderId || orderIdParam || "N/A";
+              router.push(`/payment/success?session_id=${invoiceId}&orderId=${finalOrderId}`);
               return;
             }
           }
         }
 
         // If status was not paid, or verification call failed, treat as failed payment
-        await fetch("/api/cancel", {
+        const cancelRes = await fetch("/api/cancel", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ sessionId: invoiceId, orderId })
-        }).catch(console.error);
+          body: JSON.stringify({ sessionId: invoiceId, orderId: orderIdParam })
+        });
 
-        router.push(`/payment/cancel?orderId=${orderId}&session_id=${invoiceId}`);
+        let finalOrderId = orderIdParam;
+        if (cancelRes.ok) {
+          const cancelData = await cancelRes.json();
+          finalOrderId = cancelData.orderId || finalOrderId;
+        }
+
+        router.push(`/payment/cancel?orderId=${finalOrderId || "N/A"}&session_id=${invoiceId}`);
       } catch (err) {
         console.error("Callback handling failed:", err);
-        router.push(`/payment/cancel?orderId=${orderId}&session_id=${invoiceId}`);
+        router.push(`/payment/cancel?orderId=${orderIdParam || "N/A"}&session_id=${invoiceId}`);
       }
     }
 
     verifyAndRoute();
-  }, [invoiceId, orderId, statusParam, router]);
+  }, [invoiceId, statusParam, orderIdParam, router]);
 
   const isAr = locale === "ar";
 

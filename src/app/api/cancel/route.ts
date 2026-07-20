@@ -6,21 +6,21 @@ export async function POST(req: Request) {
   try {
     const { sessionId, orderId } = await req.json();
 
-    if (!orderId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
     let failureReason = "Payment cancelled or declined by user";
-    let stripeErrorCode = "payment_cancelled"; // keep variable for compatibility, representing gateway error code
+    let stripeErrorCode = "payment_cancelled"; // keep variable for compatibility
     let lastSessionId = sessionId || "";
+    let finalOrderId = orderId;
 
     if (sessionId && sessionId.startsWith("inv_")) {
       try {
         const gateway = PaymentFactory.getGateway("Moyasar");
         const result = await gateway.verifyPayment(sessionId);
         
+        if (!finalOrderId && result.gatewayRaw?.metadata?.orderId) {
+          finalOrderId = result.gatewayRaw.metadata.orderId;
+        }
+
         if (result.gatewayRaw) {
-          // Extract error message or details from Moyasar raw invoice response
           const raw = result.gatewayRaw;
           if (raw.payments && raw.payments.length > 0) {
             const lastPayment = raw.payments[0];
@@ -35,13 +35,17 @@ export async function POST(req: Request) {
       }
     }
 
+    if (!finalOrderId) {
+      return NextResponse.json({ error: "Order ID not found" }, { status: 400 });
+    }
+
     // Fetch order details
     const orders = await db.orders.getOrders();
-    const order = orders.find(o => o.id === orderId);
+    const order = orders.find(o => o.id === finalOrderId);
 
     if (order) {
       // Update order status in Supabase securely on backend
-      await db.orders.updatePaymentStatus(orderId, "failed", {
+      await db.orders.updatePaymentStatus(finalOrderId, "failed", {
         transactionId: lastSessionId,
         paymentDate: new Date().toISOString(),
         gatewayName: "Moyasar",
@@ -56,6 +60,7 @@ export async function POST(req: Request) {
       paymentStatus: "failed",
       failureReason,
       stripeErrorCode,
+      orderId: finalOrderId,
       order
     });
   } catch (err: any) {
