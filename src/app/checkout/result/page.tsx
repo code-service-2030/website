@@ -29,7 +29,7 @@ function CheckoutResultContent() {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  const paymentId = searchParams.get("id");
+  const paymentId = searchParams.get("id") || searchParams.get("payment_id");
   const urlStatus = searchParams.get("status");
 
   useEffect(() => {

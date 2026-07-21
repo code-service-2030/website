@@ -157,6 +157,7 @@ export class MoyasarGateway implements IPaymentGateway {
 
       const isPaid = data.status === "paid";
       let paymentMethod = "CreditCard";
+      let orderIdFromMeta = data.metadata?.orderId;
       
       if (isInvoice) {
         if (data.payments && data.payments.length > 0) {
@@ -164,6 +165,27 @@ export class MoyasarGateway implements IPaymentGateway {
         }
       } else {
         paymentMethod = data.source?.type || "Mada/Card";
+        
+        // If metadata.orderId is missing and linked to invoice, fetch invoice metadata
+        if (!orderIdFromMeta && data.invoice_id) {
+          console.log(`[Moyasar] Payment has no orderId metadata. Attempting to fetch linked invoice: ${data.invoice_id}`);
+          try {
+            const invResponse = await fetch(`https://api.moyasar.com/v1/invoices/${data.invoice_id}`, {
+              method: "GET",
+              headers: {
+                "Authorization": authHeader
+              }
+            });
+            if (invResponse.ok) {
+              const invData = await invResponse.json();
+              orderIdFromMeta = invData.metadata?.orderId;
+              console.log(`[Moyasar] Successfully fetched orderId from invoice: ${orderIdFromMeta}`);
+              data.metadata = { ...data.metadata, orderId: orderIdFromMeta };
+            }
+          } catch (invErr) {
+            console.error("[Moyasar] Failed to fetch linked invoice:", invErr);
+          }
+        }
       }
 
       return {
