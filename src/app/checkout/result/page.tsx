@@ -107,25 +107,22 @@ function CheckoutResultContent() {
 
     async function verifyAndLoad() {
       try {
-        if (urlStatus === "paid" || urlStatus === "captured") {
-          // 1. Verify checkout session/payment securely on backend
-          const verifyRes = await fetch("/api/verify", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ sessionId: paymentId })
-          });
+        // 1. Verify checkout session/payment securely on backend
+        const verifyRes = await fetch("/api/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ sessionId: paymentId })
+        });
 
-          if (!verifyRes.ok) {
-            throw new Error("Verification request failed");
-          }
+        if (!verifyRes.ok) {
+          throw new Error("Verification request failed");
+        }
 
-          const verifyData = await verifyRes.json();
-          if (!verifyData.success) {
-            throw new Error("Payment verification failed on server");
-          }
-
+        const verifyData = await verifyRes.json();
+        
+        if (verifyData.success && verifyData.paymentStatus === "paid") {
           const verifiedOrderId = verifyData.orderId;
 
           // 2. Load order details from DB
