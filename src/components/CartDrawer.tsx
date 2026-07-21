@@ -39,7 +39,7 @@ export const CartDrawer: React.FC = () => {
     localPhone: ""
   });
 
-  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [systemSettings, setSystemSettings] = useState<any>(null);
 
@@ -71,7 +71,7 @@ export const CartDrawer: React.FC = () => {
     const { name, value } = e.target;
     setCustomerInfo((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: false }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -84,18 +84,80 @@ export const CartDrawer: React.FC = () => {
       localPhone: local
     }));
     if (errors.phone) {
-      setErrors((prev) => ({ ...prev, phone: false }));
+      setErrors((prev) => ({ ...prev, phone: "" }));
     }
   };
 
   const validateForm = () => {
-    const newErrors: Record<string, boolean> = {};
-    if (!customerInfo.name.trim()) newErrors.name = true;
-    if (!customerInfo.localPhone.trim()) newErrors.phone = true;
-    
-    // Simple phone regex check (should be at least 7 digits)
-    const phoneClean = customerInfo.localPhone.replace(/\D/g, "");
-    if (phoneClean.length < 7) newErrors.phone = true;
+    const newErrors: Record<string, string> = {};
+    const isAr = locale === "ar";
+
+    // 1. Validate Name
+    if (!customerInfo.name.trim()) {
+      newErrors.name = isAr ? "الاسم الكامل مطلوب" : "Full Name is required";
+    }
+
+    // Phone validation helper
+    const validatePhone = (localPhone: string, countryCode: string): string | null => {
+      const cleanPhone = localPhone.replace(/\D/g, "");
+      if (!cleanPhone) {
+        return isAr ? "رقم الهاتف مطلوب" : "Phone number is required";
+      }
+
+      if (countryCode === "+966") {
+        if (cleanPhone.length !== 9 || !cleanPhone.startsWith("5")) {
+          return isAr ? "رقم الهاتف غير مكتمل لهذا البلد" : "Phone number is incomplete for this country";
+        }
+      } else if (countryCode === "+20") {
+        if (cleanPhone.length !== 10 || !cleanPhone.startsWith("1")) {
+          return isAr ? "رقم الهاتف غير مكتمل لهذا البلد" : "Phone number is incomplete for this country";
+        }
+      } else if (countryCode === "+971") {
+        if (cleanPhone.length !== 9 || !cleanPhone.startsWith("5")) {
+          return isAr ? "رقم الهاتف غير مكتمل لهذا البلد" : "Phone number is incomplete for this country";
+        }
+      } else {
+        if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+          return isAr ? "رقم الهاتف غير صحيح لهذا البلد" : "Phone number is invalid for this country";
+        }
+      }
+      return null;
+    };
+
+    // 2. Validate Contact Method and fields
+    if (customerInfo.contactMethod === "whatsapp") {
+      // Phone is required and must be valid
+      const phoneError = validatePhone(customerInfo.localPhone, customerInfo.countryCode);
+      if (phoneError) {
+        newErrors.phone = phoneError;
+      }
+
+      // Email is optional (if provided, must be valid)
+      if (customerInfo.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(customerInfo.email.trim())) {
+          newErrors.email = isAr ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid email address";
+        }
+      }
+    } else if (customerInfo.contactMethod === "email") {
+      // Email is required and must be valid
+      if (!customerInfo.email.trim()) {
+        newErrors.email = isAr ? "البريد الإلكتروني مطلوب" : "Email address is required";
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(customerInfo.email.trim())) {
+          newErrors.email = isAr ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid email address";
+        }
+      }
+
+      // Phone is optional (if provided, must be valid)
+      if (customerInfo.localPhone.trim()) {
+        const phoneError = validatePhone(customerInfo.localPhone, customerInfo.countryCode);
+        if (phoneError) {
+          newErrors.phone = phoneError;
+        }
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -346,7 +408,7 @@ export const CartDrawer: React.FC = () => {
                       />
                       {errors.name && (
                         <p className="text-[10px] text-red-500 font-extrabold mt-1">
-                          {locale === "ar" ? "الاسم مطلوب" : "Name is required"}
+                          {errors.name}
                         </p>
                       )}
                     </div>
@@ -354,36 +416,48 @@ export const CartDrawer: React.FC = () => {
                     {/* Mobile Number */}
                     <div>
                       <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1">
-                        {locale === "ar" ? "رقم الجوال *" : "Mobile Number *"}
+                        {locale === "ar" 
+                          ? `رقم الجوال ${customerInfo.contactMethod === "whatsapp" ? "*" : "(اختياري)"}` 
+                          : `Mobile Number ${customerInfo.contactMethod === "whatsapp" ? "*" : "(Optional)"}`}
                       </label>
                       <CountryPhoneInput
                         value={customerInfo.phone}
                         onChange={handlePhoneChange}
-                        required
-                        error={errors.phone}
+                        required={customerInfo.contactMethod === "whatsapp"}
+                        error={!!errors.phone}
                         placeholder={locale === "ar" ? "5XXXXXXXX" : "5XXXXXXXX"}
                       />
                       {errors.phone && (
                         <p className="text-[10px] text-red-500 font-extrabold mt-1">
-                          {locale === "ar" ? "يرجى إدخال رقم جوال صحيح" : "Please enter a valid mobile number"}
+                          {errors.phone}
                         </p>
                       )}
                     </div>
 
-                    {/* Email (Optional) */}
+                    {/* Email */}
                     <div>
                       <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1">
-                        {locale === "ar" ? "البريد الإلكتروني (اختياري)" : "Email Address (Optional)"}
+                        {locale === "ar" 
+                          ? `البريد الإلكتروني ${customerInfo.contactMethod === "email" ? "*" : "(اختياري)"}` 
+                          : `Email Address ${customerInfo.contactMethod === "email" ? "*" : "(Optional)"}`}
                       </label>
                       <input
                         type="email"
                         name="email"
+                        required={customerInfo.contactMethod === "email"}
                         value={customerInfo.email}
                         onChange={handleInputChange}
                         placeholder={locale === "ar" ? "example@domain.com" : "example@domain.com"}
-                        className="w-full bg-gray-50 dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark focus:border-primary rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-all text-start"
+                        className={`w-full bg-gray-50 dark:bg-medium-gray/30 border ${
+                          errors.email ? "border-red-500" : "border-gray-200 dark:border-border-dark"
+                        } focus:border-primary rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-all text-start`}
                         dir="ltr"
                       />
+                      {errors.email && (
+                        <p className="text-[10px] text-red-500 font-extrabold mt-1">
+                          {errors.email}
+                        </p>
+                      )}
                     </div>
 
                     {/* Contact Method */}
