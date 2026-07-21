@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const event = payload.event;
     const paymentData = payload.data;
 
-    if (event === "payment.paid" && paymentData) {
+    if ((event === "payment.paid" || event === "payment.captured") && paymentData) {
       const paymentId = paymentData.id;
       const orderId = paymentData.metadata?.orderId;
       const amount = paymentData.amount ? paymentData.amount / 100 : 0;

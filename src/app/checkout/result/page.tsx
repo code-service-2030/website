@@ -107,7 +107,7 @@ function CheckoutResultContent() {
 
     async function verifyAndLoad() {
       try {
-        if (urlStatus === "paid") {
+        if (urlStatus === "paid" || urlStatus === "captured") {
           // 1. Verify checkout session/payment securely on backend
           const verifyRes = await fetch("/api/verify", {
             method: "POST",

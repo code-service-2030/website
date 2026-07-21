@@ -155,7 +155,7 @@ export class MoyasarGateway implements IPaymentGateway {
 
       const data = await response.json();
 
-      const isPaid = data.status === "paid";
+      const isPaid = data.status === "paid" || data.status === "captured";
       let paymentMethod = "CreditCard";
       let orderIdFromMeta = data.metadata?.orderId;
       
