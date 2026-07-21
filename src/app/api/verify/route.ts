@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
-import { PaymentFactory } from "@/services/payment";
+import Stripe from "stripe";
 import { db } from "@/services/db";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_mock_placeholder_key", {
+  apiVersion: "2025-01-27.acacia" as any
+});
 
 export async function POST(req: Request) {
   try {
@@ -10,48 +14,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Verify invoice payment status via Moyasar
-    console.log(`[Moyasar Verification] Verifying payment for sessionId/paymentId: ${sessionId}`);
-    console.log(`[Moyasar Verification] Secret Key Configured: ${process.env.MOYASAR_SECRET_KEY ? `YES (Length: ${process.env.MOYASAR_SECRET_KEY.length})` : "NO"}`);
+    console.log(`[Stripe Verification] Verifying session: ${sessionId}`);
 
-    const gateway = PaymentFactory.getGateway("Moyasar");
-    const result = await gateway.verifyPayment(sessionId);
+    // Retrieve Checkout Session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const resolvedOrderId = orderId || session.metadata?.orderId;
 
-    console.log(`[Moyasar Verification] Verification result success: ${result.success}, status: ${result.status}`);
-    console.log(`[Moyasar Verification] Raw Moyasar Response metadata:`, JSON.stringify(result.gatewayRaw?.metadata || {}));
-
-    // Get orderId from Moyasar invoice metadata if not provided by client
-    const finalOrderId = orderId || result.gatewayRaw?.metadata?.orderId;
-    console.log(`[Moyasar Verification] Resolved finalOrderId: ${finalOrderId}`);
-
-    if (!finalOrderId) {
-      console.error(`[Moyasar Verification] Failed to resolve finalOrderId for sessionId: ${sessionId}`);
-      return NextResponse.json({ error: "Order ID not found in query or invoice metadata" }, { status: 400 });
+    if (!resolvedOrderId) {
+      console.error(`[Stripe Verification] Order ID not resolved for session: ${sessionId}`);
+      return NextResponse.json({ error: "Order ID not resolved" }, { status: 400 });
     }
 
-    if (result.success && result.status === "paid") {
+    if (session.payment_status === "paid") {
       // Fetch order details
       const orders = await db.orders.getOrders();
-      const order = orders.find(o => o.id === finalOrderId);
+      const order = orders.find(o => o.id === resolvedOrderId);
 
       if (order) {
         // Update order status in Supabase securely on backend
-        await db.orders.updatePaymentStatus(finalOrderId, "paid", {
-          paymentMethod: result.paymentMethod || "Mada/Card",
-          transactionId: result.transactionId,
-          paymentDate: result.paymentDate,
-          gatewayName: "Moyasar",
-          amountPaid: result.amountPaid,
-          currency: result.currency || "SAR"
+        await db.orders.updatePaymentStatus(resolvedOrderId, "paid", {
+          paymentMethod: session.payment_method_types?.[0] || "card",
+          transactionId: session.id,
+          paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : "",
+          paymentDate: new Date().toISOString(),
+          gatewayName: "Stripe",
+          amountPaid: session.amount_total ? session.amount_total / 100 : 0,
+          currency: session.currency?.toUpperCase() || "SAR"
         });
       }
 
-      return NextResponse.json({ success: true, paymentStatus: "paid", orderId: finalOrderId });
+      return NextResponse.json({ success: true, paymentStatus: "paid", orderId: resolvedOrderId });
     } else {
-      return NextResponse.json({ success: false, paymentStatus: result.status, orderId: finalOrderId });
+      return NextResponse.json({ success: false, paymentStatus: session.payment_status, orderId: resolvedOrderId });
     }
   } catch (err: any) {
-    console.error("Moyasar verification failed:", err);
+    console.error("Stripe verification failed:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
