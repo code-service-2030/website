@@ -1,3 +1,5 @@
+<meta name="google-site-verification" content="Oz9eMXcr3yFFfk3_t5XcZjQMCSMKSQ-DaHvO3mzL4Ys" />
+
 import type { Metadata } from "next";
 import { Cairo, Poppins } from "next/font/google";
 import { LanguageProvider } from "@/context/LanguageContext";
