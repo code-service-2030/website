@@ -203,6 +203,41 @@ export const CartDrawer: React.FC = () => {
 
     const requestId = createdOrder.id;
 
+    // Check if the service cost is 0 or "حسب الاتفاق" (Agreement-based)
+    if (estimatedTotalPrice === 0) {
+      try {
+        const settings = systemSettings || defaultSystemSettings;
+        const whatsappPhone = (settings.whatsappNumber || "966537073161").replace(/[\s+]/g, "");
+        
+        const servicesSummary = cartItems
+          .map((item, idx) => `${idx + 1}- ${locale === "ar" ? item.service.titleAr : item.service.titleEn} (x${item.quantity}) ${item.notes ? `[${item.notes}]` : ""}`)
+          .join("\n");
+        
+        const text = locale === "ar"
+          ? `السلام عليكم، تم تسجيل طلبي برقم #${requestId} بانتظار المراجعة والاتفاق على التكلفة للخدمات التالية:\n\n${servicesSummary}\n\nالاسم: ${customerInfo.name}\nالجوال: ${customerInfo.countryCode}${customerInfo.localPhone}`
+          : `Hello, my order #${requestId} is registered and awaiting review/cost agreement for the following services:\n\n${servicesSummary}\n\nName: ${customerInfo.name}\nPhone: ${customerInfo.countryCode}${customerInfo.localPhone}`;
+          
+        const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(text)}`;
+        
+        // Dynamically update status to pending in Supabase
+        try {
+          await db.orders.updateOrderStatus(requestId, "pending");
+        } catch (dbErr) {
+          console.error("Failed to update status to awaiting_review:", dbErr);
+        }
+
+        setIsSubmitting(false);
+        clearCart();
+        setStep(1);
+        closeCart();
+        
+        window.location.href = waUrl;
+        return;
+      } catch (err: any) {
+        console.error("WhatsApp Redirect Failed:", err);
+      }
+    }
+
     // Call Moyasar checkout backend route
     try {
       const servicesSummary = cartItems
