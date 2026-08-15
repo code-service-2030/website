@@ -20,22 +20,20 @@ import {
   Moon, 
   Globe, 
   Clock, 
-  FileText, 
   SlidersHorizontal, 
   ArrowLeft, 
   ArrowRight,
   TrendingUp,
-  Tag,
-  Star,
-  CheckCircle,
-  XCircle,
   HelpCircle,
   Briefcase,
   Building,
   Activity,
   UserCheck,
   Home as HomeIcon,
-  Users
+  Users,
+  XCircle,
+  ArrowUpDown,
+  Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -68,8 +66,8 @@ const getServiceGradient = (catId: string) => {
 };
 
 export default function ServicesMarketplace() {
-  const { t, locale, toggleLanguage, theme, toggleTheme } = useLanguage();
-  const { cartItems, openCart } = useCart();
+  const { locale, toggleLanguage, theme, toggleTheme } = useLanguage();
+  const { cartItems, openCart, addToCart } = useCart();
   const router = useRouter();
 
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
@@ -79,9 +77,30 @@ export default function ServicesMarketplace() {
   // Filter & discovery state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCatId, setSelectedCatId] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"popular" | "price" | "fastest" | "newest">("popular");
+  const [sortBy, setSortBy] = useState<"default" | "popular" | "newest" | "price_asc" | "price_desc" | "fastest" | "longest" | "featured">("default");
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [addingServiceId, setAddingServiceId] = useState<string | null>(null);
+  
+  // DOM Scroll state
+  const [scrolled, setScrolled] = useState(false);
+
+  // Pagination state
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  // Reset pagination on filter changes
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [selectedCatId, searchTerm, sortBy]);
+
+  // Track window scroll for glass-morphic layout changes
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 40);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Parse URL parameters for cross-page navigation
   useEffect(() => {
@@ -125,11 +144,25 @@ export default function ServicesMarketplace() {
   const isAr = locale === "ar";
   const cartItemsCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-  // Calculate cart estimated total price
+  // Helpers to parse price and completion duration for robust sorting
   const parsePrice = (priceStr?: string): number => {
     if (!priceStr) return 0;
     const match = priceStr.match(/\d+/);
     return match ? parseInt(match[0], 10) : 0;
+  };
+
+  const parseCompletionTime = (timeStr?: string): number => {
+    if (!timeStr) return 999;
+    const clean = timeStr.toLowerCase();
+    if (clean.includes("فوري") || clean.includes("instant") || clean.includes("دقائق") || clean.includes("minutes")) return 0.01;
+    if (clean.includes("ساع") || clean.includes("hour")) {
+      const match = clean.match(/\d+/);
+      return match ? parseInt(match[0], 10) / 24 : 0.5;
+    }
+    if (clean.includes("يوم عمل واحد") || clean.includes("1 يوم") || clean.includes("1 day")) return 1;
+    if (clean.includes("يومين") || clean.includes("2 يوم") || clean.includes("2 days")) return 2;
+    const match = clean.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 5;
   };
 
   const estimatedCartTotal = useMemo(() => {
@@ -175,21 +208,34 @@ export default function ServicesMarketplace() {
       });
     }
 
-    // Sorting
-    if (sortBy === "price") {
+    // Sorting implementations
+    if (sortBy === "price_asc") {
       result.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
+    } else if (sortBy === "price_desc") {
+      result.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
     } else if (sortBy === "fastest") {
-      // Stub completion duration sorting (sort by availability of completion info)
-      result.sort((a, b) => (b.completionTimeAr ? 1 : 0) - (a.completionTimeAr ? 1 : 0));
+      result.sort((a, b) => parseCompletionTime(a.completionTimeAr || a.completionTimeEn) - parseCompletionTime(b.completionTimeAr || b.completionTimeEn));
+    } else if (sortBy === "longest") {
+      result.sort((a, b) => parseCompletionTime(b.completionTimeAr || b.completionTimeEn) - parseCompletionTime(a.completionTimeAr || a.completionTimeEn));
     } else if (sortBy === "newest") {
-      result.sort((a, b) => a.order - b.order); // Use admin list order as newest sorting metric
-    } else {
-      // Popular (featured first)
+      result.sort((a, b) => b.order - a.order);
+    } else if (sortBy === "featured") {
       result.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+    } else if (sortBy === "popular") {
+      result.sort((a, b) => {
+        if (a.featured !== b.featured) return a.featured ? -1 : 1;
+        return (a.featuredOrder || 99) - (b.featuredOrder || 99);
+      });
+    } else {
+      result.sort((a, b) => a.order - b.order);
     }
 
     return result;
   }, [services, selectedCatId, searchTerm, sortBy, categories]);
+
+  const displayedServices = useMemo(() => {
+    return filteredServices.slice(0, visibleCount);
+  }, [filteredServices, visibleCount]);
 
   // Search suggestions handler
   const searchSuggestions = useMemo(() => {
@@ -205,12 +251,26 @@ export default function ServicesMarketplace() {
     setShowSuggestions(false);
   };
 
+  const handleAddToCartDirectly = (service: ServiceItem) => {
+    if (addingServiceId) return;
+    setAddingServiceId(service.id);
+    addToCart(service);
+    setTimeout(() => {
+      setAddingServiceId(null);
+      openCart();
+    }, 600);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-gray transition-colors text-gray-900 dark:text-gray-100 font-sans pb-20">
       
-      {/* 1. Navigation Header (Separate Marketplace Design) */}
-      <header className="sticky top-0 z-40 w-full glass border-b border-gray-200/50 dark:border-border-dark/50 shadow-sm transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {/* 1. Navigation Header */}
+      <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+        scrolled 
+          ? "bg-white/95 dark:bg-dark-gray/95 backdrop-blur shadow-md py-2 border-b border-gray-200/60 dark:border-border-dark/60" 
+          : "bg-white/70 dark:bg-dark-gray/70 backdrop-blur-sm border-b border-gray-200/30 dark:border-border-dark/30 py-4"
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           
           <div className="flex items-center gap-4">
             <Link href="/" className="p-2 hover:bg-gray-100 dark:hover:bg-medium-gray rounded-xl transition-colors cursor-pointer text-gray-500 dark:text-gray-400">
@@ -256,9 +316,9 @@ export default function ServicesMarketplace() {
         </div>
       </header>
 
-      {/* 2. Top Header / Large Search Bar */}
-      <section className="bg-white dark:bg-medium-gray/20 border-b border-gray-200/50 dark:border-border-dark/50 py-12 px-4">
-        <div className="max-w-4xl mx-auto text-center">
+      {/* 2. Top Header / Hero Section */}
+      <section className="bg-white dark:bg-medium-gray/20 border-b border-gray-200/50 dark:border-border-dark/50 py-16 px-4 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           
           {/* Breadcrumbs */}
           <div className="flex items-center justify-center gap-1.5 text-xxs font-bold text-gray-400 dark:text-gray-500 mb-4">
@@ -267,13 +327,13 @@ export default function ServicesMarketplace() {
             <span className="text-gray-500 dark:text-gray-300">{isAr ? "سوق الخدمات الإلكترونية" : "Services Marketplace"}</span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black mb-3">
-            {isAr ? "ما الخدمة الحكومية أو التجارية التي تبحث عنها؟" : "What Government or Business Service do you need?"}
+          <h1 className="text-3xl sm:text-5xl font-black mb-4 tracking-tight leading-tight">
+            {isAr ? "اكتشف خدماتك الإلكترونية" : "Discover Your Digital Services"}
           </h1>
-          <p className="text-xs sm:text-sm font-bold text-gray-400 dark:text-gray-500 mb-8">
+          <p className="text-sm sm:text-base font-bold text-gray-400 dark:text-gray-500 mb-8 max-w-2xl mx-auto leading-relaxed">
             {isAr 
-              ? "ابحث واكتشف الخدمات السعودية الرقمية وأنجز معاملاتك ببضع نقرات" 
-              : "Discover and request digital Saudi government services instantly"}
+              ? `استعرض أكثر من ${services.length} خدمة حكومية وتجارية ومهنية في مكان واحد بأسعار شفافة وإنجاز مضمون.`
+              : `Explore over ${services.length} business, government, and commercial services in one place with fully transparent pricing.`}
           </p>
 
           {/* Search container */}
@@ -308,7 +368,7 @@ export default function ServicesMarketplace() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute left-0 right-0 mt-2 bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark rounded-2xl shadow-xl z-30 overflow-hidden text-start p-2"
+                  className="absolute left-0 right-0 mt-2 bg-white dark:bg-medium-gray/95 backdrop-blur border border-gray-200 dark:border-border-dark rounded-2xl shadow-xl z-30 overflow-hidden text-start p-2"
                 >
                   <p className="text-[10px] font-black text-gray-400 p-2 uppercase tracking-wider">{isAr ? "اقتراحات البحث" : "Suggestions"}</p>
                   {searchSuggestions.map((item) => (
@@ -344,14 +404,21 @@ export default function ServicesMarketplace() {
               <div className="space-y-1">
                 <button
                   onClick={() => setSelectedCatId("all")}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-start cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-start cursor-pointer relative ${
                     selectedCatId === "all"
-                      ? "bg-primary text-white shadow-md shadow-primary/20"
+                      ? "text-white animate-pulse-subtle"
                       : "hover:bg-gray-100 dark:hover:bg-medium-gray/50 text-gray-600 dark:text-gray-300"
                   }`}
                 >
-                  <span>{isAr ? "جميع الخدمات" : "All Services"}</span>
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
+                  {selectedCatId === "all" && (
+                    <motion.div
+                      layoutId="activeCategoryBgDesktop"
+                      className="absolute inset-0 bg-primary rounded-xl"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10">{isAr ? "جميع الخدمات" : "All Services"}</span>
+                  <span className={`relative z-10 px-2 py-0.5 rounded-md text-[10px] font-black transition-colors ${
                     selectedCatId === "all" ? "bg-white/20 text-white" : "bg-gray-100 dark:bg-medium-gray text-gray-500"
                   }`}>
                     {services.length}
@@ -364,14 +431,21 @@ export default function ServicesMarketplace() {
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCatId(cat.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-start cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-start cursor-pointer relative ${
                         selectedCatId === cat.id
-                          ? "bg-primary text-white shadow-md shadow-primary/20"
+                          ? "text-white"
                           : "hover:bg-gray-100 dark:hover:bg-medium-gray/50 text-gray-600 dark:text-gray-300"
                       }`}
                     >
-                      <span className="truncate">{isAr ? cat.nameAr : cat.nameEn}</span>
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
+                      {selectedCatId === cat.id && (
+                        <motion.div
+                          layoutId="activeCategoryBgDesktop"
+                          className="absolute inset-0 bg-primary rounded-xl"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                      <span className="relative z-10 truncate">{isAr ? cat.nameAr : cat.nameEn}</span>
+                      <span className={`relative z-10 px-2 py-0.5 rounded-md text-[10px] font-black transition-colors ${
                         selectedCatId === cat.id ? "bg-white/20 text-white" : "bg-gray-100 dark:bg-medium-gray text-gray-500"
                       }`}>
                         {count}
@@ -386,6 +460,28 @@ export default function ServicesMarketplace() {
           {/* B. Discovery Section / Results */}
           <div className="lg:col-span-3">
             
+            {/* Search filter active summary */}
+            {searchTerm.trim().length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between gap-4 mb-6 text-start p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10"
+              >
+                <div className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                  <span>{isAr ? "نتائج البحث عن: " : "Search results for: "}</span>
+                  <span className="font-extrabold text-primary dark:text-primary-light">"{searchTerm}"</span>
+                  <span className="mx-2 text-gray-355">•</span>
+                  <span>{filteredServices.length} {isAr ? "خدمة متوفرة" : "services available"}</span>
+                </div>
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="text-xxs font-black text-red-500 hover:text-red-600 cursor-pointer"
+                >
+                  {isAr ? "إلغاء البحث" : "Clear Search"}
+                </button>
+              </motion.div>
+            )}
+
             {/* Sorting & Filters Header */}
             <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-2xl sm:rounded-3xl p-4 sm:p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               
@@ -409,47 +505,70 @@ export default function ServicesMarketplace() {
                   className="lg:hidden flex items-center justify-center gap-1.5 flex-1 px-4 py-2.5 bg-gray-100 dark:bg-medium-gray rounded-xl text-xs font-bold cursor-pointer"
                 >
                   <SlidersHorizontal size={14} />
-                  <span>{isAr ? "تصفية" : "Filter"}</span>
+                  <span>{isAr ? "الأقسام" : "Categories"}</span>
                 </button>
 
                 {/* Sort dropdown */}
-                <select
-                  value={sortBy}
-                  onChange={(e: any) => setSortBy(e.target.value)}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-gray-100 dark:bg-medium-gray border border-transparent dark:border-border-dark rounded-xl text-xs font-bold outline-none cursor-pointer"
-                >
-                  <option value="popular">{isAr ? "الأكثر طلباً (شائع)" : "Popular"}</option>
-                  <option value="price">{isAr ? "السعر (من الأقل)" : "Price (Low-High)"}</option>
-                  <option value="fastest">{isAr ? "الأسرع إنجازاً" : "Fastest Completion"}</option>
-                  <option value="newest">{isAr ? "الأحدث" : "Newest"}</option>
-                </select>
+                <div className="flex items-center gap-2 bg-gray-100 dark:bg-medium-gray border border-transparent dark:border-border-dark rounded-xl px-3 py-1 flex-1 sm:flex-initial">
+                  <ArrowUpDown size={14} className="text-gray-400" />
+                  <select
+                    value={sortBy}
+                    onChange={(e: any) => setSortBy(e.target.value)}
+                    className="bg-transparent border-none text-xs font-bold outline-none cursor-pointer py-1.5 w-full sm:w-auto"
+                  >
+                    <option value="default">{isAr ? "الترتيب الافتراضي" : "Default"}</option>
+                    <option value="popular">{isAr ? "الأكثر طلباً" : "Most Popular"}</option>
+                    <option value="featured">{isAr ? "الخدمات المميزة" : "Featured Services"}</option>
+                    <option value="newest">{isAr ? "الأحدث" : "Newest"}</option>
+                    <option value="price_asc">{isAr ? "السعر: من الأقل للأعلى" : "Price: Low to High"}</option>
+                    <option value="price_desc">{isAr ? "السعر: من الأعلى للأقل" : "Price: High to Low"}</option>
+                    <option value="fastest">{isAr ? "الأسرع إنجازاً" : "Fastest Completion"}</option>
+                    <option value="longest">{isAr ? "الأبطأ إنجازاً" : "Longest Completion"}</option>
+                  </select>
+                </div>
               </div>
             </div>
 
             {/* Mobile Horizontal Category Selection */}
-            <div className="lg:hidden mb-6 overflow-x-auto flex gap-2 pb-2 scrollbar-none">
+            <div className="lg:hidden mb-6 overflow-x-auto flex gap-2 pb-2 scrollbar-none relative">
               <button
                 onClick={() => setSelectedCatId("all")}
-                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
+                className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap cursor-pointer transition-all relative ${
                   selectedCatId === "all"
-                    ? "bg-primary text-white shadow-md shadow-primary/20"
+                    ? "text-white"
                     : "bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300"
                 }`}
               >
-                {isAr ? "الكل" : "All"} ({services.length})
+                {selectedCatId === "all" && (
+                  <motion.div
+                    layoutId="activeCategoryBgMobile"
+                    className="absolute inset-0 bg-primary rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{isAr ? "الكل" : "All"} ({services.length})</span>
               </button>
               {categories.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCatId(cat.id)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
+                  className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap cursor-pointer transition-all relative ${
                     selectedCatId === cat.id
-                      ? "bg-primary text-white shadow-md shadow-primary/20"
+                      ? "text-white"
                       : "bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300"
-                  }`}
-                >
+                }`}
+              >
+                {selectedCatId === cat.id && (
+                  <motion.div
+                    layoutId="activeCategoryBgMobile"
+                    className="absolute inset-0 bg-primary rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">
                   {isAr ? cat.nameAr.replace(/[^\p{L}\s]/gu, "").trim() : cat.nameEn} ({categoryCounts[cat.id] || 0})
-                </button>
+                </span>
+              </button>
               ))}
             </div>
 
@@ -459,93 +578,138 @@ export default function ServicesMarketplace() {
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
                 <p className="text-xs text-gray-500 font-bold">{isAr ? "جاري تحميل سوق الخدمات..." : "Loading service catalog..."}</p>
               </div>
-            ) : filteredServices.length > 0 ? (
+            ) : displayedServices.length > 0 ? (
               
-              /* C. SERVICE CARD GRID */
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredServices.map((service) => {
-                  const hasPrice = parsePrice(service.price) > 0;
-                  const displayPrice = service.price || (isAr ? "حسب الاتفاق" : "Per Agreement");
-                  const displayCompletion = isAr 
-                    ? (service.completionTimeAr || "يوم عمل") 
-                    : (service.completionTimeEn || "1-2 Business Days");
-                  const catInfo = categories.find(c => c.id === service.categoryId);
+              /* C. SERVICE CARD GRID WITH FRAMER MOTION TRANSITION */
+              <div className="space-y-10">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedCatId + "-" + searchTerm + "-" + sortBy}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.25 }}
+                    className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
+                  >
+                    {displayedServices.map((service, index) => {
+                      const parsed = parsePrice(service.price);
+                      const hasPrice = parsed > 0;
+                      
+                      // Consistency mapping: Use exact DB prices if configured, fallback to حسب الاتفاق
+                      const displayPrice = hasPrice 
+                        ? (service.price?.includes("ريال") || service.price?.includes("SAR") ? service.price : `${service.price} ${isAr ? "ريال" : "SAR"}`)
+                        : (isAr ? "حسب الاتفاق" : "Per Agreement");
 
-                  return (
-                    <motion.div
-                      layout
-                      key={service.id}
-                      whileHover={{ y: -6, scale: 1.01 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="group bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-3xl p-5 shadow-sm hover:shadow-lg flex flex-col justify-between text-start relative overflow-hidden"
+                      const displayCompletion = isAr 
+                        ? (service.completionTimeAr || "يوم عمل") 
+                        : (service.completionTimeEn || "1-2 Business Days");
+                      const catInfo = categories.find(c => c.id === service.categoryId);
+                      const isAdding = addingServiceId === service.id;
+
+                      return (
+                        <motion.div
+                          layout
+                          key={service.id}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.2) }}
+                          className="group bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-3xl p-5 shadow-sm hover:shadow-lg flex flex-col justify-between text-start relative overflow-hidden transition-shadow duration-300"
+                        >
+                          {/* Featured tag */}
+                          {service.featured && (
+                            <div className="absolute top-4 right-4 z-10 px-2.5 py-1 bg-amber-500 text-white text-[9px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                              <TrendingUp size={10} />
+                              <span>{isAr ? "موصى به" : "Featured"}</span>
+                            </div>
+                          )}
+
+                          <div>
+                            {/* Themed Visual Card Top */}
+                            <div className={`w-full h-32 rounded-2xl bg-gradient-to-br ${getServiceGradient(service.categoryId)} p-4 flex flex-col justify-between relative overflow-hidden mb-4 shadow-inner`}>
+                              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white transform group-hover:scale-110 transition-transform duration-300">
+                                {catInfo?.icon ? (
+                                  <ServiceIcon name={catInfo.icon} className="text-white" />
+                                ) : (
+                                  <Briefcase size={20} />
+                                )}
+                              </div>
+                              
+                              <span className="text-[10px] font-black text-white/80 uppercase tracking-widest block bg-black/10 self-start px-2 py-0.5 rounded">
+                                {catInfo?.[isAr ? "nameAr" : "nameEn"]}
+                              </span>
+                            </div>
+
+                            {/* Title & Desc */}
+                            <h3 className="text-sm sm:text-base font-black text-gray-900 dark:text-white leading-tight mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors line-clamp-2">
+                              {isAr ? service.titleAr : service.titleEn}
+                            </h3>
+                            <p className="text-xxs sm:text-xs font-semibold text-gray-400 dark:text-gray-500 mb-4 line-clamp-2 min-h-[32px] leading-relaxed">
+                              {isAr ? service.descAr || "الخدمة تشمل معالجة فورية وتوثيق عبر القنوات الرسمية بضمان كود خدمات." : service.descEn || "Complete documentation and quick processing guarantee from Code Services."}
+                            </p>
+                          </div>
+
+                          {/* Details & CTA Footer */}
+                          <div className="border-t border-gray-150 dark:border-border-dark/50 pt-4 mt-auto">
+                            <div className="flex justify-between items-center text-xxs font-bold text-gray-500 mb-4">
+                              <div className="flex items-center gap-1">
+                                <Clock size={12} className="text-primary dark:text-primary-light" />
+                                <span>{displayCompletion}</span>
+                              </div>
+                              <div className="text-end">
+                                <span className="font-extrabold text-xs text-emerald-600 dark:text-emerald-400">{displayPrice}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Link 
+                                href={`/services/${service.id}`}
+                                className="flex-1 py-2 px-3 bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray/50 dark:hover:bg-medium-gray text-gray-700 dark:text-gray-300 rounded-xl text-[11px] font-extrabold text-center transition-colors cursor-pointer"
+                              >
+                                {isAr ? "التفاصيل" : "Details"}
+                              </Link>
+                              
+                              <button
+                                disabled={isAdding}
+                                onClick={() => handleAddToCartDirectly(service)}
+                                className="flex-1 py-2 px-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-[11px] font-extrabold transition-colors cursor-pointer text-center flex items-center justify-center gap-1 disabled:opacity-75 disabled:cursor-not-allowed select-none"
+                              >
+                                {isAdding ? (
+                                  <>
+                                    <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    <span>{isAr ? "جاري الإضافة" : "Adding..."}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    {cartItems.some(i => i.service.id === service.id) ? (
+                                      <span className="flex items-center gap-1">
+                                        <Check size={12} />
+                                        <span>{isAr ? "مضاف" : "Added"}</span>
+                                      </span>
+                                    ) : (
+                                      <span>{isAr ? "اطلب الخدمة" : "Request"}</span>
+                                    )}
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Load More Pagination */}
+                {filteredServices.length > visibleCount && (
+                  <div className="mt-8 text-center">
+                    <button
+                      onClick={() => setVisibleCount(prev => prev + 12)}
+                      className="px-8 py-3.5 bg-white dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark/50 hover:border-primary dark:hover:border-primary-light text-primary dark:text-primary-light font-black text-xs rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer"
                     >
-                      {/* Featured tag */}
-                      {service.featured && (
-                        <div className="absolute top-4 right-4 z-10 px-2.5 py-1 bg-amber-500 text-white text-[9px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                          <TrendingUp size={10} />
-                          <span>{isAr ? "موصى به" : "Featured"}</span>
-                        </div>
-                      )}
-
-                      <div>
-                        {/* Themed Visual Card Top */}
-                        <div className={`w-full h-32 rounded-2xl bg-gradient-to-br ${getServiceGradient(service.categoryId)} p-4 flex flex-col justify-between relative overflow-hidden mb-4 shadow-inner`}>
-                          <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white">
-                            {catInfo?.icon ? (
-                              <ServiceIcon name={catInfo.icon} className="text-white" />
-                            ) : (
-                              <Briefcase size={20} />
-                            )}
-                          </div>
-                          
-                          <span className="text-[10px] font-black text-white/80 uppercase tracking-widest block bg-black/10 self-start px-2 py-0.5 rounded">
-                            {catInfo?.[isAr ? "nameAr" : "nameEn"]}
-                          </span>
-                        </div>
-
-                        {/* Title & Desc */}
-                        <h3 className="text-sm sm:text-base font-black text-gray-900 dark:text-white leading-tight mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
-                          {isAr ? service.titleAr : service.titleEn}
-                        </h3>
-                        <p className="text-xxs sm:text-xs font-semibold text-gray-400 dark:text-gray-500 mb-4 line-clamp-2 min-h-[32px] leading-relaxed">
-                          {isAr ? service.descAr || "الخدمة تشمل معالجة فورية وتوثيق عبر القنوات الرسمية بضمان كود خدمات." : service.descEn || "Complete documentation and quick processing guarantee from Code Services."}
-                        </p>
-                      </div>
-
-                      {/* Details & CTA Footer */}
-                      <div className="border-t border-gray-150 dark:border-border-dark/50 pt-4 mt-auto">
-                        <div className="flex justify-between items-center text-xxs font-bold text-gray-500 mb-4">
-                          <div className="flex items-center gap-1">
-                            <Clock size={12} className="text-primary dark:text-primary-light" />
-                            <span>{displayCompletion}</span>
-                          </div>
-                          <div className="text-end">
-                            <span className="font-extrabold text-xs text-emerald-600 dark:text-emerald-400">{displayPrice}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Link 
-                            href={`/services/${service.id}`}
-                            className="flex-1 py-2 px-3 bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray/50 dark:hover:bg-medium-gray text-gray-700 dark:text-gray-300 rounded-xl text-[11px] font-extrabold text-center transition-colors cursor-pointer"
-                          >
-                            {isAr ? "التفاصيل" : "Details"}
-                          </Link>
-                          
-                          <button
-                            onClick={() => {
-                              const { addToCart } = useCart();
-                              addToCart(service);
-                            }}
-                            className="flex-1 py-2 px-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-[11px] font-extrabold transition-colors cursor-pointer text-center"
-                          >
-                            {isAr ? "طلب الخدمة" : "Request"}
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                      {isAr ? "عرض المزيد من الخدمات" : "Load More Services"}
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               
@@ -587,7 +751,7 @@ export default function ServicesMarketplace() {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowFiltersMobile(false)}
-              className="fixed inset-0 bg-black z-40 cursor-pointer"
+              className="fixed inset-0 bg-black z-45 cursor-pointer"
             />
             {/* Drawer */}
             <motion.div
