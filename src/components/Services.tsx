@@ -10,6 +10,7 @@ import {
   ServiceItem,
   getMigratedServices
 } from "@/data/translations";
+import { db } from "@/services/db";
 import * as Icons from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -28,28 +29,36 @@ export const Services: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
   // Database state
-  const [categories, setCategories] = useState<Category[]>(defaultCategories);
-  const [services, setServices] = useState<ServiceItem[]>(defaultServices);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Initialize and Seed LocalStorage Database
+  // Initialize from Supabase dynamic database
   useEffect(() => {
-    // Categories Seeding
-    const savedCategories = localStorage.getItem("code_services_categories");
-    if (savedCategories) {
+    async function loadCatalog() {
       try {
-        const parsed = JSON.parse(savedCategories) as Category[];
-        setCategories(parsed.filter(c => c.visible).sort((a, b) => a.order - b.order));
-      } catch (e) {
-        setCategories(defaultCategories);
-      }
-    } else {
-      localStorage.setItem("code_services_categories", JSON.stringify(defaultCategories));
-      setCategories(defaultCategories);
-    }
+        const cats = await db.categories.getCategories();
+        const servs = await db.services.getServices();
+        
+        if (cats && cats.length > 0) {
+          setCategories(cats.filter(c => c.visible).sort((a, b) => a.order - b.order));
+        } else {
+          setCategories(defaultCategories.filter(c => c.visible).sort((a, b) => a.order - b.order));
+        }
 
-    // Services Seeding
-    const migrated = getMigratedServices();
-    setServices(migrated.filter(s => s.visible).sort((a, b) => a.order - b.order));
+        if (servs && servs.length > 0) {
+          setServices(servs.filter(s => s.visible).sort((a, b) => a.order - b.order));
+        } else {
+          const fallback = getMigratedServices();
+          setServices(fallback.filter(s => s.visible).sort((a, b) => a.order - b.order));
+        }
+      } catch (err) {
+        console.error("Failed to load homepage categories:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCatalog();
   }, []);
 
   // Handle category navigation click
@@ -65,7 +74,7 @@ export const Services: React.FC = () => {
     }
   };
 
-  // Only display the top 6 categories on the homepage teaser for high-performance structure
+  // Only display the top 6 categories on the homepage teaser
   const teaserCategories = useMemo(() => {
     return categories.slice(0, 6);
   }, [categories]);
@@ -120,46 +129,52 @@ export const Services: React.FC = () => {
         </form>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          {teaserCategories.map((category) => {
-            const name = locale === "ar" ? category.nameAr : category.nameEn;
-            const desc = locale === "ar" ? category.descAr : category.descEn;
-            const catServicesCount = services.filter((s) => s.categoryId === category.id).length;
+        {loading ? (
+          <div className="py-12 flex justify-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {teaserCategories.map((category) => {
+              const name = locale === "ar" ? category.nameAr : category.nameEn;
+              const desc = locale === "ar" ? category.descAr : category.descEn;
+              const catServicesCount = services.filter((s) => s.categoryId === category.id).length;
 
-            return (
-              <motion.div
-                key={category.id}
-                onClick={() => handleCategoryClick(category.id)}
-                whileHover={{ y: -4 }}
-                className="group p-8 rounded-3xl glass-card border border-primary/5 dark:border-white/5 hover:border-primary/20 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer text-start flex flex-col justify-between h-64"
-              >
-                <div>
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
-                      <ServiceIcon name={category.icon} />
+              return (
+                <motion.div
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category.id)}
+                  whileHover={{ y: -4 }}
+                  className="group p-8 rounded-3xl glass-card border border-primary/5 dark:border-white/5 hover:border-primary/20 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer text-start flex flex-col justify-between h-64"
+                >
+                  <div>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-14 h-14 rounded-2xl bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
+                        <ServiceIcon name={category.icon} />
+                      </div>
+                      
+                      <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-medium-gray text-gray-500 dark:text-gray-400 text-xs font-bold">
+                        {catServicesCount} {locale === "ar" ? "خدمة" : "Services"}
+                      </span>
                     </div>
-                    
-                    <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-medium-gray text-gray-500 dark:text-gray-400 text-xs font-bold">
-                      {catServicesCount} {locale === "ar" ? "خدمة" : "Services"}
-                    </span>
+
+                    <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
+                      {name}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
+                      {desc}
+                    </p>
                   </div>
 
-                  <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
-                    {name}
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
-                    {desc}
-                  </p>
-                </div>
-
-                <span className="text-xs text-primary dark:text-primary-light font-black inline-flex items-center gap-1">
-                  <span>{locale === "ar" ? "استعراض الخدمات" : "Browse Services"}</span>
-                  <span>→</span>
-                </span>
-              </motion.div>
-            );
-          })}
-        </div>
+                  <span className="text-xs text-primary dark:text-primary-light font-black inline-flex items-center gap-1">
+                    <span>{locale === "ar" ? "استعراض الخدمات" : "Browse Services"}</span>
+                    <span>→</span>
+                  </span>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Prominent High-End Call to Action Button */}
         <div className="text-center">

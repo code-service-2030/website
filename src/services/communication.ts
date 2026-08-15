@@ -40,14 +40,16 @@ export function formatPrice(price: string, lang: string): string {
   if (!cleanPrice) {
     return lang === "en" ? "Per agreement" : "حسب الاتفاق";
   }
-  // Check if it is a non-numeric/custom text (e.g. "حسب الاتفاق" or "Per agreement")
-  // We clean up numbers and see if anything is left. If it contains arabic or non-digit chars that aren't dot/comma, it's non-numeric
+  
+  if (cleanPrice === "حسب الاتفاق" || cleanPrice.toLowerCase().includes("agreement") || cleanPrice === "0" || cleanPrice === "0 ريال") {
+    return lang === "en" ? "Per agreement" : "حسب الاتفاق";
+  }
+
   const numOnly = cleanPrice.replace(/[^\d.,]/g, "");
   if (!numOnly) {
     return cleanPrice;
   }
   
-  // Check if it already contains currency keywords
   const hasArCurrency = cleanPrice.includes("ريال") || cleanPrice.includes("ر.س");
   const hasEnCurrency = cleanPrice.toUpperCase().includes("SAR") || cleanPrice.toUpperCase().includes("SR");
   
@@ -71,9 +73,22 @@ export function buildLocalizedMessage(
     ? (settings.emailSubjectEn || "New Request - {RequestID}")
     : (settings.emailSubject || "طلب جديد - رقم الطلب {RequestID}");
 
-  const whatsappMessageTpl = selectedLang === "en"
-    ? (settings.whatsappTemplateEn || "Hello, I would like to request the following services...")
-    : (settings.whatsappTemplate || "السلام عليكم ورحمة الله وبركاته، أرغب بطلب الخدمات التالية...");
+  // Check if it is a price inquiry request
+  const isPriceInquiry = payload.items?.some(item => {
+    const p = (item.price || "").trim();
+    return p === "حسب الاتفاق" || p === "" || p === "0" || p === "0 ريال" || p.toLowerCase().includes("agreement");
+  }) || payload.items?.length === 0 || payload.totalPrice === "حسب الاتفاق";
+
+  let whatsappMessageTpl = "";
+  if (isPriceInquiry) {
+    whatsappMessageTpl = selectedLang === "en"
+      ? `Hello,\n\nI would like to inquire about the price of the following service from Code Services.\n\nService:\n{ServiceName}\n\nRequest Number:\n{RequestID}\n\nCustomer Information:\nName: {CustomerName}\nPhone: {PhoneNumber}\nEmail: {Email}\nPreferred Contact Method: {PreferredContactMethod}\nPreferred Contact Time: {PreferredContactTime}\n\nPlease provide the expected price and relevant service details.\n\nThank you.\n\nCode Services`
+      : `السلام عليكم ورحمة الله وبركاته،\n\nأرغب في الاستفسار عن سعر الخدمة التالية من مكتب كود خدمات.\n\nالخدمة:\n{ServiceName}\n\nرقم الطلب:\n{RequestID}\n\nمعلومات العميل:\nالاسم: {CustomerName}\nالجوال: {PhoneNumber}\nالبريد الإلكتروني: {Email}\nطريقة التواصل المفضلة: {PreferredContactMethod}\nوقت التواصل المفضل: {PreferredContactTime}\n\nأرجو توضيح السعر المتوقع للخدمة والتفاصيل المتعلقة بها.\n\nشكراً لكم.\n\nكود خدمات`;
+  } else {
+    whatsappMessageTpl = selectedLang === "en"
+      ? (settings.whatsappTemplateEn || "Hello, I would like to request the following services...")
+      : (settings.whatsappTemplate || "السلام عليكم ورحمة الله وبركاته، أرغب بطلب الخدمات التالية...");
+  }
 
   let servicesList = "";
   if (payload.items && payload.items.length > 0) {
@@ -89,11 +104,20 @@ export function buildLocalizedMessage(
     servicesList = payload.servicesSummary;
   }
 
+  const serviceName = payload.items && payload.items.length > 0
+    ? payload.items.map(item => item.name).join(", ")
+    : payload.servicesSummary;
+
   const subject = emailSubjectTpl.replace(/\{RequestID\}/g, payload.requestId);
 
   let body = whatsappMessageTpl;
+  
+  // Resolve escaped line breaks
+  body = body.replace(/\\n/g, "\n");
+  
   body = body.replace(/\{RequestID\}/g, payload.requestId);
   body = body.replace(/\{ServicesList\}/g, servicesList);
+  body = body.replace(/\{ServiceName\}/g, serviceName);
   body = body.replace(/\{TotalPrice\}/g, formatPrice(payload.totalPrice || "0", selectedLang));
   body = body.replace(/\{CustomerName\}/g, payload.customerName);
   body = body.replace(/\{PhoneNumber\}/g, payload.customerPhone);

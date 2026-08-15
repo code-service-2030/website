@@ -70,7 +70,7 @@ export default function ServicesMarketplace() {
   const { cartItems, openCart, addToCart } = useCart();
   const router = useRouter();
 
-  const [categories, setCategories] = useState<Category[]>(defaultCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -171,7 +171,7 @@ export default function ServicesMarketplace() {
     }, 0);
   }, [cartItems]);
 
-  // Compute category counts
+  // Compute category counts dynamically from active visible services
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     services.forEach(s => {
@@ -406,7 +406,7 @@ export default function ServicesMarketplace() {
                   onClick={() => setSelectedCatId("all")}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-start cursor-pointer relative ${
                     selectedCatId === "all"
-                      ? "text-white animate-pulse-subtle"
+                      ? "text-white"
                       : "hover:bg-gray-100 dark:hover:bg-medium-gray/50 text-gray-600 dark:text-gray-300"
                   }`}
                 >
@@ -508,22 +508,22 @@ export default function ServicesMarketplace() {
                   <span>{isAr ? "الأقسام" : "Categories"}</span>
                 </button>
 
-                {/* Sort dropdown */}
-                <div className="flex items-center gap-2 bg-gray-100 dark:bg-medium-gray border border-transparent dark:border-border-dark rounded-xl px-3 py-1 flex-1 sm:flex-initial">
+                {/* Sort dropdown with custom theme option colors to fix contrast */}
+                <div className="flex items-center gap-2 bg-gray-100 dark:bg-medium-gray border border-transparent dark:border-border-dark rounded-xl px-3 py-1 flex-1 sm:flex-initial text-gray-800 dark:text-gray-100">
                   <ArrowUpDown size={14} className="text-gray-400" />
                   <select
                     value={sortBy}
                     onChange={(e: any) => setSortBy(e.target.value)}
-                    className="bg-transparent border-none text-xs font-bold outline-none cursor-pointer py-1.5 w-full sm:w-auto"
+                    className="bg-transparent border-none text-xs font-bold outline-none cursor-pointer py-1.5 w-full sm:w-auto text-gray-800 dark:text-gray-100"
                   >
-                    <option value="default">{isAr ? "الترتيب الافتراضي" : "Default"}</option>
-                    <option value="popular">{isAr ? "الأكثر طلباً" : "Most Popular"}</option>
-                    <option value="featured">{isAr ? "الخدمات المميزة" : "Featured Services"}</option>
-                    <option value="newest">{isAr ? "الأحدث" : "Newest"}</option>
-                    <option value="price_asc">{isAr ? "السعر: من الأقل للأعلى" : "Price: Low to High"}</option>
-                    <option value="price_desc">{isAr ? "السعر: من الأعلى للأقل" : "Price: High to Low"}</option>
-                    <option value="fastest">{isAr ? "الأسرع إنجازاً" : "Fastest Completion"}</option>
-                    <option value="longest">{isAr ? "الأبطأ إنجازاً" : "Longest Completion"}</option>
+                    <option value="default" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الترتيب الافتراضي" : "Default"}</option>
+                    <option value="popular" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الأكثر طلباً" : "Most Popular"}</option>
+                    <option value="featured" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الخدمات المميزة" : "Featured Services"}</option>
+                    <option value="newest" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الأحدث" : "Newest"}</option>
+                    <option value="price_asc" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "السعر: من الأقل للأعلى" : "Price: Low to High"}</option>
+                    <option value="price_desc" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "السعر: من الأعلى للأقل" : "Price: High to Low"}</option>
+                    <option value="fastest" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الأسرع إنجازاً" : "Fastest Completion"}</option>
+                    <option value="longest" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الأبطأ إنجازاً" : "Longest Completion"}</option>
                   </select>
                 </div>
               </div>
@@ -556,19 +556,19 @@ export default function ServicesMarketplace() {
                     selectedCatId === cat.id
                       ? "text-white"
                       : "bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300"
-                }`}
-              >
-                {selectedCatId === cat.id && (
-                  <motion.div
-                    layoutId="activeCategoryBgMobile"
-                    className="absolute inset-0 bg-primary rounded-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">
-                  {isAr ? cat.nameAr.replace(/[^\p{L}\s]/gu, "").trim() : cat.nameEn} ({categoryCounts[cat.id] || 0})
-                </span>
-              </button>
+                  }`}
+                >
+                  {selectedCatId === cat.id && (
+                    <motion.div
+                      layoutId="activeCategoryBgMobile"
+                      className="absolute inset-0 bg-primary rounded-full"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10">
+                    {isAr ? cat.nameAr.replace(/[^\p{L}\s]/gu, "").trim() : cat.nameEn} ({categoryCounts[cat.id] || 0})
+                  </span>
+                </button>
               ))}
             </div>
 
@@ -686,7 +686,9 @@ export default function ServicesMarketplace() {
                                         <span>{isAr ? "مضاف" : "Added"}</span>
                                       </span>
                                     ) : (
-                                      <span>{isAr ? "اطلب الخدمة" : "Request"}</span>
+                                      hasPrice 
+                                        ? <span>{isAr ? "اطلب الخدمة" : "Request"}</span>
+                                        : <span>{isAr ? "استفسر عن السعر" : "Inquire"}</span>
                                     )}
                                   </>
                                 )}
@@ -759,7 +761,7 @@ export default function ServicesMarketplace() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 250 }}
-              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-medium-gray rounded-t-3xl p-6 z-50 shadow-2xl overflow-y-auto max-h-[80vh] text-start"
+              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-medium-gray rounded-t-3xl p-6 z-50 shadow-2xl overflow-y-auto max-h-[80vh] text-start text-gray-900 dark:text-gray-150"
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-sm font-black">{isAr ? "تصفية حسب الأقسام" : "Filter by Categories"}</h3>

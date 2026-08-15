@@ -261,6 +261,7 @@ export default function AdminDashboard() {
     featured: false,
     featuredOrder: 1,
     visible: true,
+    order: 10,
   });
 
   const [newFAQ, setNewFAQ] = useState({
@@ -379,13 +380,49 @@ export default function AdminDashboard() {
         } else {
           // Seed default templates
           const defaultTemplates = [
-            { id: 'welcome', name: 'ترحيب / Welcome', body: 'السلام عليكم أستاذ/ة {Customer Name}\n\nنرحب بك في كود خدمات.\nأنا {Staff Name} وسأكون المسؤول عن تنفيذ طلبكم ومتابعته حتى الانتهاء بإذن الله.\n\nرقم الطلب:\n{Request ID}\n\nالخدمة المطلوبة:\n{Requested Services}\n\nإذا احتجتم أي استفسار فأنا في خدمتكم.\n\nشكراً لاختياركم كود خدمات.\n\n{Staff Signature}' },
-            { id: 'received', name: 'تم الاستلام / Request Received', body: 'السلام عليكم {Customer Name}\n\nتم استلام طلبكم بنجاح.\nرقم الطلب: {Request ID}\nالخدمة: {Requested Services}\n\nسيتم البدء في معالجته في أقرب وقت.\n\n{Staff Signature}' },
-            { id: 'missing_docs', name: 'مستندات ناقصة / Missing Documents', body: 'السلام عليكم {Customer Name}\n\nبخصوص طلبكم رقم {Request ID}\nنحتاج منكم المستندات التالية:\n\n[أضف المستندات هنا]\n\nيرجى إرسالها في أقرب وقت.\n\n{Staff Signature}' },
-            { id: 'payment', name: 'تذكير بالدفع / Payment Reminder', body: 'السلام عليكم {Customer Name}\n\nنود تذكيركم بسداد رسوم الخدمة لطلبكم رقم {Request ID}.\n\nالخدمة: {Requested Services}\n\nيرجى التواصل معنا لإتمام عملية الدفع.\n\n{Staff Signature}' },
-            { id: 'completed', name: 'تم الإنجاز / Request Completed', body: 'السلام عليكم {Customer Name}\n\nيسرنا إبلاغكم بأن طلبكم رقم {Request ID} قد تم إنجازه بنجاح.\n\nالخدمة: {Requested Services}\n\nشكراً لثقتكم بكود خدمات.\n\n{Staff Signature}' },
-            { id: 'ready', name: 'جاهز للاستلام / Ready for Collection', body: 'السلام عليكم {Customer Name}\n\nطلبكم رقم {Request ID} جاهز للاستلام.\n\nيرجى التواصل معنا لتحديد موعد الاستلام.\n\n{Staff Signature}' },
-            { id: 'info_needed', name: 'نحتاج معلومات / Need More Info', body: 'السلام عليكم {Customer Name}\n\nبخصوص طلبكم رقم {Request ID}\nنحتاج منكم بعض المعلومات الإضافية:\n\n[أضف الأسئلة هنا]\n\nيرجى الرد في أقرب وقت.\n\n{Staff Signature}' }
+            // Staff Contact Templates
+            { 
+              id: 'staff_welcome', 
+              name: 'مراسلة: ترحيب بالعميل / Staff: Welcome Customer', 
+              body: 'السلام عليكم ورحمة الله وبركاته، أستاذ/ة {CustomerName}،\n\nنرحب بك في مكتب كود خدمات.\nأنا {StaffName} وسأكون المسؤول عن تنفيذ طلبكم رقم {RequestID} ومتابعته حتى الانتهاء بإذن الله.\n\nالخدمات المطلوبة:\n{ServicesList}\n\nنحن في خدمتكم لأي استفسار.\n\nشكراً لكم،\n{StaffName}' 
+            },
+            { 
+              id: 'staff_received', 
+              name: 'مراسلة: تم استلام الطلب / Staff: Request Received', 
+              body: 'السلام عليكم أستاذ/ة {CustomerName}،\n\nتم استلام طلبكم رقم {RequestID} بنجاح وجاري العمل عليه حالياً.\n\nالخدمة: {ServicesList}\n\nشكراً لثقتكم بنا،\nمكتب كود خدمات' 
+            },
+            { 
+              id: 'staff_in_progress', 
+              name: 'مراسلة: قيد الإنجاز / Staff: In Progress', 
+              body: 'السلام عليكم أستاذ/ة {CustomerName}،\n\nنفيدكم بأن طلبكم رقم {RequestID} هو الآن قيد المعالجة والإنجاز وسنوافيكم بالتحديثات أولاً بأول.\n\nتحياتنا،\n{StaffName}' 
+            },
+            { 
+              id: 'staff_missing_docs', 
+              name: 'مراسلة: مستندات ناقصة / Staff: Need Documents', 
+              body: 'السلام عليكم أستاذ/ة {CustomerName}،\n\nبخصوص طلبكم رقم {RequestID}، نحتاج منكم تزويدنا بالمستندات التالية لاستكمال المعاملة:\n\n[يرجى كتابة المستندات هنا]\n\nشاكرين تعاونكم،\n{StaffName}' 
+            },
+            { 
+              id: 'staff_price_info', 
+              name: 'مراسلة: تفاصيل السعر / Staff: Price Information', 
+              body: 'السلام عليكم أستاذ/ة {CustomerName}،\n\nبخصوص استفساركم عن سعر خدمة ({ServiceName})، الرسوم المتوقعة هي: {TotalPrice}.\n\nيرجى تأكيد رغبتكم بالبدء لإتمام الطلب.\n\nفي خدمتكم دائماً،\n{StaffName}' 
+            },
+            { 
+              id: 'staff_completed', 
+              name: 'مراسلة: تم الإنجاز بنجاح / Staff: Request Completed', 
+              body: 'السلام عليكم أستاذ/ة {CustomerName}،\n\nيسعدنا إبلاغكم بأن طلبكم رقم {RequestID} قد تم إنجازه بنجاح.\n\nالخدمة: {ServicesList}\n\nشكراً لتعاملكم معنا،\nمكتب كود خدمات' 
+            },
+
+            // Customer Request Templates
+            {
+              id: 'cust_new_request',
+              name: 'عميل: طلب جديد / Customer: New Request',
+              body: 'السلام عليكم ورحمة الله وبركاته،\nأرغب في التقديم على الخدمات التالية من مكتب كود خدمات.\n\nالخدمات المطلوبة:\n{ServicesList}\n\nرقم الطلب:\n{RequestID}\n\nمعلومات العميل:\nالاسم: {CustomerName}\nالجوال: {PhoneNumber}\n\nشكراً لكم.'
+            },
+            {
+              id: 'cust_price_inquiry',
+              name: 'عميل: استفسار عن السعر / Customer: Price Inquiry',
+              body: 'السلام عليكم ورحمة الله وبركاته،\nأرغب في الاستفسار عن سعر الخدمة التالية من مكتب كود خدمات.\n\nالخدمة:\n{ServiceName}\n\nرقم الطلب:\n{RequestID}\n\nمعلومات العميل:\nالاسم: {CustomerName}\nالجوال: {PhoneNumber}\nالبريد الإلكتروني: {Email}\nطريقة التواصل المفضلة: {PreferredContactMethod}\nوقت التواصل المفضل: {PreferredContactTime}\n\nأرجو توضيح السعر المتوقع للخدمة والتفاصيل المتعلقة بها.\n\nشكراً لكم.\nكود خدمات'
+            }
           ];
           for (const tmpl of defaultTemplates) {
             try { await db.templates.createTemplate(tmpl); } catch {}
@@ -792,38 +829,47 @@ export default function AdminDashboard() {
     const rawPriceLabel = estTotalPrice > 0 ? `${estTotalPrice} ريال` : (locale === "ar" ? "حسب الاتفاق" : "Per agreement");
     const formattedPrice = formatPrice(rawPriceLabel, locale);
 
-    // Resolve Customer Name / CustomerName
+    // Resolve placeholders
+    text = text.replace(/\{CustomerName\}/gi, request.customerName || '');
     text = text.replace(/\{Customer\s*Name\}/gi, request.customerName || '');
-    // Resolve Staff Name / StaffName
+    text = text.replace(/\{StaffName\}/gi, staff?.fullName || '');
     text = text.replace(/\{Staff\s*Name\}/gi, staff?.fullName || '');
-    // Resolve Request ID / RequestID
+    text = text.replace(/\{RequestID\}/gi, request.id || '');
     text = text.replace(/\{Request\s*ID\}/gi, request.id || '');
-    // Resolve Services List / ServicesList / Requested Services / RequestedServices
-    text = text.replace(/\{Services\s*List\}/gi, servicesText);
-    text = text.replace(/\{Requested\s*Services\}/gi, servicesText);
     text = text.replace(/\{ServicesList\}/gi, servicesText);
-    // Resolve Total Price / TotalPrice
-    text = text.replace(/\{Total\s*Price\}/gi, formattedPrice);
+    text = text.replace(/\{RequestedServices\}/gi, servicesText);
     text = text.replace(/\{TotalPrice\}/gi, formattedPrice);
-    // Resolve Staff Signature / StaffSignature
+    text = text.replace(/\{Total\s*Price\}/gi, formattedPrice);
+    text = text.replace(/\{StaffSignature\}/gi, staff?.signature || '');
     text = text.replace(/\{Staff\s*Signature\}/gi, staff?.signature || '');
-    // Resolve Phone Number / PhoneNumber
-    text = text.replace(/\{Phone\s*Number\}/gi, (request.customerCountryCode || "+966") + request.customerPhone || '');
     text = text.replace(/\{PhoneNumber\}/gi, (request.customerCountryCode || "+966") + request.customerPhone || '');
-    // Resolve Email
-    text = text.replace(/\{Email\}/gi, request.customerEmail || '');
-    // Resolve Current Status / CurrentStatus
-    text = text.replace(/\{Current\s*Status\}/gi, request.status || 'pending');
-    text = text.replace(/\{CurrentStatus\}/gi, request.status || 'pending');
+    text = text.replace(/\{Email\}/gi, request.customerEmail || '-');
+    text = text.replace(/\{PreferredContactMethod\}/gi, request.contactMethod || 'whatsapp');
+    text = text.replace(/\{PreferredContactTime\}/gi, request.preferredTime || 'afternoon');
+    
+    const serviceName = request.services && request.services.length > 0 
+      ? request.services.map((s: any) => s.titleAr || s.titleEn).join(', ')
+      : "";
+    text = text.replace(/\{ServiceName\}/gi, serviceName);
+
+    // Resolve escaped line breaks
+    text = text.replace(/\\n/g, "\n");
 
     return text;
   };
 
   const openWhatsAppDialog = (request: any) => {
     setWhatsAppRequest(request);
-    setSelectedStaffForMessage('');
-    setSelectedTemplateId('welcome');
-    setWhatsAppPreview('');
+    
+    // Choose the first staff contact template as default
+    const staffTemplates = templates.filter(t => t.id.startsWith("staff_"));
+    const defaultId = staffTemplates.length > 0 ? staffTemplates[0].id : "custom";
+    setSelectedTemplateId(defaultId);
+    
+    const staff = staffMembers.find(s => s.id === request.assignedStaffId);
+    const template = templates.find(t => t.id === defaultId);
+    setWhatsAppPreview(resolveTemplate(template, request, staff));
+    
     setShowWhatsAppDialog(true);
   };
 
@@ -1051,7 +1097,7 @@ export default function AdminDashboard() {
       featured: newService.featured,
       featuredOrder: newService.featuredOrder,
       visible: newService.visible,
-      order: services.length + 1
+      order: newService.order
     };
 
     const updated = [...services, added];
@@ -1064,7 +1110,7 @@ export default function AdminDashboard() {
     setNewService({
       id: "", titleAr: "", titleEn: "", descAr: "", descEn: "", categoryId: "business",
       price: "", docsAr: "", docsEn: "", completionTimeAr: "", completionTimeEn: "",
-      keywordsString: "", featured: false, featuredOrder: 1, visible: true
+      keywordsString: "", featured: false, featuredOrder: 1, visible: true, order: 10
     });
     setShowAddServiceModal(false);
   };
@@ -2562,7 +2608,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                   </div>
-                  <span className="text-xxs text-gray-400 block -mt-2">
+                  <span className="text-xxs text-gray-400 block -mt-2 font-mono">
                     Placeholders: {`{CustomerName}`}, {`{PhoneNumber}`}, {`{ServicesList}`}, {`{TotalPrice}`}, {`{RequestID}`}
                   </span>
 
@@ -2617,7 +2663,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                   </div>
-                  <span className="text-xxs text-gray-400 block -mt-2">
+                  <span className="text-xxs text-gray-400 block -mt-2 font-mono">
                     Placeholders: {`{CustomerName}`}, {`{PhoneNumber}`}, {`{ServicesList}`}, {`{TotalPrice}`}, {`{RequestID}`}
                   </span>
 
@@ -2648,15 +2694,15 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* SECTION B: Employee Templates (Staff -> Customer) */}
-              <div className="space-y-6">
-                <div className="flex justify-between items-center select-none border-b border-gray-100 dark:border-white/5 pb-3">
+              {/* SECTION B: Customer Request Templates */}
+              <div className="glass p-6 rounded-3xl border border-primary/5 dark:border-white/5 shadow-sm space-y-6 text-start">
+                <div className="flex justify-between items-center border-b border-gray-100 dark:border-white/5 pb-3">
                   <div>
-                    <h4 className="text-md font-black text-start text-gray-800 dark:text-gray-100">
-                      {locale === "ar" ? "💼 قوالب الموظفين (لمراسلة العملاء)" : "💼 Employee Templates (For Staff Contact)"}
+                    <h4 className="text-md font-black text-gray-800 dark:text-gray-100">
+                      {locale === "ar" ? "🤖 قوالب طلبات العملاء (التلقائية)" : "🤖 Customer Request Templates (Auto)"}
                     </h4>
-                    <p className="text-xxs text-gray-400 mt-1 text-start">
-                      {locale === "ar" ? "هذه القوالب يختارها الموظف يدوياً عند النقر على 'مراسلة العميل' وتحديث حالة الطلب." : "These templates are selected manually by staff members when contacting a customer."}
+                    <p className="text-xxs text-gray-400 mt-1">
+                      {locale === "ar" ? "هذه القوالب تُستخدم لطلبات العملاء المختلفة ولا تظهر للموظف أثناء المراسلة اليدوية." : "These templates are used for automatic requests and do not show up for manual staff contact."}
                     </p>
                   </div>
                   <button
@@ -2668,53 +2714,79 @@ export default function AdminDashboard() {
                   </button>
                 </div>
 
-              {/* Templates List */}
-              <div className="grid grid-cols-1 gap-4 text-start">
-                {templates.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400 font-bold">
-                    {locale === "ar" ? "لا توجد قوالب مسجلة بعد." : "No templates yet."}
-                  </div>
-                ) : (
-                  templates.map((tmpl) => (
-                    <div
-                      key={tmpl.id}
-                      className="glass p-5 rounded-2xl border border-primary/5 dark:border-white/5 shadow-sm flex flex-col sm:flex-row justify-between items-start gap-4"
-                    >
-                      <div className="flex-grow min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileEdit size={14} className="text-primary flex-shrink-0" />
-                          <h4 className="font-extrabold text-sm text-gray-900 dark:text-white truncate">{tmpl.name}</h4>
-                          <span className="text-xxs font-mono text-gray-400 bg-gray-100 dark:bg-medium-gray px-2 py-0.5 rounded flex-shrink-0">
-                            ID: {tmpl.id}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-medium-gray/20 border border-gray-100 dark:border-white/5 rounded-xl p-3 leading-relaxed font-medium whitespace-pre-line line-clamp-4">
-                          {tmpl.body}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-1.5 select-none flex-shrink-0">
-                        <button
-                          onClick={() => setEditingTemplate(tmpl)}
-                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-primary hover:text-white dark:bg-medium-gray text-gray-600 dark:text-gray-300 transition-colors flex items-center justify-center cursor-pointer"
-                          title="Edit Template"
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                        <button
-                          onClick={() => deleteTemplate(tmpl.id)}
-                          className="p-1.5 rounded-lg bg-gray-100 hover:bg-red-500 hover:text-white dark:bg-medium-gray text-red-500 dark:text-red-400 transition-colors flex items-center justify-center cursor-pointer"
-                          title="Delete Template"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                <div className="grid grid-cols-1 gap-4">
+                  {templates.filter(t => t.id.startsWith("cust_")).length === 0 ? (
+                    <div className="text-center py-6 text-gray-400 font-bold text-xs">
+                      {locale === "ar" ? "لا توجد قوالب طلبات عملاء مسجلة." : "No customer request templates."}
                     </div>
-                  ))
-                )}
+                  ) : (
+                    templates.filter(t => t.id.startsWith("cust_")).map((tmpl) => (
+                      <div
+                        key={tmpl.id}
+                        className="p-4 rounded-2xl bg-gray-50 dark:bg-medium-gray/10 border border-gray-150 dark:border-border-dark flex flex-col sm:flex-row justify-between items-start gap-4"
+                      >
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xxs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">CUSTOMER</span>
+                            <h4 className="font-extrabold text-xs text-gray-950 dark:text-white truncate">{tmpl.name}</h4>
+                            <span className="text-[10px] font-mono text-gray-400 bg-gray-100 dark:bg-medium-gray px-2 py-0.5 rounded select-all">{tmpl.id}</span>
+                          </div>
+                          <p className="text-xxs text-gray-500 dark:text-gray-400 bg-white dark:bg-dark-gray/30 border border-gray-200 dark:border-white/5 rounded-xl p-3 leading-relaxed whitespace-pre-wrap font-mono line-clamp-4">
+                            {tmpl.body}
+                          </p>
+                        </div>
+                        <div className="flex gap-1.5 flex-shrink-0">
+                          <button onClick={() => setEditingTemplate(tmpl)} className="p-1.5 rounded-lg bg-white hover:bg-primary hover:text-white dark:bg-medium-gray text-gray-600 dark:text-gray-300 border border-gray-150 dark:border-border-dark transition-colors cursor-pointer"><Edit3 size={12} /></button>
+                          <button onClick={() => deleteTemplate(tmpl.id)} className="p-1.5 rounded-lg bg-white hover:bg-red-500 hover:text-white dark:bg-medium-gray text-red-500 border border-gray-150 dark:border-border-dark transition-colors cursor-pointer"><Trash2 size={12} /></button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION C: Employee Templates (Staff -> Customer) */}
+              <div className="glass p-6 rounded-3xl border border-primary/5 dark:border-white/5 shadow-sm space-y-6 text-start">
+                <div className="border-b border-gray-100 dark:border-white/5 pb-3">
+                  <h4 className="text-md font-black text-gray-800 dark:text-gray-100">
+                    {locale === "ar" ? "💼 قوالب الموظفين (لمراسلة العملاء يدوياً)" : "💼 Staff Contact Templates (For Manual Message)"}
+                  </h4>
+                  <p className="text-xxs text-gray-400 mt-1">
+                    {locale === "ar" ? "هذه القوالب تظهر للموظفين فقط عند مراسلة العميل يدوياً من تفاصيل الطلب." : "These templates are shown exclusively to staff members when manually messaging a customer."}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {templates.filter(t => !t.id.startsWith("cust_")).length === 0 ? (
+                    <div className="text-center py-6 text-gray-400 font-bold text-xs">
+                      {locale === "ar" ? "لا توجد قوالب موظفين مسجلة." : "No staff templates."}
+                    </div>
+                  ) : (
+                    templates.filter(t => !t.id.startsWith("cust_")).map((tmpl) => (
+                      <div
+                        key={tmpl.id}
+                        className="p-4 rounded-2xl bg-gray-50 dark:bg-medium-gray/10 border border-gray-150 dark:border-border-dark flex flex-col sm:flex-row justify-between items-start gap-4"
+                      >
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xxs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">STAFF</span>
+                            <h4 className="font-extrabold text-xs text-gray-950 dark:text-white truncate">{tmpl.name}</h4>
+                            <span className="text-[10px] font-mono text-gray-400 bg-gray-100 dark:bg-medium-gray px-2 py-0.5 rounded select-all">{tmpl.id}</span>
+                          </div>
+                          <p className="text-xxs text-gray-500 dark:text-gray-400 bg-white dark:bg-dark-gray/30 border border-gray-200 dark:border-white/5 rounded-xl p-3 leading-relaxed whitespace-pre-wrap font-mono line-clamp-4">
+                            {tmpl.body}
+                          </p>
+                        </div>
+                        <div className="flex gap-1.5 flex-shrink-0">
+                          <button onClick={() => setEditingTemplate(tmpl)} className="p-1.5 rounded-lg bg-white hover:bg-primary hover:text-white dark:bg-medium-gray text-gray-600 dark:text-gray-300 border border-gray-150 dark:border-border-dark transition-colors cursor-pointer"><Edit3 size={12} /></button>
+                          <button onClick={() => deleteTemplate(tmpl.id)} className="p-1.5 rounded-lg bg-white hover:bg-red-500 hover:text-white dark:bg-medium-gray text-red-500 border border-gray-150 dark:border-border-dark transition-colors cursor-pointer"><Trash2 size={12} /></button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-          </div>
           )}
 
           {/* TAB 9: Communication Settings */}
@@ -3075,15 +3147,35 @@ export default function AdminDashboard() {
                     </select>
                   </div>
 
+                  {/* Price Type */}
+                  <div>
+                    <label className="block text-xxs font-bold text-gray-450 mb-1">نوع التسعير / Price Type</label>
+                    <select
+                      value={newService.price === "حسب الاتفاق" ? "request" : "fixed"}
+                      onChange={(e) => {
+                        if (e.target.value === "request") {
+                          setNewService({ ...newService, price: "حسب الاتفاق" });
+                        } else {
+                          setNewService({ ...newService, price: "" });
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-bold cursor-pointer text-gray-800 dark:text-gray-150"
+                    >
+                      <option value="fixed" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">سعر ثابت / Fixed Price</option>
+                      <option value="request" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">حسب الاتفاق / Price on Request</option>
+                    </select>
+                  </div>
+
                   {/* Price */}
                   <div>
-                    <label className="block text-xxs font-bold text-gray-400 mb-1">الرسوم والأسعار (أدخل الرقم فقط أو اتركه فارغاً)</label>
+                    <label className="block text-xxs font-bold text-gray-450 mb-1">الرسوم والأسعار (أدخل الرقم فقط)</label>
                     <input
                       type="text"
-                      placeholder="e.g. 150 ريال"
-                      value={newService.price}
+                      placeholder={newService.price === "حسب الاتفاق" ? "حسب الاتفاق" : "e.g. 150"}
+                      disabled={newService.price === "حسب الاتفاق"}
+                      value={newService.price === "حسب الاتفاق" ? "" : newService.price}
                       onChange={(e) => setNewService({ ...newService, price: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -3204,6 +3296,30 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Order */}
+                  <div>
+                    <label className="block text-xxs font-bold text-gray-400 mb-1">ترتيب العرض بالقسم / Display Order</label>
+                    <input
+                      type="number"
+                      value={newService.order || 10}
+                      onChange={(e) => setNewService({ ...newService, order: parseInt(e.target.value) || 10 })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Featured Order */}
+                  <div>
+                    <label className="block text-xxs font-bold text-gray-400 mb-1">ترتيب التمييز بالرئيسية / Featured Order</label>
+                    <input
+                      type="number"
+                      value={newService.featuredOrder || 1}
+                      onChange={(e) => setNewService({ ...newService, featuredOrder: parseInt(e.target.value) || 1 })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4 select-none bg-gray-50 dark:bg-medium-gray/25 p-3 rounded-xl">
                   {/* Featured toggle */}
                   <div className="flex items-center gap-2">
@@ -3272,14 +3388,35 @@ export default function AdminDashboard() {
                     </select>
                   </div>
 
+                  {/* Price Type */}
+                  <div>
+                    <label className="block text-xxs font-bold text-gray-450 mb-1">نوع التسعير / Price Type</label>
+                    <select
+                      value={editingService.price === "حسب الاتفاق" ? "request" : "fixed"}
+                      onChange={(e) => {
+                        if (e.target.value === "request") {
+                          setEditingService({ ...editingService, price: "حسب الاتفاق" });
+                        } else {
+                          setEditingService({ ...editingService, price: "" });
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-bold cursor-pointer text-gray-800 dark:text-gray-150"
+                    >
+                      <option value="fixed" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">سعر ثابت / Fixed Price</option>
+                      <option value="request" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">حسب الاتفاق / Price on Request</option>
+                    </select>
+                  </div>
+
                   {/* Price */}
                   <div>
-                    <label className="block text-xxs font-bold text-gray-400 mb-1">الرسوم والأسعار</label>
+                    <label className="block text-xxs font-bold text-gray-450 mb-1">الرسوم والأسعار</label>
                     <input
                       type="text"
-                      value={editingService.price || ""}
+                      placeholder={editingService.price === "حسب الاتفاق" ? "حسب الاتفاق" : "e.g. 150"}
+                      disabled={editingService.price === "حسب الاتفاق"}
+                      value={editingService.price === "حسب الاتفاق" ? "" : (editingService.price || "")}
                       onChange={(e) => setEditingService({ ...editingService, price: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -3392,6 +3529,30 @@ export default function AdminDashboard() {
                     onChange={(e) => setEditingService({ ...editingService, keywords: e.target.value.split(",").map(k => k.trim()).filter(Boolean) })}
                     className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Order */}
+                  <div>
+                    <label className="block text-xxs font-bold text-gray-400 mb-1">ترتيب العرض بالقسم / Display Order</label>
+                    <input
+                      type="number"
+                      value={editingService.order || 10}
+                      onChange={(e) => setEditingService({ ...editingService, order: parseInt(e.target.value) || 10 })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Featured Order */}
+                  <div>
+                    <label className="block text-xxs font-bold text-gray-400 mb-1">ترتيب التمييز بالرئيسية / Featured Order</label>
+                    <input
+                      type="number"
+                      value={editingService.featuredOrder || 1}
+                      onChange={(e) => setEditingService({ ...editingService, featuredOrder: parseInt(e.target.value) || 1 })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-xs font-semibold text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 select-none bg-gray-50 dark:bg-medium-gray/25 p-3 rounded-xl">
@@ -3799,8 +3960,8 @@ export default function AdminDashboard() {
                       className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-dark-gray border border-gray-200 dark:border-border-dark text-xs font-extrabold cursor-pointer outline-none focus:border-primary text-gray-900 dark:text-white"
                     >
                       <option value="custom">{locale === "ar" ? "✍️ رسالة مخصصة" : "✍️ Custom Message"}</option>
-                      {templates.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
+                      {templates.filter(t => t.id.startsWith("staff_") || (!t.id.startsWith("cust_") && !t.id.startsWith("staff_"))).map(t => (
+                        <option key={t.id} value={t.id} className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{t.name}</option>
                       ))}
                     </select>
                   </div>
