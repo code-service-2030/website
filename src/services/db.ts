@@ -45,6 +45,7 @@ export interface Order {
   customerCountryCode?: string;
   paymentStatus?: "paid" | "pending" | "unpaid" | "failed";
   language?: string;
+  source?: "whatsapp" | "website" | string;
   // Future Payment Integration Architecture fields
   paymentMethod?: string;
   transactionId?: string;
@@ -314,6 +315,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
       customerCountryCode: o.customer_country_code || "+966",
       paymentStatus: o.payment_status || "unpaid",
       language: o.language || "ar",
+      source: o.source || (o.general_notes && o.general_notes.toLowerCase().includes('whatsapp') ? 'whatsapp' : 'website'),
       // Payment Integration fields mapping
       paymentMethod: o.payment_method || "",
       transactionId: o.transaction_id || "",
