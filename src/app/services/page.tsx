@@ -83,6 +83,17 @@ export default function ServicesMarketplace() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // Parse URL parameters for cross-page navigation
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get("category");
+      const search = params.get("search");
+      if (cat) setSelectedCatId(cat);
+      if (search) setSearchTerm(search);
+    }
+  }, []);
+
   // Sync / Load database catalog
   useEffect(() => {
     async function loadCatalog() {
