@@ -260,12 +260,12 @@ export default function ServiceDetails() {
             </div>
 
             {/* Info Tabs Selection */}
-            <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-3xl p-5 text-start">
-              <div className="flex border-b border-gray-150 dark:border-border-dark/50 pb-3 gap-6 mb-6">
+            <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/80 dark:border-border-dark/50 rounded-3xl p-5 text-start shadow-xs">
+              <div className="flex border-b border-gray-200 dark:border-border-dark/50 pb-3 gap-6 mb-6">
                 <button
                   onClick={() => setActiveTab("details")}
                   className={`text-xs font-black pb-2 border-b-2 cursor-pointer transition-colors ${
-                    activeTab === "details" ? "border-primary text-primary dark:text-primary-light" : "border-transparent text-gray-400 hover:text-gray-600"
+                    activeTab === "details" ? "border-primary text-primary dark:text-primary-light" : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   }`}
                 >
                   {isAr ? "التفاصيل والمزايا" : "Service Overview"}
@@ -273,7 +273,7 @@ export default function ServiceDetails() {
                 <button
                   onClick={() => setActiveTab("documents")}
                   className={`text-xs font-black pb-2 border-b-2 cursor-pointer transition-colors ${
-                    activeTab === "documents" ? "border-primary text-primary dark:text-primary-light" : "border-transparent text-gray-400 hover:text-gray-600"
+                    activeTab === "documents" ? "border-primary text-primary dark:text-primary-light" : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   }`}
                 >
                   {isAr ? "المستندات المطلوبة" : "Required Documents"}
@@ -281,7 +281,7 @@ export default function ServiceDetails() {
                 <button
                   onClick={() => setActiveTab("process")}
                   className={`text-xs font-black pb-2 border-b-2 cursor-pointer transition-colors ${
-                    activeTab === "process" ? "border-primary text-primary dark:text-primary-light" : "border-transparent text-gray-400 hover:text-gray-600"
+                    activeTab === "process" ? "border-primary text-primary dark:text-primary-light" : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   }`}
                 >
                   {isAr ? "خطوات العمل" : "Process Guide"}
@@ -289,25 +289,25 @@ export default function ServiceDetails() {
               </div>
 
               {/* Tab Content */}
-              <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 leading-relaxed space-y-4">
+              <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 leading-relaxed space-y-4">
                 {activeTab === "details" && (
                   <div>
-                    <p className="mb-4">
+                    <p className="mb-4 font-medium">
                       {isAr ? service.descAr || "الخدمة تشمل معالجة فورية وتوثيق عبر القنوات الرسمية بضمان كود خدمات." : service.descEn || "Complete documentation and quick processing guarantee from Code Services."}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-                      <div className="p-4 bg-gray-50 dark:bg-medium-gray/20 rounded-2xl flex items-start gap-3">
+                      <div className="p-4 bg-gray-50 dark:bg-medium-gray/20 rounded-2xl flex items-start gap-3 border border-gray-100 dark:border-border-dark">
                         <Check size={16} className="text-emerald-500 mt-0.5" />
                         <div>
                           <p className="font-extrabold text-gray-900 dark:text-white mb-1">{isAr ? "معالجة رسمية" : "Official Processing"}</p>
-                          <p className="text-[10px] text-gray-400">{isAr ? "نضمن تنفيذ طلبك مباشرة عبر الأنظمة الحكومية" : "Direct execution via government portals"}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{isAr ? "نضمن تنفيذ طلبك مباشرة عبر الأنظمة الحكومية" : "Direct execution via government portals"}</p>
                         </div>
                       </div>
-                      <div className="p-4 bg-gray-50 dark:bg-medium-gray/20 rounded-2xl flex items-start gap-3">
+                      <div className="p-4 bg-gray-50 dark:bg-medium-gray/20 rounded-2xl flex items-start gap-3 border border-gray-100 dark:border-border-dark">
                         <Check size={16} className="text-emerald-500 mt-0.5" />
                         <div>
                           <p className="font-extrabold text-gray-900 dark:text-white mb-1">{isAr ? "دعم كامل للملف" : "Comprehensive Review"}</p>
-                          <p className="text-[10px] text-gray-400">{isAr ? "فحص المستندات للتأكد من خلوها من الأخطاء قبل التقديم" : "Manual error checks on documents prior to submission"}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{isAr ? "فحص المستندات للتأكد من خلوها من الأخطاء قبل التقديم" : "Manual error checks on documents prior to submission"}</p>
                         </div>
                       </div>
                     </div>
@@ -321,12 +321,12 @@ export default function ServiceDetails() {
                         {docsArray.map((doc, idx) => (
                           <li key={idx} className="flex items-start gap-2.5">
                             <span className="w-5 h-5 rounded bg-primary/10 text-primary dark:text-primary-light flex items-center justify-center font-bold text-[10px] mt-0.5">{idx + 1}</span>
-                            <span className="text-gray-700 dark:text-gray-300 font-bold">{doc}</span>
+                            <span className="text-gray-800 dark:text-gray-200 font-bold">{doc}</span>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-gray-400 font-bold italic">
+                      <p className="text-gray-500 dark:text-gray-400 font-bold italic">
                         {isAr ? "لا توجد مستندات معينة مطلوبة لهذه الخدمة." : "No specific documents required for this service."}
                       </p>
                     )}
@@ -339,21 +339,21 @@ export default function ServiceDetails() {
                       <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-black text-xxs mt-0.5">1</div>
                       <div>
                         <p className="font-extrabold text-gray-900 dark:text-white mb-1">{isAr ? "أضف الخدمة وتقدم بالطلب" : "Submit Request"}</p>
-                        <p className="text-[10px] text-gray-400">{isAr ? "أضف الخدمة لسلتك واكتب بيانات التواصل لتسجيل الطلب" : "Place your request and verify details"}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{isAr ? "أضف الخدمة لسلتك واكتب بيانات التواصل لتسجيل الطلب" : "Place your request and verify details"}</p>
                       </div>
                     </div>
                     <div className="flex gap-4 relative">
                       <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-black text-xxs mt-0.5">2</div>
                       <div>
                         <p className="font-extrabold text-gray-900 dark:text-white mb-1">{isAr ? "مراجعة الملف الفني" : "Review Stage"}</p>
-                        <p className="text-[10px] text-gray-400">{isAr ? "يتواصل معك موظف كود خدمات المسؤول لمراجعة الملف والمستندات" : "Staff contacts you to review required files"}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{isAr ? "يتواصل معك موظف كود خدمات المسؤول لمراجعة الملف والمستندات" : "Staff contacts you to review required files"}</p>
                       </div>
                     </div>
                     <div className="flex gap-4 relative">
                       <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-black text-xxs mt-0.5">3</div>
                       <div>
                         <p className="font-extrabold text-gray-900 dark:text-white mb-1">{isAr ? "التنفيذ والاستلام" : "Completion & Handover"}</p>
-                        <p className="text-[10px] text-gray-400">{isAr ? "يتم إنجاز الخدمة وإرسال المستندات وتأكيد الطلب" : "Get your official documents processed and delivered"}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{isAr ? "يتم إنجاز الخدمة وإرسال المستندات وتأكيد الطلب" : "Get your official documents processed and delivered"}</p>
                       </div>
                     </div>
                   </div>
@@ -410,21 +410,21 @@ export default function ServiceDetails() {
 
           {/* Side Checkout CTA Panel */}
           <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
-            <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-3xl p-6 text-start">
+            <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/80 dark:border-border-dark/50 rounded-3xl p-6 text-start shadow-xs">
               
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">
+              <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest block mb-1">
                 {isAr ? "سعر التقديم" : "Estimated Cost"}
               </span>
               <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mb-6">{displayPrice}</p>
 
-              <div className="space-y-3.5 mb-6 text-xxs font-bold text-gray-500">
-                <div className="flex justify-between items-center pb-2.5 border-b border-gray-100 dark:border-border-dark/50">
+              <div className="space-y-3.5 mb-6 text-xxs font-bold text-gray-600 dark:text-gray-400">
+                <div className="flex justify-between items-center pb-2.5 border-b border-gray-150 dark:border-border-dark/50">
                   <span>{isAr ? "الوقت المتوقع" : "Completion Time"}</span>
-                  <span className="text-gray-900 dark:text-white">{displayCompletion}</span>
+                  <span className="text-gray-900 dark:text-white font-extrabold">{displayCompletion}</span>
                 </div>
-                <div className="flex justify-between items-center pb-2.5 border-b border-gray-100 dark:border-border-dark/50">
+                <div className="flex justify-between items-center pb-2.5 border-b border-gray-150 dark:border-border-dark/50">
                   <span>{isAr ? "الضمان" : "Guarantee"}</span>
-                  <span className="text-gray-900 dark:text-white flex items-center gap-1">
+                  <span className="text-gray-900 dark:text-white font-extrabold flex items-center gap-1">
                     <ShieldCheck size={14} className="text-emerald-500" />
                     {isAr ? "رسمي 100%" : "100% Official"}
                   </span>
@@ -445,7 +445,7 @@ export default function ServiceDetails() {
                   onClick={() => {
                     addToCart(service);
                   }}
-                  className="w-full py-3.5 bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray/50 dark:hover:bg-medium-gray text-gray-700 dark:text-gray-300 rounded-2xl font-black text-xs transition-colors cursor-pointer text-center"
+                  className="w-full py-3.5 bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray/50 dark:hover:bg-medium-gray text-gray-800 dark:text-gray-200 border border-gray-200/60 dark:border-border-dark rounded-2xl font-black text-xs transition-colors cursor-pointer text-center"
                 >
                   {isAr ? "إضافة إلى السلة" : "Add to Cart"}
                 </button>
@@ -454,14 +454,14 @@ export default function ServiceDetails() {
 
             {/* Related Services */}
             {relatedServices.length > 0 && (
-              <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-3xl p-5 text-start">
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4">{isAr ? "خدمات مشابهة" : "Related Services"}</h3>
+              <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/80 dark:border-border-dark/50 rounded-3xl p-5 text-start shadow-xs">
+                <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">{isAr ? "خدمات مشابهة" : "Related Services"}</h3>
                 <div className="space-y-3">
                   {relatedServices.map(item => (
                     <Link
                       key={item.id}
                       href={`/services/${item.id}`}
-                      className="group flex items-start gap-3 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-medium-gray/20 transition-colors border border-transparent hover:border-gray-200/30 text-start"
+                      className="group flex items-start gap-3 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-medium-gray/20 transition-colors border border-gray-100 dark:border-transparent hover:border-gray-200 text-start"
                     >
                       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getServiceGradient(item.categoryId)} flex items-center justify-center text-white shrink-0`}>
                         <ServiceIcon name={category?.icon || "Briefcase"} className="text-white" />

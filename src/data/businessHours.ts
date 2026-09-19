@@ -62,7 +62,7 @@ export interface BusinessHoursConfig {
 
 export const businessHours: BusinessHoursConfig = {
   timezone: "Asia/Riyadh",
-  workingDays: [0, 1, 2, 3, 4], // Sunday = 0, Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4
+  workingDays: [6, 0, 1, 2, 3, 4], // Saturday = 6, Sunday = 0, Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4
   shifts: [
     {
       start: "09:30",
@@ -85,34 +85,34 @@ export const businessHours: BusinessHoursConfig = {
   ],
   labels: {
     ar: {
-      days: "الأحد – الخميس",
+      days: "السبت – الخميس",
       shift1: "9:30 ص – 1:00 م",
       shift2: "4:00 م – 11:00 م",
       breakTime: "1:00 م – 4:00 م (مغلق)",
-      weekend: "الجمعة والسبت (مغلق)",
-      summary: "الأحد – الخميس (فترتان): 9:30 ص – 1:00 م | 4:00 م – 11:00 م",
+      weekend: "الجمعة (مغلق)",
+      summary: "السبت – الخميس (فترتان): 9:30 ص – 1:00 م | 4:00 م – 11:00 م",
       openNow: "مفتوح الآن",
       closedNow: "مغلق الآن",
       lunchBreak: "فترة راحة (يفتح 4:00 م)"
     },
     en: {
-      days: "Sun – Thu",
+      days: "Sat – Thu",
       shift1: "9:30 AM – 1:00 PM",
       shift2: "4:00 PM – 11:00 PM",
       breakTime: "1:00 PM – 4:00 PM (Closed)",
-      weekend: "Fri & Sat (Closed)",
-      summary: "Sun – Thu (Two Shifts): 9:30 AM – 1:00 PM | 4:00 PM – 11:00 PM",
+      weekend: "Friday (Closed)",
+      summary: "Sat – Thu (Two Shifts): 9:30 AM – 1:00 PM | 4:00 PM – 11:00 PM",
       openNow: "Open Now",
       closedNow: "Closed Now",
       lunchBreak: "Break Time (Opens 4:00 PM)"
     },
     ur: {
-      days: "اتوار تا جمعرات",
+      days: "ہفتہ تا جمعرات",
       shift1: "صبح 9:30 تا دوپہر 1:00",
       shift2: "شام 4:00 تا رات 11:00",
       breakTime: "دوپہر 1:00 تا 4:00 (بند)",
-      weekend: "جمعہ اور ہفتہ (بند)",
-      summary: "اتوار تا جمعرات: صبح 9:30 تا دوپہر 1:00 | شام 4:00 تا رات 11:00",
+      weekend: "جمعہ (بند)",
+      summary: "ہفتہ تا جمعرات: صبح 9:30 تا دوپہر 1:00 | شام 4:00 تا رات 11:00",
       openNow: "ابھی کھلا ہے",
       closedNow: "ابھی بند ہے",
       lunchBreak: "وقفہ (4:00 شام کھلے گا)"

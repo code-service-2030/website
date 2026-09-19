@@ -3622,8 +3622,8 @@ export const defaultFAQs: FAQItem[] = [
     id: "faq-1",
     qAr: "ما هي أوقات العمل في مكتب كود خدمات؟",
     qEn: "What are the working hours at Code Services?",
-    aAr: "نسعد بخدمتكم من الأحد إلى الخميس على فترتين: الفترة الصباحية من 9:30 ص إلى 1:00 م، والفترة المسائية من 4:00 م إلى 11:00 م (الجمعة والسبت مغلق). وتستقبل منصتنا وواتساب الطلبات على مدار 24 ساعة.",
-    aEn: "We are pleased to serve you Sunday to Thursday in two shifts: Morning from 9:30 AM to 1:00 PM, and Evening from 4:00 PM to 11:00 PM (Closed on Friday & Saturday). Online & WhatsApp requests are received 24/7.",
+    aAr: "نسعد بخدمتكم من السبت إلى الخميس على فترتين: الفترة الصباحية من 9:30 ص إلى 1:00 م، والفترة المسائية من 4:00 م إلى 11:00 م (الجمعة مغلق). وتستقبل منصتنا وواتساب الطلبات على مدار 24 ساعة.",
+    aEn: "We are pleased to serve you Saturday to Thursday in two shifts: Morning from 9:30 AM to 1:00 PM, and Evening from 4:00 PM to 11:00 PM (Closed on Friday). Online & WhatsApp requests are received 24/7.",
     visible: true,
     order: 1
   },
@@ -3649,8 +3649,8 @@ export const defaultFAQs: FAQItem[] = [
 
 export const defaultAnnouncement: Announcement = {
   id: "announcement-main",
-  textAr: "📢 أوقات العمل: من الأحد إلى الخميس (9:30 ص – 1:00 م | 4:00 م – 11:00 م) وخدماتنا الإلكترونية متاحة 24/7",
-  textEn: "📢 Working Hours: Sunday to Thursday (9:30 AM – 1:00 PM | 4:00 PM – 11:00 PM). Online requests open 24/7",
+  textAr: "📢 أوقات العمل: من السبت إلى الخميس (9:30 ص – 1:00 م | 4:00 م – 11:00 م) وخدماتنا الإلكترونية متاحة 24/7",
+  textEn: "📢 Working Hours: Saturday to Thursday (9:30 AM – 1:00 PM | 4:00 PM – 11:00 PM). Online requests open 24/7",
   active: true,
   bgColor: "bg-primary"
 };
@@ -3729,7 +3729,7 @@ export const translations = {
     contactPhone: "الهاتف",
     contactWhatsApp: "واتساب",
     contactHours: "أوقات العمل",
-    contactHoursVal: "الأحد – الخميس: 9:30 ص – 1:00 م | 4:00 م – 11:00 م (الجمعة والسبت مغلق)",
+    contactHoursVal: "السبت – الخميس: 9:30 ص – 1:00 م | 4:00 م – 11:00 م (الجمعة مغلق)",
     contactAddressLabel: "العنوان",
     contactFormName: "الاسم",
     contactFormEmail: "البريد الإلكتروني",
@@ -3744,7 +3744,7 @@ export const translations = {
     faqTitle: "الأسئلة الشائعة",
     faqSub: "إجابات على استفساراتكم المتكررة",
     faqQ1: "ما هي أوقات العمل في مكتب كود خدمات؟",
-    faqA1: "نسعد بخدمتكم من الأحد إلى الخميس على فترتين: الصباحية (9:30 ص – 1:00 م) والمسائية (4:00 م – 11:00 م). الجمعة والسبت مغلق. وتستقبل طلباتكم الإلكترونية عبر الموقع والواتساب على مدار الساعة.",
+    faqA1: "نسعد بخدمتكم من السبت إلى الخميس على فترتين: الصباحية (9:30 ص – 1:00 م) والمسائية (4:00 م – 11:00 م). الجمعة مغلق. وتستقبل طلباتكم الإلكترونية عبر الموقع والواتساب على مدار الساعة.",
     faqQ2: "هل يمكنني إنجاز معاملاتي عن بعد دون الحضور للمكتب؟",
     faqA2: "نعم بكل تأكيد! يمكنك التواصل معنا مباشرة عبر الواتساب وإرسال المستندات المطلوبة، وسيقوم فريقنا بإنجازها وإرسالها لك فوراً.",
     faqQ3: "هل تقدمون خدمات طباعة وتصوير الكتب والمذكرات الدراسية للطلاب؟",
@@ -3834,7 +3834,7 @@ export const translations = {
     contactPhone: "Phone",
     contactWhatsApp: "WhatsApp",
     contactHours: "Working Hours",
-    contactHoursVal: "Sun – Thu: 9:30 AM – 1:00 PM | 4:00 PM – 11:00 PM (Fri & Sat Closed)",
+    contactHoursVal: "Sat – Thu: 9:30 AM – 1:00 PM | 4:00 PM – 11:00 PM (Friday Closed)",
     contactAddressLabel: "Address",
     contactFormName: "Full Name",
     contactFormEmail: "Email Address",
@@ -3849,7 +3849,7 @@ export const translations = {
     faqTitle: "FAQ",
     faqSub: "Answers to your frequently asked questions",
     faqQ1: "What are the working hours at Code Services?",
-    faqA1: "We are pleased to serve you Sunday to Thursday in two shifts: Morning (9:30 AM – 1:00 PM) and Evening (4:00 PM – 11:00 PM). Closed on Friday & Saturday. Online requests are received 24/7.",
+    faqA1: "We are pleased to serve you Saturday to Thursday in two shifts: Morning (9:30 AM – 1:00 PM) and Evening (4:00 PM – 11:00 PM). Closed on Friday. Online requests are received 24/7.",
     faqQ2: "Can I complete my transactions online without visiting the office?",
     faqA2: "Yes, absolutely! You can contact us directly via WhatsApp and send the required documents, and our team will process and send them back to you immediately.",
     faqQ3: "Do you provide printing and copying services for students?",

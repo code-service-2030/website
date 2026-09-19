@@ -112,9 +112,9 @@ const st0200 = checkOfficeStatus(t0200, 'ar');
 assert(!st0200.isOpen && st0200.statusKey === 'closed', "Monday 02:00 AM is CLOSED");
 
 // ─────────────────────────────────────────────
-// Group 4: Weekend (Friday & Saturday)
+// Group 4: Weekend (Friday = Closed all day, Saturday = Open)
 // ─────────────────────────────────────────────
-console.log("\n▶ GROUP 4: Weekend (Friday & Saturday = Closed all day)");
+console.log("\n▶ GROUP 4: Weekend & Saturday Shift Boundaries");
 
 // Friday 10:00 AM -> WEEKEND CLOSED
 const tFriMorning = makeRiyadhDate(2026, 9, 25, 10, 0);
@@ -126,10 +126,15 @@ const tFriEvening = makeRiyadhDate(2026, 9, 25, 18, 0);
 const stFriEvening = checkOfficeStatus(tFriEvening, 'ar');
 assert(!stFriEvening.isOpen && stFriEvening.statusKey === 'weekend', "Friday 06:00 PM is CLOSED (Weekend)");
 
-// Saturday 11:00 AM -> WEEKEND CLOSED
+// Saturday 11:00 AM -> OPEN (Shift 1)
 const tSatMorning = makeRiyadhDate(2026, 9, 26, 11, 0);
 const stSatMorning = checkOfficeStatus(tSatMorning, 'ar');
-assert(!stSatMorning.isOpen && stSatMorning.statusKey === 'weekend', "Saturday 11:00 AM is CLOSED (Weekend)");
+assert(stSatMorning.isOpen && stSatMorning.statusKey === 'open', "Saturday 11:00 AM is OPEN (Shift 1)");
+
+// Saturday 08:00 PM -> OPEN (Shift 2)
+const tSatEvening = makeRiyadhDate(2026, 9, 26, 20, 0);
+const stSatEvening = checkOfficeStatus(tSatEvening, 'ar');
+assert(stSatEvening.isOpen && stSatEvening.statusKey === 'open', "Saturday 08:00 PM is OPEN (Shift 2)");
 
 // ─────────────────────────────────────────────
 // Group 5: Localized Labels & Formatting
@@ -137,12 +142,12 @@ assert(!stSatMorning.isOpen && stSatMorning.statusKey === 'weekend', "Saturday 1
 console.log("\n▶ GROUP 5: Localized Text & Labels");
 
 const arText = getBusinessHoursText('ar');
-assert(arText.days === "الأحد – الخميس", "Arabic working days label");
+assert(arText.days === "السبت – الخميس", "Arabic working days label (السبت – الخميس)");
 assert(arText.shift1 === "9:30 ص – 1:00 م", "Arabic shift 1 label");
 assert(arText.shift2 === "4:00 م – 11:00 م", "Arabic shift 2 label");
 
 const enText = getBusinessHoursText('en');
-assert(enText.days === "Sun – Thu", "English working days label");
+assert(enText.days === "Sat – Thu", "English working days label (Sat – Thu)");
 assert(enText.shift1 === "9:30 AM – 1:00 PM", "English shift 1 label");
 assert(enText.shift2 === "4:00 PM – 11:00 PM", "English shift 2 label");
 
