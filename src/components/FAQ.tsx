@@ -86,7 +86,7 @@ export const FAQ: React.FC = () => {
         </div>
 
         {/* Live Search Box */}
-        <div className="mb-10 max-w-xl mx-auto relative glass p-3.5 rounded-2xl border border-primary/5 shadow-sm">
+        <div className="mb-10 max-w-xl mx-auto relative glass p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm">
           <span className="absolute inset-y-0 start-0 flex items-center ps-6 text-gray-400 dark:text-gray-500">
             <Search size={20} />
           </span>
@@ -98,7 +98,7 @@ export const FAQ: React.FC = () => {
               setSearchQuery(e.target.value);
               setExpandedIdx(null); // Reset expansions on search
             }}
-            className="w-full ps-12 pe-9 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm"
+            className="w-full ps-12 pe-9 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm shadow-xs"
           />
           {searchQuery && (
             <button
@@ -113,11 +113,11 @@ export const FAQ: React.FC = () => {
         {/* Accordions */}
         <div className="space-y-4 text-start">
           {filteredFaqs.length === 0 ? (
-            <div className="text-center py-16 bg-white dark:bg-medium-gray/20 rounded-3xl p-8 border border-gray-100 dark:border-white/5">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-medium-gray text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center py-16 bg-white dark:bg-medium-gray/20 rounded-3xl p-8 border border-gray-200/80 dark:border-white/5 shadow-xs">
+              <div className="w-12 h-12 bg-primary/10 dark:bg-medium-gray text-primary dark:text-primary-light rounded-full flex items-center justify-center mx-auto mb-4">
                 <HelpCircle size={24} />
               </div>
-              <h4 className="text-base font-bold text-gray-700 dark:text-gray-300">
+              <h4 className="text-base font-bold text-gray-800 dark:text-gray-200">
                 {locale === "ar" ? "لا توجد أسئلة تطابق بحثك" : "No results match your search"}
               </h4>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -133,14 +133,14 @@ export const FAQ: React.FC = () => {
               return (
                 <div
                   key={faq.id}
-                  className="glass rounded-2xl border border-primary/5 dark:border-white/5 overflow-hidden shadow-sm transition-all"
+                  className="glass rounded-2xl border border-gray-200/80 dark:border-white/5 overflow-hidden shadow-xs hover:shadow-md transition-all"
                 >
                   {/* Question Trigger */}
                   <button
                     onClick={() => handleToggle(index)}
-                    className="w-full px-6 py-5 flex items-center justify-between text-start font-bold text-gray-800 dark:text-gray-200 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors cursor-pointer"
+                    className="w-full px-6 py-5 flex items-center justify-between text-start font-black text-gray-900 dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors cursor-pointer"
                   >
-                    <span className="text-base sm:text-lg pe-4">{question}</span>
+                    <span className="text-base sm:text-lg pe-4 leading-snug">{question}</span>
                     <motion.span
                       animate={{ rotate: isExpanded ? 180 : 0 }}
                       transition={{ duration: 0.3 }}
@@ -159,7 +159,7 @@ export const FAQ: React.FC = () => {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                       >
-                        <div className="px-6 pb-6 pt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400 border-t border-primary/5 dark:border-white/5 leading-relaxed font-medium">
+                        <div className="px-6 pb-6 pt-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 border-t border-gray-150 dark:border-white/5 leading-relaxed font-semibold">
                           {answer}
                         </div>
                       </motion.div>

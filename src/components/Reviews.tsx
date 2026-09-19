@@ -122,7 +122,7 @@ export const Reviews: React.FC = () => {
             </div>
 
             {/* Sub-label */}
-            <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
+            <p className="text-sm font-bold text-gray-600 dark:text-gray-400">
               {locale === "ar" ? "بناءً على 18+ تقييم حقيقي" : "Based on 18+ real reviews"}
             </p>
 
@@ -153,10 +153,10 @@ export const Reviews: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: locale === "ar" ? 30 : -30 }}
                   transition={{ duration: 0.4 }}
-                  className="w-full glass p-8 sm:p-10 rounded-3xl border border-white/20 dark:border-white/5 shadow-md flex flex-col justify-between"
+                  className="w-full glass p-8 sm:p-10 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm hover:shadow-md flex flex-col justify-between transition-all"
                 >
                   {/* Quote */}
-                  <p className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-200 italic mb-8 text-center sm:text-start leading-relaxed">
+                  <p className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 italic mb-8 text-center sm:text-start leading-relaxed">
                     &ldquo;{reviewsList[activeIndex].text}&rdquo;
                   </p>
 
@@ -171,7 +171,7 @@ export const Reviews: React.FC = () => {
                         <h4 className="font-extrabold text-gray-900 dark:text-white text-base">
                           {reviewsList[activeIndex].name}
                         </h4>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-gray-600 dark:text-gray-400 font-semibold">
                           {reviewsList[activeIndex].date}
                         </span>
                       </div>

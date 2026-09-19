@@ -99,7 +99,7 @@ export const Services: React.FC = () => {
         </div>
 
         {/* Dynamic Search Box Redirector */}
-        <form onSubmit={handleSearchSubmit} className="mb-14 max-w-2xl mx-auto relative glass p-4 rounded-3xl border border-primary/5 shadow-sm">
+        <form onSubmit={handleSearchSubmit} className="mb-14 max-w-2xl mx-auto relative glass p-4 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm">
           <span className="absolute inset-y-0 start-0 flex items-center ps-7 text-gray-400 dark:text-gray-500">
             <Icons.Search size={22} />
           </span>
@@ -108,7 +108,7 @@ export const Services: React.FC = () => {
             placeholder={t("searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full ps-14 pe-14 py-4 rounded-2xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm sm:text-base"
+            className="w-full ps-14 pe-14 py-4 rounded-2xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm sm:text-base shadow-xs"
           />
           {searchTerm ? (
             <button
@@ -145,7 +145,7 @@ export const Services: React.FC = () => {
                   key={category.id}
                   onClick={() => handleCategoryClick(category.id)}
                   whileHover={{ y: -4 }}
-                  className="group p-8 rounded-3xl glass-card border border-primary/5 dark:border-white/5 hover:border-primary/20 dark:hover:border-primary/30 transition-all duration-300 cursor-pointer text-start flex flex-col justify-between h-64"
+                  className="group p-8 rounded-3xl glass-card border border-gray-200/80 dark:border-white/5 hover:border-primary/30 dark:hover:border-primary/30 shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer text-start flex flex-col justify-between h-64"
                 >
                   <div>
                     <div className="flex justify-between items-start mb-6">
@@ -153,7 +153,7 @@ export const Services: React.FC = () => {
                         <ServiceIcon name={category.icon} />
                       </div>
                       
-                      <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-medium-gray text-gray-500 dark:text-gray-400 text-xs font-bold">
+                      <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-400 text-xs font-bold">
                         {catServicesCount} {locale === "ar" ? "خدمة" : "Services"}
                       </span>
                     </div>
@@ -161,7 +161,7 @@ export const Services: React.FC = () => {
                     <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
                       {name}
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2 font-medium">
                       {desc}
                     </p>
                   </div>

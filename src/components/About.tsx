@@ -72,12 +72,12 @@ export const About: React.FC = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1, duration: 0.4 }}
-                  className="flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-medium-gray shadow-sm border border-primary/5 dark:border-white/5"
+                  className="flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-medium-gray shadow-xs hover:shadow-sm border border-gray-200/80 dark:border-white/5 transition-all"
                 >
                   <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center font-bold">
                     <Check size={18} />
                   </div>
-                  <span className="text-base font-extrabold text-gray-800 dark:text-gray-200">
+                  <span className="text-base font-extrabold text-gray-900 dark:text-gray-100">
                     {highlight}
                   </span>
                 </motion.div>

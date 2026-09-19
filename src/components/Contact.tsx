@@ -6,10 +6,21 @@ import { Phone, MessageSquare, Clock, MapPin, Send, CheckCircle, Calendar, Map, 
 import { motion } from "framer-motion";
 import { db } from "@/services/db";
 import { CountryPhoneInput } from "./CountryPhoneInput";
+import { checkOfficeStatus } from "@/data/businessHours";
 
 export const Contact: React.FC = () => {
   const { t, locale } = useLanguage();
   const nameInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [officeStatus, setOfficeStatus] = useState(() => checkOfficeStatus());
+
+  useEffect(() => {
+    // Update office status every minute
+    const interval = setInterval(() => {
+      setOfficeStatus(checkOfficeStatus());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -214,42 +225,62 @@ export const Contact: React.FC = () => {
           
           {/* Contact Details (Left Side) */}
           <div className="lg:col-span-5 space-y-6">
-            {contactDetails.map((detail, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="glass p-6 rounded-2xl border border-primary/5 dark:border-white/5 shadow-sm flex items-start gap-4"
-              >
-                {/* Icon Box */}
-                <div className="w-12 h-12 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center flex-shrink-0">
-                  {detail.icon}
-                </div>
+            {contactDetails.map((detail, index) => {
+              const isHoursCard = index === 1;
 
-                {/* Text and Actions */}
-                <div className="flex-1 text-start">
-                  <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 mb-1">
-                    {detail.label}
-                  </h4>
-                  <p className="text-lg font-extrabold text-gray-800 dark:text-gray-100">
-                    {detail.value}
-                  </p>
-                  {detail.link && (
-                    <a
-                      href={detail.link}
-                      target={detail.link.startsWith("http") ? "_blank" : undefined}
-                      rel="noopener noreferrer"
-                      className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary/5 hover:bg-primary dark:bg-white/5 dark:hover:bg-primary text-primary hover:text-white dark:text-primary-light dark:hover:text-white font-bold text-xs transition-colors cursor-pointer border border-primary/15"
-                    >
-                      <span>{detail.btnText}</span>
-                      <span>→</span>
-                    </a>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="glass p-6 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm flex items-start gap-4"
+                >
+                  {/* Icon Box */}
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center flex-shrink-0">
+                    {detail.icon}
+                  </div>
+
+                  {/* Text and Actions */}
+                  <div className="flex-1 text-start">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                        {detail.label}
+                      </h4>
+                      {isHoursCard && (
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black ${
+                          officeStatus.isOpen 
+                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30" 
+                            : "bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-500/30"
+                        }`}>
+                          <span className={`w-2 h-2 rounded-full ${officeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                          <span>
+                            {locale === "ar" 
+                              ? (officeStatus.isOpen ? "مفتوح الآن" : "مغلق حالياً") 
+                              : (officeStatus.isOpen ? "Open Now" : "Closed Now")}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-snug">
+                      {detail.value}
+                    </p>
+                    {detail.link && (
+                      <a
+                        href={detail.link}
+                        target={detail.link.startsWith("http") ? "_blank" : undefined}
+                        rel="noopener noreferrer"
+                        className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary/10 hover:bg-primary dark:bg-white/5 dark:hover:bg-primary text-primary hover:text-white dark:text-primary-light dark:hover:text-white font-bold text-xs transition-colors cursor-pointer border border-primary/20"
+                      >
+                        <span>{detail.btnText}</span>
+                        <span>→</span>
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* Contact Form (Right Side) */}
@@ -285,7 +316,7 @@ export const Contact: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Name */}
                   <div className="text-start">
-                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase">
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase">
                       {t("contactFormName")} <span className="text-primary">*</span>
                     </label>
                     <input
@@ -296,13 +327,13 @@ export const Contact: React.FC = () => {
                       onChange={handleChange}
                       required
                       placeholder={locale === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
-                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm shadow-xs"
                     />
                   </div>
 
                   {/* Phone */}
                   <div className="text-start">
-                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase">
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase">
                       {t("contactFormPhone")} <span className="text-primary">*</span>
                     </label>
                     <CountryPhoneInput
@@ -317,7 +348,7 @@ export const Contact: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Email */}
                   <div className="text-start">
-                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase">
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase">
                       {t("contactFormEmail")}
                     </label>
                     <input
@@ -326,20 +357,20 @@ export const Contact: React.FC = () => {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="name@example.com"
-                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm shadow-xs"
                     />
                   </div>
 
                   {/* Requested Service Category */}
                   <div className="text-start">
-                    <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase">
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase">
                       {t("contactFormService")}
                     </label>
                     <select
                       name="service"
                       value={formData.service}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm cursor-pointer"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm cursor-pointer shadow-xs"
                     >
                       <option value="">{locale === "ar" ? "اختر تصنيف الخدمة" : "Select Service Category"}</option>
                       <option value="business">{locale === "ar" ? "🏢 مركز الأعمال" : "🏢 Business Center"}</option>
@@ -354,13 +385,13 @@ export const Contact: React.FC = () => {
 
                 {/* Optional Appointment Date/Time Booking */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-4 rounded-2xl bg-primary/5 dark:bg-white/5 border border-primary/10">
-                  <div className="text-start col-span-2 text-xxs font-black uppercase text-primary/60 dark:text-primary-light mb-1">
+                  <div className="text-start col-span-2 text-xxs font-black uppercase text-primary/70 dark:text-primary-light mb-1">
                     🗓️ {locale === "ar" ? "حجز موعد مسبق في المكتب (اختياري)" : "Book Office Appointment (Optional)"}
                   </div>
                   
                   {/* Appointment Date */}
                   <div className="text-start">
-                    <label className="block text-xxs font-bold text-gray-400 dark:text-gray-500 mb-1.5 uppercase">
+                    <label className="block text-xxs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase">
                       {locale === "ar" ? "تاريخ الموعد" : "Appointment Date"}
                     </label>
                     <input
@@ -369,13 +400,13 @@ export const Contact: React.FC = () => {
                       id="appointmentDate"
                       value={formData.appointmentDate}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-xs cursor-pointer"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-xs cursor-pointer shadow-xs"
                     />
                   </div>
 
                   {/* Appointment Time */}
                   <div className="text-start">
-                    <label className="block text-xxs font-bold text-gray-400 dark:text-gray-500 mb-1.5 uppercase">
+                    <label className="block text-xxs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase">
                       {locale === "ar" ? "وقت الموعد" : "Preferred Time"}
                     </label>
                     <input
@@ -383,14 +414,14 @@ export const Contact: React.FC = () => {
                       name="appointmentTime"
                       value={formData.appointmentTime}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-xs cursor-pointer"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-xs cursor-pointer shadow-xs"
                     />
                   </div>
                 </div>
 
                 {/* Message */}
                 <div className="text-start">
-                  <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase">
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase">
                     {t("contactFormMessage")} <span className="text-primary">*</span>
                   </label>
                   <textarea
@@ -400,7 +431,7 @@ export const Contact: React.FC = () => {
                     required
                     rows={4}
                     placeholder={locale === "ar" ? "اكتب تفاصيل معاملتك هنا..." : "Type your transaction details here..."}
-                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm resize-none"
+                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm resize-none shadow-xs"
                   />
                 </div>
 

@@ -13,6 +13,7 @@ import {
   defaultCategories, 
   getMigratedServices 
 } from "@/data/translations";
+import { searchServices } from "@/utils/arabicSearch";
 import { 
   Search, 
   ShoppingCart, 
@@ -180,32 +181,30 @@ export default function ServicesMarketplace() {
     return counts;
   }, [services]);
 
+  // Smart Arabic Fuzzy Search Results Pipeline
+  const searchResult = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return { 
+        services: services, 
+        didYouMean: null as string | null, 
+        suggestions: [] as ServiceItem[] 
+      };
+    }
+    return searchServices(services, searchTerm, selectedCatId);
+  }, [services, searchTerm, selectedCatId]);
+
   // Search & Filter & Sort Pipeline
   const filteredServices = useMemo(() => {
-    let result = [...services];
+    let result: ServiceItem[];
 
-    // Category Filter
-    if (selectedCatId !== "all") {
-      result = result.filter(s => s.categoryId === selectedCatId);
-    }
-
-    // Keyword Search Filter
     if (searchTerm.trim().length > 0) {
-      const term = searchTerm.toLowerCase().trim();
-      result = result.filter(s => {
-        const cat = categories.find(c => c.id === s.categoryId);
-        const catNameAr = cat ? cat.nameAr.toLowerCase() : "";
-        const catNameEn = cat ? cat.nameEn.toLowerCase() : "";
-        return (
-          s.titleAr.toLowerCase().includes(term) ||
-          s.titleEn.toLowerCase().includes(term) ||
-          s.descAr.toLowerCase().includes(term) ||
-          s.descEn.toLowerCase().includes(term) ||
-          catNameAr.includes(term) ||
-          catNameEn.includes(term) ||
-          (s.keywords && s.keywords.some(k => k.toLowerCase().includes(term)))
-        );
-      });
+      // Use ranked results from searchServices
+      result = [...searchResult.services];
+    } else {
+      // Category Filter when not searching
+      result = selectedCatId !== "all" 
+        ? services.filter(s => s.categoryId === selectedCatId) 
+        : [...services];
     }
 
     // Sorting implementations
@@ -227,24 +226,24 @@ export default function ServicesMarketplace() {
         return (a.featuredOrder || 99) - (b.featuredOrder || 99);
       });
     } else {
-      result.sort((a, b) => a.order - b.order);
+      // When searching with default sort, maintain high-relevance fuzzy ranking
+      if (!searchTerm.trim()) {
+        result.sort((a, b) => a.order - b.order);
+      }
     }
 
     return result;
-  }, [services, selectedCatId, searchTerm, sortBy, categories]);
+  }, [services, selectedCatId, searchTerm, sortBy, searchResult]);
 
   const displayedServices = useMemo(() => {
     return filteredServices.slice(0, visibleCount);
   }, [filteredServices, visibleCount]);
 
-  // Search suggestions handler
+  // Smart search suggestions handler using arabicSearch
   const searchSuggestions = useMemo(() => {
     if (searchTerm.trim().length === 0) return [];
-    const term = searchTerm.toLowerCase().trim();
-    return services
-      .filter(s => s.titleAr.toLowerCase().includes(term) || s.titleEn.toLowerCase().includes(term))
-      .slice(0, 5);
-  }, [searchTerm, services]);
+    return searchResult.services.slice(0, 5);
+  }, [searchTerm, searchResult]);
 
   const handleSuggestionClick = (title: string) => {
     setSearchTerm(title);
@@ -460,26 +459,54 @@ export default function ServicesMarketplace() {
           {/* B. Discovery Section / Results */}
           <div className="lg:col-span-3">
             
-            {/* Search filter active summary */}
+            {/* Search filter active summary & Did You Mean */}
             {searchTerm.trim().length > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between gap-4 mb-6 text-start p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10"
-              >
-                <div className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                  <span>{isAr ? "نتائج البحث عن: " : "Search results for: "}</span>
-                  <span className="font-extrabold text-primary dark:text-primary-light">"{searchTerm}"</span>
-                  <span className="mx-2 text-gray-355">•</span>
-                  <span>{filteredServices.length} {isAr ? "خدمة متوفرة" : "services available"}</span>
-                </div>
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="text-xxs font-black text-red-500 hover:text-red-600 cursor-pointer"
+              <div className="space-y-3 mb-6">
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between gap-4 text-start p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10"
                 >
-                  {isAr ? "إلغاء البحث" : "Clear Search"}
-                </button>
-              </motion.div>
+                  <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                    <span>{isAr ? "نتائج البحث عن: " : "Search results for: "}</span>
+                    <span className="font-extrabold text-primary dark:text-primary-light">"{searchTerm}"</span>
+                    <span className="mx-2 text-gray-400">•</span>
+                    <span>{filteredServices.length} {isAr ? "خدمة متوفرة" : "services available"}</span>
+                  </div>
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="text-xxs font-black text-red-500 hover:text-red-600 cursor-pointer"
+                  >
+                    {isAr ? "إلغاء البحث" : "Clear Search"}
+                  </button>
+                </motion.div>
+
+                {/* Did You Mean interactive banner */}
+                {searchResult.didYouMean && searchResult.didYouMean !== searchTerm && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center justify-between gap-3 p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-xs font-bold text-amber-900 dark:text-amber-300 text-start"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">💡</span>
+                      <span>{isAr ? "هل تقصد:" : "Did you mean:"}</span>
+                      <button
+                        onClick={() => setSearchTerm(searchResult.didYouMean!)}
+                        className="underline font-black hover:text-primary dark:hover:text-primary-light cursor-pointer text-amber-700 dark:text-amber-300"
+                      >
+                        {searchResult.didYouMean}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setSearchTerm(searchResult.didYouMean!)}
+                      className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xxs font-black transition-colors cursor-pointer"
+                    >
+                      {isAr ? "بحث بهذا الاسم" : "Search this"}
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             )}
 
             {/* Sorting & Filters Header */}
@@ -716,24 +743,45 @@ export default function ServicesMarketplace() {
             ) : (
               
               /* D. EMPTY SEARCH / RESULTS STATE */
-              <div className="py-20 text-center bg-white dark:bg-medium-gray/15 rounded-3xl border border-gray-200/50 dark:border-border-dark/50 p-6 max-w-lg mx-auto">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary dark:text-primary-light">
+              <div className="py-16 text-center bg-white dark:bg-medium-gray/30 rounded-3xl border border-gray-200/80 dark:border-border-dark/50 p-6 sm:p-8 max-w-lg mx-auto shadow-sm">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5 text-primary dark:text-primary-light">
                   <SlidersHorizontal size={24} />
                 </div>
                 <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2">
                   {isAr ? "لم نجد أي خدمة تطابق بحثك" : "No services matched your query"}
                 </h3>
-                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-6 leading-relaxed max-w-sm mx-auto">
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-6 leading-relaxed max-w-sm mx-auto">
                   {isAr 
-                    ? "تأكد من كتابة الكلمات بشكل صحيح أو حاول البحث عن أقسام أخرى مثل خدمات أبشر أو ناجز."
-                    : "Double-check your spelling, clear any active filters, or browse other categories."}
+                    ? "تأكد من كتابة الكلمات بشكل صحيح أو جرب أحد الاقتراحات الذكية أدناه:"
+                    : "Double-check your spelling or try one of the suggestions below:"}
                 </p>
+
+                {/* Suggestions Pills if available */}
+                {searchResult.suggestions.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-xxs font-black text-gray-400 uppercase tracking-wider mb-2.5">
+                      {isAr ? "خدمات مقترحة قد تهمك" : "Suggested services"}
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {searchResult.suggestions.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => setSearchTerm(isAr ? s.titleAr : s.titleEn)}
+                          className="px-3 py-1.5 bg-primary/5 hover:bg-primary hover:text-white text-primary dark:text-primary-light dark:bg-primary/20 dark:hover:bg-primary dark:hover:text-white rounded-xl text-xs font-bold transition-colors cursor-pointer border border-primary/10"
+                        >
+                          {isAr ? s.titleAr : s.titleEn}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() => {
                     setSearchTerm("");
                     setSelectedCatId("all");
                   }}
-                  className="px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary-dark transition-colors cursor-pointer"
+                  className="px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary-dark transition-colors cursor-pointer shadow-md shadow-primary/20"
                 >
                   {isAr ? "عرض جميع الخدمات" : "Show All Services"}
                 </button>

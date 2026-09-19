@@ -151,7 +151,7 @@ export const WhyChooseUs: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="glass p-8 rounded-3xl border border-white/20 dark:border-white/5 shadow-md text-center flex flex-col items-center group"
+                className="glass p-8 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm hover:shadow-md text-center flex flex-col items-center group transition-all"
               >
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110 ${stat.color}`}>
                   {stat.icon}
@@ -159,7 +159,7 @@ export const WhyChooseUs: React.FC = () => {
                 <h3 className="text-4xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
                   {stat.value}
                 </h3>
-                <p className="text-base text-gray-500 dark:text-gray-400 font-extrabold">
+                <p className="text-base text-gray-600 dark:text-gray-400 font-extrabold">
                   {stat.label}
                 </p>
               </motion.div>
@@ -190,7 +190,7 @@ export const WhyChooseUs: React.FC = () => {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.05 }}
-                  className="glass p-8 rounded-3xl border border-white/20 dark:border-white/5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 text-start flex flex-col justify-between group"
+                  className="glass p-8 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 text-start flex flex-col justify-between group"
                 >
                   <div>
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 ${benefit.color}`}>
@@ -199,7 +199,7 @@ export const WhyChooseUs: React.FC = () => {
                     <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-3">
                       {title}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-medium">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed font-semibold">
                       {desc}
                     </p>
                   </div>
