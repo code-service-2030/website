@@ -17,7 +17,7 @@ export const About: React.FC = () => {
   ];
 
   return (
-    <section id="about" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-medium-gray/30 transition-colors">
+    <section id="about" className="py-24 px-4 sm:px-6 lg:px-8 bg-[#FCFAFE] dark:bg-medium-gray/30 transition-colors">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
@@ -49,17 +49,17 @@ export const About: React.FC = () => {
             className="lg:col-span-6 flex flex-col justify-center"
           >
             {/* Section Tag */}
-            <span className="text-primary dark:text-primary-light font-extrabold text-sm uppercase tracking-wider mb-3 block">
+            <span className="text-primary dark:text-primary-light font-black text-sm uppercase tracking-wider mb-3 block">
               {t("navAbout")}
             </span>
 
             {/* Title */}
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-black text-[#260E44] dark:text-white mb-6 leading-tight">
               {t("aboutTitle")}
             </h2>
 
             {/* Description */}
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed font-medium">
+            <p className="text-lg text-[#524560] dark:text-gray-300 mb-8 leading-relaxed font-bold">
               {t("aboutText")}
             </p>
 
@@ -72,12 +72,12 @@ export const About: React.FC = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1, duration: 0.4 }}
-                  className="flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-medium-gray shadow-xs hover:shadow-sm border border-gray-200/80 dark:border-white/5 transition-all"
+                  className="flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-medium-gray shadow-xs hover:shadow-md border border-purple-100 dark:border-white/5 transition-all"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-full bg-purple-50 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center font-black">
                     <Check size={18} />
                   </div>
-                  <span className="text-base font-extrabold text-gray-900 dark:text-gray-100">
+                  <span className="text-base font-black text-[#260E44] dark:text-gray-100">
                     {highlight}
                   </span>
                 </motion.div>

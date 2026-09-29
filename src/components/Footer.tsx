@@ -23,13 +23,13 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="w-full bg-gray-900 text-gray-400 py-16 px-4 sm:px-6 lg:px-8 border-t border-gray-800 transition-colors">
+    <footer className="w-full bg-[#FAF7FD] dark:bg-gray-900 text-[#524560] dark:text-gray-400 py-16 px-4 sm:px-6 lg:px-8 border-t border-purple-100 dark:border-gray-800 transition-colors">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-10">
         
         {/* Brand details col */}
         <div className="md:col-span-5 text-start space-y-6">
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 overflow-hidden rounded-xl border border-primary/20">
+            <div className="relative w-10 h-10 overflow-hidden rounded-xl border border-primary/20 shadow-xs">
               <Image
                 src="/images/logo.jpg"
                 alt="كود خدمات"
@@ -38,26 +38,26 @@ export const Footer: React.FC = () => {
                 sizes="40px"
               />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">
+            <span className="text-xl font-black text-[#260E44] dark:text-white tracking-tight">
               {t("heroTitle")}
             </span>
           </div>
 
-          <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-sm">
+          <p className="text-sm text-[#524560] dark:text-gray-400 font-medium leading-relaxed max-w-sm">
             {t("footerDesc")}
           </p>
 
           <div className="flex gap-4">
             <a
               href="https://wa.me/966537073161"
-              className="p-3.5 rounded-xl bg-gray-800 text-white hover:bg-emerald-600 transition-colors cursor-pointer"
+              className="p-3.5 rounded-xl bg-purple-100/70 dark:bg-gray-800 text-primary dark:text-white hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 transition-colors cursor-pointer shadow-xs"
               aria-label="WhatsApp Chat"
             >
               <MessageSquare size={18} />
             </a>
             <a
               href="https://maps.app.goo.gl/4bdwupSAb9v6P9RE8"
-              className="p-3.5 rounded-xl bg-gray-800 text-white hover:bg-primary transition-colors cursor-pointer"
+              className="p-3.5 rounded-xl bg-purple-100/70 dark:bg-gray-800 text-primary dark:text-white hover:bg-primary hover:text-white dark:hover:bg-primary transition-colors cursor-pointer shadow-xs"
               aria-label="View Map Location"
             >
               <MapPin size={18} />
@@ -67,10 +67,10 @@ export const Footer: React.FC = () => {
 
         {/* Quick Links col */}
         <div className="md:col-span-3 text-start space-y-4">
-          <h4 className="text-white text-base font-extrabold tracking-wider">
+          <h4 className="text-[#260E44] dark:text-white text-base font-extrabold tracking-wider">
             {t("footerLinks")}
           </h4>
-          <ul className="space-y-2.5 font-medium text-sm">
+          <ul className="space-y-2.5 font-bold text-sm">
             <li>
               <a
                 href="#home"
@@ -112,10 +112,10 @@ export const Footer: React.FC = () => {
 
         {/* Contact Info details col */}
         <div className="md:col-span-4 text-start space-y-4">
-          <h4 className="text-white text-base font-extrabold tracking-wider">
+          <h4 className="text-[#260E44] dark:text-white text-base font-extrabold tracking-wider">
             {locale === "ar" ? "معلومات التواصل" : "Contact Details"}
           </h4>
-          <ul className="space-y-4 font-medium text-sm">
+          <ul className="space-y-4 font-bold text-sm">
             <li className="flex items-start gap-3">
               <span className="text-primary dark:text-primary-light mt-0.5"><MapPin size={16} /></span>
               <span>{t("locationAddress")}</span>
@@ -129,9 +129,9 @@ export const Footer: React.FC = () => {
 
       </div>
 
-      <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 font-bold text-xs sm:text-sm">
+      <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-purple-200/50 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 font-bold text-xs sm:text-sm text-[#6B5E7B] dark:text-gray-500">
         <p>{t("footerCopyright")}</p>
-        <p className="flex items-center gap-1 hover:text-white transition-colors">
+        <p className="flex items-center gap-1 hover:text-primary dark:hover:text-white transition-colors">
           <span>{locale === "ar" ? "تم تصميمه بـ" : "Designed with"}</span>
           <Heart size={14} className="text-red-500 fill-current" />
           <span>{locale === "ar" ? "بواسطة كود خدمات" : "by Code Services"}</span>

@@ -235,17 +235,17 @@ export const Contact: React.FC = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="glass p-6 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm flex items-start gap-4"
+                  className="glass p-6 rounded-2xl border border-purple-100 dark:border-white/5 shadow-xs hover:shadow-md hover:border-primary/40 flex items-start gap-4 transition-all"
                 >
                   {/* Icon Box */}
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center flex-shrink-0 border border-purple-100/60 dark:border-transparent">
                     {detail.icon}
                   </div>
 
                   {/* Text and Actions */}
                   <div className="flex-1 text-start">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                      <h4 className="text-sm font-bold text-[#6B5E7B] dark:text-gray-400">
                         {detail.label}
                       </h4>
                       {isHoursCard && (
@@ -263,7 +263,7 @@ export const Contact: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-snug">
+                    <p className="text-base sm:text-lg font-black text-[#260E44] dark:text-white leading-snug">
                       {detail.value}
                     </p>
                     {detail.link && (
@@ -271,7 +271,7 @@ export const Contact: React.FC = () => {
                         href={detail.link}
                         target={detail.link.startsWith("http") ? "_blank" : undefined}
                         rel="noopener noreferrer"
-                        className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary/10 hover:bg-primary dark:bg-white/5 dark:hover:bg-primary text-primary hover:text-white dark:text-primary-light dark:hover:text-white font-bold text-xs transition-colors cursor-pointer border border-primary/20"
+                        className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-50 hover:bg-primary dark:bg-white/5 dark:hover:bg-primary text-primary hover:text-white dark:text-primary-light dark:hover:text-white font-bold text-xs transition-colors cursor-pointer border border-purple-100/80 dark:border-primary/20 shadow-xs"
                       >
                         <span>{detail.btnText}</span>
                         <span>→</span>
@@ -289,17 +289,17 @@ export const Contact: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-7 glass p-8 sm:p-10 rounded-3xl border border-primary/10 shadow-lg"
+            className="lg:col-span-7 glass p-8 sm:p-10 rounded-3xl border border-purple-100 dark:border-white/5 shadow-xl shadow-primary/5"
           >
             {success ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-6">
                   <CheckCircle size={40} />
                 </div>
-                <h3 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-2xl font-black text-[#260E44] dark:text-white mb-2">
                   {locale === "ar" ? "تم الإرسال بنجاح!" : "Sent Successfully!"}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 font-medium text-sm sm:text-base">
+                <p className="text-[#524560] dark:text-gray-400 font-bold text-sm sm:text-base">
                   {t("contactFormSuccess")}
                 </p>
               </div>
@@ -316,7 +316,7 @@ export const Contact: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Name */}
                   <div className="text-start">
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase">
+                    <label className="block text-xs font-bold text-[#6B5E7B] dark:text-gray-300 mb-2 uppercase">
                       {t("contactFormName")} <span className="text-primary">*</span>
                     </label>
                     <input
@@ -327,13 +327,13 @@ export const Contact: React.FC = () => {
                       onChange={handleChange}
                       required
                       placeholder={locale === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
-                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm shadow-xs"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-purple-100 dark:border-border-dark text-[#260E44] dark:text-gray-100 placeholder:text-purple-300 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm shadow-xs"
                     />
                   </div>
 
                   {/* Phone */}
                   <div className="text-start">
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase">
+                    <label className="block text-xs font-bold text-[#6B5E7B] dark:text-gray-300 mb-2 uppercase">
                       {t("contactFormPhone")} <span className="text-primary">*</span>
                     </label>
                     <CountryPhoneInput
@@ -348,7 +348,7 @@ export const Contact: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Email */}
                   <div className="text-start">
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase">
+                    <label className="block text-xs font-bold text-[#6B5E7B] dark:text-gray-300 mb-2 uppercase">
                       {t("contactFormEmail")}
                     </label>
                     <input
@@ -357,7 +357,7 @@ export const Contact: React.FC = () => {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="name@example.com"
-                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium text-sm shadow-xs"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-medium-gray border border-purple-100 dark:border-border-dark text-[#260E44] dark:text-gray-100 placeholder:text-purple-300 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm shadow-xs"
                     />
                   </div>
 

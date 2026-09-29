@@ -58,13 +58,13 @@ export const Header: React.FC = () => {
         </a>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8 font-medium">
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8 font-bold">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
               onClick={(e) => handleScroll(e, item.href)}
-              className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary-light transition-colors relative py-2 group text-sm lg:text-base"
+              className="text-[#463853] hover:text-primary dark:text-gray-300 dark:hover:text-primary-light transition-colors relative py-2 group text-sm lg:text-base"
             >
               {item.label}
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary dark:bg-primary-light transition-all duration-300 group-hover:w-full"></span>
@@ -77,7 +77,7 @@ export const Header: React.FC = () => {
           {/* Shopping Cart Button */}
           <button
             onClick={openCart}
-            className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray dark:hover:bg-primary/20 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer relative"
+            className="p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-medium-gray dark:hover:bg-primary/20 text-primary dark:text-gray-200 border border-purple-100/60 dark:border-transparent transition-colors cursor-pointer relative"
             aria-label="Open Cart"
           >
             <ShoppingCart size={20} />
@@ -91,7 +91,7 @@ export const Header: React.FC = () => {
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray dark:hover:bg-primary/20 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
+            className="p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-medium-gray dark:hover:bg-primary/20 text-primary dark:text-gray-200 border border-purple-100/60 dark:border-transparent transition-colors cursor-pointer"
             aria-label="Toggle theme"
           >
             {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
@@ -100,7 +100,7 @@ export const Header: React.FC = () => {
           {/* Language Switcher */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark dark:bg-primary/20 dark:hover:bg-primary/30 text-white dark:text-primary-light transition-colors font-semibold text-sm cursor-pointer border border-transparent dark:border-primary/30"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark dark:bg-primary/20 dark:hover:bg-primary/30 text-white dark:text-primary-light transition-colors font-bold text-sm cursor-pointer border border-transparent dark:border-primary/30 shadow-xs"
           >
             <Globe size={16} />
             <span>{locale === "ar" ? "English" : "العربية"}</span>
@@ -112,7 +112,7 @@ export const Header: React.FC = () => {
           {/* Shopping Cart Button (Mobile) */}
           <button
             onClick={openCart}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-medium-gray text-gray-700 dark:text-gray-200 relative cursor-pointer"
+            className="p-2 rounded-lg bg-purple-50 dark:bg-medium-gray text-primary dark:text-gray-200 border border-purple-100 dark:border-transparent relative cursor-pointer"
             aria-label="Open Cart"
           >
             <ShoppingCart size={18} />
@@ -126,7 +126,7 @@ export const Header: React.FC = () => {
           {/* Theme Button (Mobile) */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-medium-gray text-gray-700 dark:text-gray-200"
+            className="p-2 rounded-lg bg-purple-50 dark:bg-medium-gray text-primary dark:text-gray-200 border border-purple-100 dark:border-transparent"
             aria-label="Toggle theme"
           >
             {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
@@ -143,7 +143,7 @@ export const Header: React.FC = () => {
           {/* Hamburger Menu Toggle */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-medium-gray text-gray-700 dark:text-gray-200"
+            className="p-2 rounded-lg bg-purple-50 dark:bg-medium-gray text-primary dark:text-gray-200 border border-purple-100 dark:border-transparent"
             aria-label="Toggle menu"
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -159,7 +159,7 @@ export const Header: React.FC = () => {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden w-full overflow-hidden bg-white/95 dark:bg-dark-gray/95 backdrop-blur-lg border-t border-border-light/10 dark:border-border-dark/30 shadow-inner"
+            className="md:hidden w-full overflow-hidden bg-white/98 dark:bg-dark-gray/95 backdrop-blur-lg border-t border-purple-100 dark:border-border-dark/30 shadow-inner"
           >
             <div className="px-4 pt-2 pb-6 flex flex-col gap-3">
               {navItems.map((item) => (
@@ -167,7 +167,7 @@ export const Header: React.FC = () => {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleScroll(e, item.href)}
-                  className="py-3 px-4 rounded-xl text-gray-700 hover:text-white dark:text-gray-200 hover:bg-primary dark:hover:bg-primary/30 transition-all font-medium text-base text-start"
+                  className="py-3 px-4 rounded-xl text-[#463853] hover:text-white dark:text-gray-200 hover:bg-primary dark:hover:bg-primary/30 transition-all font-bold text-base text-start"
                 >
                   {item.label}
                 </a>

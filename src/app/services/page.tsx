@@ -261,36 +261,36 @@ export default function ServicesMarketplace() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-gray transition-colors text-gray-900 dark:text-gray-100 font-sans pb-20">
+    <div className="min-h-screen bg-[#FAF7FD] dark:bg-dark-gray transition-colors text-[#260E44] dark:text-gray-100 font-sans pb-20">
       
       {/* 1. Navigation Header */}
       <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${
         scrolled 
-          ? "bg-white/95 dark:bg-dark-gray/95 backdrop-blur shadow-md py-2 border-b border-gray-200/60 dark:border-border-dark/60" 
-          : "bg-white/70 dark:bg-dark-gray/70 backdrop-blur-sm border-b border-gray-200/30 dark:border-border-dark/30 py-4"
+          ? "bg-white/95 dark:bg-dark-gray/95 backdrop-blur shadow-sm py-2 border-b border-purple-100 dark:border-border-dark/60" 
+          : "bg-white/70 dark:bg-dark-gray/70 backdrop-blur-sm border-b border-purple-100/50 dark:border-border-dark/30 py-4"
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           
           <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-gray-100 dark:hover:bg-medium-gray rounded-xl transition-colors cursor-pointer text-gray-500 dark:text-gray-400">
+            <Link href="/" className="p-2 hover:bg-purple-50 dark:hover:bg-medium-gray rounded-xl transition-colors cursor-pointer text-primary dark:text-gray-400">
               {isAr ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
             </Link>
             <Link href="/" className="flex items-center gap-2 group">
               <span className="text-lg font-black bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
                 {isAr ? "كود خدمات" : "Code Services"}
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary dark:text-primary-light font-bold text-[9px]">MARKETPLACE</span>
+              <span className="px-2 py-0.5 rounded-md bg-purple-50 text-primary dark:bg-primary/10 dark:text-primary-light font-black text-[9px] border border-purple-100 dark:border-transparent">MARKETPLACE</span>
             </Link>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Dark Mode */}
-            <button onClick={toggleTheme} className="p-2 hover:bg-gray-100 dark:hover:bg-medium-gray rounded-xl text-gray-500 dark:text-gray-400 cursor-pointer">
+            <button onClick={toggleTheme} className="p-2 bg-purple-50 hover:bg-purple-100 dark:bg-medium-gray dark:hover:bg-primary/20 rounded-xl text-primary dark:text-gray-400 border border-purple-100/60 dark:border-transparent cursor-pointer">
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
 
             {/* Language Switcher */}
-            <button onClick={toggleLanguage} className="p-2 hover:bg-gray-100 dark:hover:bg-medium-gray rounded-xl text-gray-500 dark:text-gray-400 flex items-center gap-1.5 cursor-pointer text-xs font-bold">
+            <button onClick={toggleLanguage} className="p-2 bg-purple-50 hover:bg-purple-100 dark:bg-medium-gray rounded-xl text-primary dark:text-gray-400 border border-purple-100/60 dark:border-transparent flex items-center gap-1.5 cursor-pointer text-xs font-bold">
               <Globe size={16} />
               <span>{isAr ? "English" : "العربية"}</span>
             </button>
@@ -316,20 +316,20 @@ export default function ServicesMarketplace() {
       </header>
 
       {/* 2. Top Header / Hero Section */}
-      <section className="bg-white dark:bg-medium-gray/20 border-b border-gray-200/50 dark:border-border-dark/50 py-16 px-4 relative overflow-hidden">
+      <section className="bg-white dark:bg-medium-gray/20 border-b border-purple-100 dark:border-border-dark/50 py-16 px-4 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center relative z-10">
           
           {/* Breadcrumbs */}
-          <div className="flex items-center justify-center gap-1.5 text-xxs font-bold text-gray-400 dark:text-gray-500 mb-4">
+          <div className="flex items-center justify-center gap-1.5 text-xxs font-bold text-[#6B5E7B] dark:text-gray-500 mb-4">
             <Link href="/" className="hover:text-primary transition-colors">{isAr ? "الرئيسية" : "Home"}</Link>
             <span>/</span>
-            <span className="text-gray-500 dark:text-gray-300">{isAr ? "سوق الخدمات الإلكترونية" : "Services Marketplace"}</span>
+            <span className="text-primary dark:text-gray-300 font-black">{isAr ? "سوق الخدمات الإلكترونية" : "Services Marketplace"}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black mb-4 tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-black mb-4 tracking-tight leading-tight text-[#260E44] dark:text-white">
             {isAr ? "اكتشف خدماتك الإلكترونية" : "Discover Your Digital Services"}
           </h1>
-          <p className="text-sm sm:text-base font-bold text-gray-400 dark:text-gray-500 mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base font-bold text-[#524560] dark:text-gray-400 mb-8 max-w-2xl mx-auto leading-relaxed">
             {isAr 
               ? `استعرض أكثر من ${services.length} خدمة حكومية وتجارية ومهنية في مكان واحد بأسعار شفافة وإنجاز مضمون.`
               : `Explore over ${services.length} business, government, and commercial services in one place with fully transparent pricing.`}
@@ -337,8 +337,8 @@ export default function ServicesMarketplace() {
 
           {/* Search container */}
           <div className="relative max-w-2xl mx-auto">
-            <div className="flex items-center bg-white dark:bg-medium-gray border-2 border-gray-200 dark:border-border-dark focus-within:border-primary dark:focus-within:border-primary-light rounded-2xl px-4 py-3.5 shadow-lg transition-all">
-              <Search className="text-gray-400 me-3" size={20} />
+            <div className="flex items-center bg-white dark:bg-medium-gray border-2 border-purple-100 dark:border-border-dark focus-within:border-primary dark:focus-within:border-primary-light rounded-2xl px-4 py-3.5 shadow-lg shadow-primary/5 transition-all">
+              <Search className="text-primary/70 dark:text-gray-400 me-3" size={20} />
               <input
                 type="text"
                 value={searchTerm}
@@ -348,7 +348,7 @@ export default function ServicesMarketplace() {
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 placeholder={isAr ? "مثال: إصدار سجل تجاري، كفيل، بلدية..." : "e.g. Issue Commercial Register, Qiwa..."}
-                className="w-full bg-transparent outline-none text-sm font-semibold placeholder:text-gray-400 text-start"
+                className="w-full bg-transparent outline-none text-sm font-bold placeholder:text-purple-300 text-start text-[#260E44] dark:text-gray-100"
               />
               {searchTerm.length > 0 && (
                 <button 
@@ -367,17 +367,17 @@ export default function ServicesMarketplace() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute left-0 right-0 mt-2 bg-white dark:bg-medium-gray/95 backdrop-blur border border-gray-200 dark:border-border-dark rounded-2xl shadow-xl z-30 overflow-hidden text-start p-2"
+                  className="absolute left-0 right-0 mt-2 bg-white dark:bg-medium-gray/95 backdrop-blur border border-purple-100 dark:border-border-dark rounded-2xl shadow-xl z-30 overflow-hidden text-start p-2"
                 >
-                  <p className="text-[10px] font-black text-gray-400 p-2 uppercase tracking-wider">{isAr ? "اقتراحات البحث" : "Suggestions"}</p>
+                  <p className="text-[10px] font-black text-primary p-2 uppercase tracking-wider">{isAr ? "اقتراحات البحث" : "Suggestions"}</p>
                   {searchSuggestions.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => handleSuggestionClick(isAr ? item.titleAr : item.titleEn)}
-                      className="w-full px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-dark-gray rounded-xl text-xs font-semibold flex items-center justify-between text-gray-700 dark:text-gray-300 transition-colors"
+                      className="w-full px-3 py-2.5 hover:bg-purple-50 dark:hover:bg-dark-gray rounded-xl text-xs font-bold flex items-center justify-between text-[#260E44] dark:text-gray-300 transition-colors"
                     >
                       <span>{isAr ? item.titleAr : item.titleEn}</span>
-                      <span className="text-[10px] text-primary dark:text-primary-light font-bold bg-primary/5 px-2 py-0.5 rounded">
+                      <span className="text-[10px] text-primary dark:text-primary-light font-black bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
                         {categories.find(c => c.id === item.categoryId)?.[isAr ? "nameAr" : "nameEn"]}
                       </span>
                     </button>
@@ -395,8 +395,8 @@ export default function ServicesMarketplace() {
           
           {/* A. CATEGORY SIDEBAR (Desktop) */}
           <aside className="hidden lg:block lg:col-span-1">
-            <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-3xl p-5 sticky top-24">
-              <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">
+            <div className="bg-white dark:bg-medium-gray/30 border border-purple-100 dark:border-border-dark/50 rounded-3xl p-5 sticky top-24 shadow-sm shadow-primary/5">
+              <h3 className="text-xs font-black text-primary dark:text-gray-500 uppercase tracking-wider mb-4">
                 {isAr ? "أقسام الخدمات" : "Service Categories"}
               </h3>
               
@@ -406,7 +406,7 @@ export default function ServicesMarketplace() {
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-start cursor-pointer relative ${
                     selectedCatId === "all"
                       ? "text-white"
-                      : "hover:bg-gray-100 dark:hover:bg-medium-gray/50 text-gray-600 dark:text-gray-300"
+                      : "hover:bg-purple-50 dark:hover:bg-medium-gray/50 text-[#463853] dark:text-gray-300"
                   }`}
                 >
                   {selectedCatId === "all" && (
@@ -418,7 +418,7 @@ export default function ServicesMarketplace() {
                   )}
                   <span className="relative z-10">{isAr ? "جميع الخدمات" : "All Services"}</span>
                   <span className={`relative z-10 px-2 py-0.5 rounded-md text-[10px] font-black transition-colors ${
-                    selectedCatId === "all" ? "bg-white/20 text-white" : "bg-gray-100 dark:bg-medium-gray text-gray-500"
+                    selectedCatId === "all" ? "bg-white/20 text-white" : "bg-purple-50 dark:bg-medium-gray text-primary"
                   }`}>
                     {services.length}
                   </span>
@@ -433,7 +433,7 @@ export default function ServicesMarketplace() {
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-start cursor-pointer relative ${
                         selectedCatId === cat.id
                           ? "text-white"
-                          : "hover:bg-gray-100 dark:hover:bg-medium-gray/50 text-gray-600 dark:text-gray-300"
+                          : "hover:bg-purple-50 dark:hover:bg-medium-gray/50 text-[#463853] dark:text-gray-300"
                       }`}
                     >
                       {selectedCatId === cat.id && (
@@ -445,7 +445,7 @@ export default function ServicesMarketplace() {
                       )}
                       <span className="relative z-10 truncate">{isAr ? cat.nameAr : cat.nameEn}</span>
                       <span className={`relative z-10 px-2 py-0.5 rounded-md text-[10px] font-black transition-colors ${
-                        selectedCatId === cat.id ? "bg-white/20 text-white" : "bg-gray-100 dark:bg-medium-gray text-gray-500"
+                        selectedCatId === cat.id ? "bg-white/20 text-white" : "bg-purple-50 dark:bg-medium-gray text-primary"
                       }`}>
                         {count}
                       </span>
@@ -465,12 +465,12 @@ export default function ServicesMarketplace() {
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between gap-4 text-start p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10"
+                  className="flex items-center justify-between gap-4 text-start p-4 bg-purple-50 dark:bg-primary/10 rounded-2xl border border-purple-100"
                 >
-                  <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  <div className="text-xs font-bold text-[#260E44] dark:text-gray-300">
                     <span>{isAr ? "نتائج البحث عن: " : "Search results for: "}</span>
-                    <span className="font-extrabold text-primary dark:text-primary-light">"{searchTerm}"</span>
-                    <span className="mx-2 text-gray-400">•</span>
+                    <span className="font-black text-primary dark:text-primary-light">"{searchTerm}"</span>
+                    <span className="mx-2 text-[#6B5E7B]">•</span>
                     <span>{filteredServices.length} {isAr ? "خدمة متوفرة" : "services available"}</span>
                   </div>
                   <button
@@ -510,13 +510,13 @@ export default function ServicesMarketplace() {
             )}
 
             {/* Sorting & Filters Header */}
-            <div className="bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-2xl sm:rounded-3xl p-4 sm:p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="bg-white dark:bg-medium-gray/30 border border-purple-100 dark:border-border-dark/50 rounded-2xl sm:rounded-3xl p-4 sm:p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm shadow-primary/5">
               
               <div className="text-start">
-                <h2 className="text-sm sm:text-base font-black">
+                <h2 className="text-sm sm:text-base font-black text-[#260E44] dark:text-white">
                   {isAr ? "الخدمات المتاحة" : "Available Services"}
                 </h2>
-                <p className="text-[10px] sm:text-xs font-bold text-gray-400 dark:text-gray-500">
+                <p className="text-[10px] sm:text-xs font-bold text-[#524560] dark:text-gray-500">
                   {isAr 
                     ? `تم العثور على ${filteredServices.length} خدمة رقمية` 
                     : `Found ${filteredServices.length} digital services`}
@@ -529,28 +529,28 @@ export default function ServicesMarketplace() {
                 {/* Mobile Filter Button */}
                 <button
                   onClick={() => setShowFiltersMobile(true)}
-                  className="lg:hidden flex items-center justify-center gap-1.5 flex-1 px-4 py-2.5 bg-gray-100 dark:bg-medium-gray rounded-xl text-xs font-bold cursor-pointer"
+                  className="lg:hidden flex items-center justify-center gap-1.5 flex-1 px-4 py-2.5 bg-purple-50 dark:bg-medium-gray text-primary dark:text-gray-200 border border-purple-100 rounded-xl text-xs font-bold cursor-pointer"
                 >
                   <SlidersHorizontal size={14} />
                   <span>{isAr ? "الأقسام" : "Categories"}</span>
                 </button>
 
                 {/* Sort dropdown with custom theme option colors to fix contrast */}
-                <div className="flex items-center gap-2 bg-gray-100 dark:bg-medium-gray border border-transparent dark:border-border-dark rounded-xl px-3 py-1 flex-1 sm:flex-initial text-gray-800 dark:text-gray-100">
-                  <ArrowUpDown size={14} className="text-gray-400" />
+                <div className="flex items-center gap-2 bg-purple-50 dark:bg-medium-gray border border-purple-100 dark:border-border-dark rounded-xl px-3 py-1 flex-1 sm:flex-initial text-[#260E44] dark:text-gray-100">
+                  <ArrowUpDown size={14} className="text-primary dark:text-gray-400" />
                   <select
                     value={sortBy}
                     onChange={(e: any) => setSortBy(e.target.value)}
-                    className="bg-transparent border-none text-xs font-bold outline-none cursor-pointer py-1.5 w-full sm:w-auto text-gray-800 dark:text-gray-100"
+                    className="bg-transparent border-none text-xs font-black outline-none cursor-pointer py-1.5 w-full sm:w-auto text-[#260E44] dark:text-gray-100"
                   >
-                    <option value="default" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الترتيب الافتراضي" : "Default"}</option>
-                    <option value="popular" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الأكثر طلباً" : "Most Popular"}</option>
-                    <option value="featured" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الخدمات المميزة" : "Featured Services"}</option>
-                    <option value="newest" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الأحدث" : "Newest"}</option>
-                    <option value="price_asc" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "السعر: من الأقل للأعلى" : "Price: Low to High"}</option>
-                    <option value="price_desc" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "السعر: من الأعلى للأقل" : "Price: High to Low"}</option>
-                    <option value="fastest" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الأسرع إنجازاً" : "Fastest Completion"}</option>
-                    <option value="longest" className="bg-white dark:bg-medium-gray text-gray-800 dark:text-gray-150">{isAr ? "الأبطأ إنجازاً" : "Longest Completion"}</option>
+                    <option value="default" className="bg-white dark:bg-medium-gray text-[#260E44] dark:text-gray-150">{isAr ? "الترتيب الافتراضي" : "Default"}</option>
+                    <option value="popular" className="bg-white dark:bg-medium-gray text-[#260E44] dark:text-gray-150">{isAr ? "الأكثر طلباً" : "Most Popular"}</option>
+                    <option value="featured" className="bg-white dark:bg-medium-gray text-[#260E44] dark:text-gray-150">{isAr ? "الخدمات المميزة" : "Featured Services"}</option>
+                    <option value="newest" className="bg-white dark:bg-medium-gray text-[#260E44] dark:text-gray-150">{isAr ? "الأحدث" : "Newest"}</option>
+                    <option value="price_asc" className="bg-white dark:bg-medium-gray text-[#260E44] dark:text-gray-150">{isAr ? "السعر: من الأقل للأعلى" : "Price: Low to High"}</option>
+                    <option value="price_desc" className="bg-white dark:bg-medium-gray text-[#260E44] dark:text-gray-150">{isAr ? "السعر: من الأعلى للأقل" : "Price: High to Low"}</option>
+                    <option value="fastest" className="bg-white dark:bg-medium-gray text-[#260E44] dark:text-gray-150">{isAr ? "الأسرع إنجازاً" : "Fastest Completion"}</option>
+                    <option value="longest" className="bg-white dark:bg-medium-gray text-[#260E44] dark:text-gray-150">{isAr ? "الأبطأ إنجازاً" : "Longest Completion"}</option>
                   </select>
                 </div>
               </div>
@@ -563,7 +563,7 @@ export default function ServicesMarketplace() {
                 className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap cursor-pointer transition-all relative ${
                   selectedCatId === "all"
                     ? "text-white"
-                    : "bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300"
+                    : "bg-purple-50 dark:bg-medium-gray text-[#463853] dark:text-gray-300 border border-purple-100"
                 }`}
               >
                 {selectedCatId === "all" && (
@@ -582,7 +582,7 @@ export default function ServicesMarketplace() {
                   className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap cursor-pointer transition-all relative ${
                     selectedCatId === cat.id
                       ? "text-white"
-                      : "bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-300"
+                      : "bg-purple-50 dark:bg-medium-gray text-[#463853] dark:text-gray-300 border border-purple-100"
                   }`}
                 >
                   {selectedCatId === cat.id && (
@@ -640,7 +640,7 @@ export default function ServicesMarketplace() {
                           initial={{ opacity: 0, y: 15 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.2) }}
-                          className="group bg-white dark:bg-medium-gray/30 border border-gray-200/50 dark:border-border-dark/50 rounded-3xl p-5 shadow-sm hover:shadow-lg flex flex-col justify-between text-start relative overflow-hidden transition-shadow duration-300"
+                          className="group bg-white dark:bg-medium-gray/30 border border-purple-100 dark:border-border-dark/50 rounded-3xl p-5 shadow-xs hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 flex flex-col justify-between text-start relative overflow-hidden transition-all duration-300"
                         >
                           {/* Featured tag */}
                           {service.featured && (
@@ -667,30 +667,30 @@ export default function ServicesMarketplace() {
                             </div>
 
                             {/* Title & Desc */}
-                            <h3 className="text-sm sm:text-base font-black text-gray-900 dark:text-white leading-tight mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors line-clamp-2">
+                            <h3 className="text-sm sm:text-base font-black text-[#260E44] dark:text-white leading-tight mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors line-clamp-2">
                               {isAr ? service.titleAr : service.titleEn}
                             </h3>
-                            <p className="text-xxs sm:text-xs font-semibold text-gray-400 dark:text-gray-500 mb-4 line-clamp-2 min-h-[32px] leading-relaxed">
+                            <p className="text-xxs sm:text-xs font-bold text-[#524560] dark:text-gray-400 mb-4 line-clamp-2 min-h-[32px] leading-relaxed">
                               {isAr ? service.descAr || "الخدمة تشمل معالجة فورية وتوثيق عبر القنوات الرسمية بضمان كود خدمات." : service.descEn || "Complete documentation and quick processing guarantee from Code Services."}
                             </p>
                           </div>
 
                           {/* Details & CTA Footer */}
-                          <div className="border-t border-gray-150 dark:border-border-dark/50 pt-4 mt-auto">
-                            <div className="flex justify-between items-center text-xxs font-bold text-gray-500 mb-4">
+                          <div className="border-t border-purple-100 dark:border-border-dark/50 pt-4 mt-auto">
+                            <div className="flex justify-between items-center text-xxs font-bold text-[#6B5E7B] dark:text-gray-400 mb-4">
                               <div className="flex items-center gap-1">
                                 <Clock size={12} className="text-primary dark:text-primary-light" />
                                 <span>{displayCompletion}</span>
                               </div>
                               <div className="text-end">
-                                <span className="font-extrabold text-xs text-emerald-600 dark:text-emerald-400">{displayPrice}</span>
+                                <span className="font-black text-xs text-emerald-600 dark:text-emerald-400">{displayPrice}</span>
                               </div>
                             </div>
 
                             <div className="flex gap-2">
                               <Link 
                                 href={`/services/${service.id}`}
-                                className="flex-1 py-2 px-3 bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray/50 dark:hover:bg-medium-gray text-gray-700 dark:text-gray-300 rounded-xl text-[11px] font-extrabold text-center transition-colors cursor-pointer"
+                                className="flex-1 py-2 px-3 bg-purple-50 hover:bg-purple-100 dark:bg-medium-gray/50 dark:hover:bg-medium-gray text-primary dark:text-gray-300 rounded-xl text-[11px] font-black text-center transition-colors cursor-pointer border border-purple-100/60 dark:border-transparent"
                               >
                                 {isAr ? "التفاصيل" : "Details"}
                               </Link>
@@ -698,7 +698,7 @@ export default function ServicesMarketplace() {
                               <button
                                 disabled={isAdding}
                                 onClick={() => handleAddToCartDirectly(service)}
-                                className="flex-1 py-2 px-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-[11px] font-extrabold transition-colors cursor-pointer text-center flex items-center justify-center gap-1 disabled:opacity-75 disabled:cursor-not-allowed select-none"
+                                className="flex-1 py-2 px-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-[11px] font-black transition-colors cursor-pointer text-center flex items-center justify-center gap-1 disabled:opacity-75 disabled:cursor-not-allowed select-none shadow-xs"
                               >
                                 {isAdding ? (
                                   <>
@@ -733,7 +733,7 @@ export default function ServicesMarketplace() {
                   <div className="mt-8 text-center">
                     <button
                       onClick={() => setVisibleCount(prev => prev + 12)}
-                      className="px-8 py-3.5 bg-white dark:bg-medium-gray/30 border border-gray-200 dark:border-border-dark/50 hover:border-primary dark:hover:border-primary-light text-primary dark:text-primary-light font-black text-xs rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer"
+                      className="px-8 py-3.5 bg-white dark:bg-medium-gray/30 border border-purple-100 dark:border-border-dark/50 hover:border-primary dark:hover:border-primary-light text-primary dark:text-primary-light font-black text-xs rounded-2xl transition-all shadow-xs hover:shadow-md cursor-pointer"
                     >
                       {isAr ? "عرض المزيد من الخدمات" : "Load More Services"}
                     </button>
@@ -743,14 +743,14 @@ export default function ServicesMarketplace() {
             ) : (
               
               /* D. EMPTY SEARCH / RESULTS STATE */
-              <div className="py-16 text-center bg-white dark:bg-medium-gray/30 rounded-3xl border border-gray-200/80 dark:border-border-dark/50 p-6 sm:p-8 max-w-lg mx-auto shadow-sm">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5 text-primary dark:text-primary-light">
+              <div className="py-16 text-center bg-white dark:bg-medium-gray/30 rounded-3xl border border-purple-100 dark:border-border-dark/50 p-6 sm:p-8 max-w-lg mx-auto shadow-sm">
+                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-5 text-primary dark:text-primary-light border border-purple-100">
                   <SlidersHorizontal size={24} />
                 </div>
-                <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2">
+                <h3 className="text-lg font-black text-[#260E44] dark:text-white mb-2">
                   {isAr ? "لم نجد أي خدمة تطابق بحثك" : "No services matched your query"}
                 </h3>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-6 leading-relaxed max-w-sm mx-auto">
+                <p className="text-xs font-bold text-[#524560] dark:text-gray-400 mb-6 leading-relaxed max-w-sm mx-auto">
                   {isAr 
                     ? "تأكد من كتابة الكلمات بشكل صحيح أو جرب أحد الاقتراحات الذكية أدناه:"
                     : "Double-check your spelling or try one of the suggestions below:"}
@@ -759,7 +759,7 @@ export default function ServicesMarketplace() {
                 {/* Suggestions Pills if available */}
                 {searchResult.suggestions.length > 0 && (
                   <div className="mb-6">
-                    <p className="text-xxs font-black text-gray-400 uppercase tracking-wider mb-2.5">
+                    <p className="text-xxs font-black text-[#6B5E7B] uppercase tracking-wider mb-2.5">
                       {isAr ? "خدمات مقترحة قد تهمك" : "Suggested services"}
                     </p>
                     <div className="flex flex-wrap gap-2 justify-center">
@@ -767,7 +767,7 @@ export default function ServicesMarketplace() {
                         <button
                           key={s.id}
                           onClick={() => setSearchTerm(isAr ? s.titleAr : s.titleEn)}
-                          className="px-3 py-1.5 bg-primary/5 hover:bg-primary hover:text-white text-primary dark:text-primary-light dark:bg-primary/20 dark:hover:bg-primary dark:hover:text-white rounded-xl text-xs font-bold transition-colors cursor-pointer border border-primary/10"
+                          className="px-3 py-1.5 bg-purple-50 hover:bg-primary hover:text-white text-primary dark:text-primary-light dark:bg-primary/20 dark:hover:bg-primary dark:hover:text-white rounded-xl text-xs font-black transition-colors cursor-pointer border border-purple-100"
                         >
                           {isAr ? s.titleAr : s.titleEn}
                         </button>
@@ -801,7 +801,7 @@ export default function ServicesMarketplace() {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowFiltersMobile(false)}
-              className="fixed inset-0 bg-black z-45 cursor-pointer"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-45 cursor-pointer"
             />
             {/* Drawer */}
             <motion.div
@@ -809,11 +809,11 @@ export default function ServicesMarketplace() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 250 }}
-              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-medium-gray rounded-t-3xl p-6 z-50 shadow-2xl overflow-y-auto max-h-[80vh] text-start text-gray-900 dark:text-gray-150"
+              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-medium-gray rounded-t-3xl p-6 z-50 shadow-2xl overflow-y-auto max-h-[80vh] text-start text-[#260E44] dark:text-gray-150 border-t border-purple-100"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-black">{isAr ? "تصفية حسب الأقسام" : "Filter by Categories"}</h3>
-                <button onClick={() => setShowFiltersMobile(false)} className="p-1 text-gray-400 hover:text-white cursor-pointer">
+                <h3 className="text-sm font-black text-[#260E44] dark:text-white">{isAr ? "تصفية حسب الأقسام" : "Filter by Categories"}</h3>
+                <button onClick={() => setShowFiltersMobile(false)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
                   <XCircle size={20} />
                 </button>
               </div>
@@ -824,8 +824,8 @@ export default function ServicesMarketplace() {
                     setSelectedCatId("all");
                     setShowFiltersMobile(false);
                   }}
-                  className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs font-bold ${
-                    selectedCatId === "all" ? "bg-primary text-white" : "bg-gray-50 dark:bg-dark-gray text-gray-600 dark:text-gray-300"
+                  className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs font-black ${
+                    selectedCatId === "all" ? "bg-primary text-white" : "bg-purple-50 dark:bg-dark-gray text-[#463853] dark:text-gray-300 border border-purple-100"
                   }`}
                 >
                   <span>{isAr ? "عرض الكل" : "Show All"}</span>
@@ -838,8 +838,8 @@ export default function ServicesMarketplace() {
                       setSelectedCatId(cat.id);
                       setShowFiltersMobile(false);
                     }}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs font-bold ${
-                      selectedCatId === cat.id ? "bg-primary text-white" : "bg-gray-50 dark:bg-dark-gray text-gray-600 dark:text-gray-300"
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs font-black ${
+                      selectedCatId === cat.id ? "bg-primary text-white" : "bg-purple-50 dark:bg-dark-gray text-[#463853] dark:text-gray-300 border border-purple-100"
                     }`}
                   >
                     <span>{isAr ? cat.nameAr : cat.nameEn}</span>

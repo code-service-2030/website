@@ -69,25 +69,25 @@ export const FAQ: React.FC = () => {
   }, [searchQuery, faqs]);
 
   return (
-    <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-medium-gray/30 transition-colors">
+    <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-[#FCFAFE] dark:bg-medium-gray/30 transition-colors">
       <div className="max-w-4xl mx-auto">
         
         {/* Section Heading */}
         <div className="text-center mb-10 select-none">
-          <span className="text-primary dark:text-primary-light font-extrabold text-sm uppercase tracking-wider mb-3 block">
+          <span className="text-primary dark:text-primary-light font-black text-sm uppercase tracking-wider mb-3 block">
             {t("faqTitle")}
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-black text-[#260E44] dark:text-white mb-4">
             {locale === "ar" ? "الأسئلة الشائعة" : "Frequently Asked Questions"}
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-[#524560] dark:text-gray-400 font-bold">
             {t("faqSub")}
           </p>
         </div>
 
         {/* Live Search Box */}
-        <div className="mb-10 max-w-xl mx-auto relative glass p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm">
-          <span className="absolute inset-y-0 start-0 flex items-center ps-6 text-gray-400 dark:text-gray-500">
+        <div className="mb-10 max-w-xl mx-auto relative glass p-3.5 rounded-2xl border border-purple-100 dark:border-white/5 shadow-md shadow-primary/5">
+          <span className="absolute inset-y-0 start-0 flex items-center ps-6 text-primary/60 dark:text-gray-500">
             <Search size={20} />
           </span>
           <input
@@ -98,7 +98,7 @@ export const FAQ: React.FC = () => {
               setSearchQuery(e.target.value);
               setExpandedIdx(null); // Reset expansions on search
             }}
-            className="w-full ps-12 pe-9 py-3 rounded-xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm shadow-xs"
+            className="w-full ps-12 pe-9 py-3 rounded-xl bg-white dark:bg-medium-gray border border-purple-100 dark:border-border-dark text-[#260E44] dark:text-gray-100 placeholder:text-purple-300 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm shadow-xs"
           />
           {searchQuery && (
             <button
@@ -113,14 +113,14 @@ export const FAQ: React.FC = () => {
         {/* Accordions */}
         <div className="space-y-4 text-start">
           {filteredFaqs.length === 0 ? (
-            <div className="text-center py-16 bg-white dark:bg-medium-gray/20 rounded-3xl p-8 border border-gray-200/80 dark:border-white/5 shadow-xs">
-              <div className="w-12 h-12 bg-primary/10 dark:bg-medium-gray text-primary dark:text-primary-light rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center py-16 bg-white dark:bg-medium-gray/20 rounded-3xl p-8 border border-purple-100 dark:border-white/5 shadow-xs">
+              <div className="w-12 h-12 bg-purple-50 dark:bg-medium-gray text-primary dark:text-primary-light rounded-full flex items-center justify-center mx-auto mb-4">
                 <HelpCircle size={24} />
               </div>
-              <h4 className="text-base font-bold text-gray-800 dark:text-gray-200">
+              <h4 className="text-base font-black text-[#260E44] dark:text-gray-200">
                 {locale === "ar" ? "لا توجد أسئلة تطابق بحثك" : "No results match your search"}
               </h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-[#6B5E7B] dark:text-gray-400 mt-1 font-bold">
                 {locale === "ar" ? "تواصل معنا مباشرة للإجابة على استفسارك فوراً" : "Contact us directly and we'll reply right away"}
               </p>
             </div>
@@ -133,12 +133,12 @@ export const FAQ: React.FC = () => {
               return (
                 <div
                   key={faq.id}
-                  className="glass rounded-2xl border border-gray-200/80 dark:border-white/5 overflow-hidden shadow-xs hover:shadow-md transition-all"
+                  className="glass rounded-2xl border border-purple-100 dark:border-white/5 overflow-hidden shadow-xs hover:shadow-md hover:border-primary/40 transition-all"
                 >
                   {/* Question Trigger */}
                   <button
                     onClick={() => handleToggle(index)}
-                    className="w-full px-6 py-5 flex items-center justify-between text-start font-black text-gray-900 dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors cursor-pointer"
+                    className="w-full px-6 py-5 flex items-center justify-between text-start font-black text-[#260E44] dark:text-white hover:bg-purple-50/50 dark:hover:bg-primary/10 transition-colors cursor-pointer"
                   >
                     <span className="text-base sm:text-lg pe-4 leading-snug">{question}</span>
                     <motion.span
@@ -159,7 +159,7 @@ export const FAQ: React.FC = () => {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                       >
-                        <div className="px-6 pb-6 pt-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 border-t border-gray-150 dark:border-white/5 leading-relaxed font-semibold">
+                        <div className="px-6 pb-6 pt-2 text-sm sm:text-base text-[#524560] dark:text-gray-300 border-t border-purple-100/60 dark:border-white/5 leading-relaxed font-bold">
                           {answer}
                         </div>
                       </motion.div>

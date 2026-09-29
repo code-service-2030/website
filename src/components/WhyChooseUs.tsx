@@ -129,16 +129,16 @@ export const WhyChooseUs: React.FC = () => {
   ];
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-medium-gray/30 transition-colors">
+    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white dark:bg-medium-gray/30 transition-colors">
       <div className="max-w-7xl mx-auto space-y-20">
         
         {/* SECTION 1: Statistics Counters */}
         <div className="space-y-12">
           <div className="text-center max-w-3xl mx-auto">
-            <span className="text-primary dark:text-primary-light font-extrabold text-sm uppercase tracking-wider mb-3 block">
+            <span className="text-primary dark:text-primary-light font-black text-sm uppercase tracking-wider mb-3 block">
               {locale === "ar" ? "أرقامنا تميزنا" : "Our Statistics"}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
+            <h2 className="text-3xl sm:text-4xl font-black text-[#260E44] dark:text-white">
               {locale === "ar" ? "كود خدمات بالأرقام" : "Code Services in Numbers"}
             </h2>
           </div>
@@ -151,15 +151,15 @@ export const WhyChooseUs: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="glass p-8 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm hover:shadow-md text-center flex flex-col items-center group transition-all"
+                className="glass p-8 rounded-3xl border border-purple-100 dark:border-white/5 shadow-xs hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 text-center flex flex-col items-center group transition-all"
               >
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110 ${stat.color}`}>
                   {stat.icon}
                 </div>
-                <h3 className="text-4xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
+                <h3 className="text-4xl font-black text-[#260E44] dark:text-white mb-2 tracking-tight">
                   {stat.value}
                 </h3>
-                <p className="text-base text-gray-600 dark:text-gray-400 font-extrabold">
+                <p className="text-base text-[#524560] dark:text-gray-400 font-bold">
                   {stat.label}
                 </p>
               </motion.div>
@@ -170,10 +170,10 @@ export const WhyChooseUs: React.FC = () => {
         {/* SECTION 2: Why Choose Us Benefits */}
         <div className="space-y-12">
           <div className="text-center max-w-3xl mx-auto">
-            <span className="text-primary dark:text-primary-light font-extrabold text-sm uppercase tracking-wider mb-3 block">
+            <span className="text-primary dark:text-primary-light font-black text-sm uppercase tracking-wider mb-3 block">
               {locale === "ar" ? "مميزاتنا" : "Our Features"}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
+            <h2 className="text-3xl sm:text-4xl font-black text-[#260E44] dark:text-white">
               {locale === "ar" ? "ما الذي يجعلنا اختيارك الأول؟" : "What Makes Us Your First Choice?"}
             </h2>
           </div>
@@ -190,16 +190,16 @@ export const WhyChooseUs: React.FC = () => {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.05 }}
-                  className="glass p-8 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 text-start flex flex-col justify-between group"
+                  className="glass p-8 rounded-3xl border border-purple-100 dark:border-white/5 shadow-xs hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 hover:border-primary/40 transition-all duration-300 text-start flex flex-col justify-between group"
                 >
                   <div>
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 ${benefit.color}`}>
                       {benefit.icon}
                     </div>
-                    <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-3">
+                    <h3 className="text-xl font-black text-[#260E44] dark:text-white mb-3">
                       {title}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed font-semibold">
+                    <p className="text-sm text-[#524560] dark:text-gray-400 leading-relaxed font-bold">
                       {desc}
                     </p>
                   </div>

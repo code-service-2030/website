@@ -85,13 +85,13 @@ export const Services: React.FC = () => {
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <span className="text-primary dark:text-primary-light font-extrabold text-sm uppercase tracking-wider mb-3 block">
+          <span className="text-primary dark:text-primary-light font-black text-sm uppercase tracking-wider mb-3 block">
             {t("navServices")}
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-black text-[#260E44] dark:text-white mb-4">
             {locale === "ar" ? "استكشف خدماتنا الرقمية" : "Explore Our Digital Services"}
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-[#524560] dark:text-gray-400 font-bold">
             {locale === "ar"
               ? "ابحث مباشرة عن أي معاملة حكومية أو تجارية، أو تصفح الأقسام الرئيسية للوصول للمتطلبات والأسعار"
               : "Search directly for any government or business transaction, or browse main departments for requirements & pricing"}
@@ -99,8 +99,8 @@ export const Services: React.FC = () => {
         </div>
 
         {/* Dynamic Search Box Redirector */}
-        <form onSubmit={handleSearchSubmit} className="mb-14 max-w-2xl mx-auto relative glass p-4 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm">
-          <span className="absolute inset-y-0 start-0 flex items-center ps-7 text-gray-400 dark:text-gray-500">
+        <form onSubmit={handleSearchSubmit} className="mb-14 max-w-2xl mx-auto relative glass p-4 rounded-3xl border border-purple-100 dark:border-white/5 shadow-md shadow-primary/5">
+          <span className="absolute inset-y-0 start-0 flex items-center ps-7 text-primary/60 dark:text-gray-500">
             <Icons.Search size={22} />
           </span>
           <input
@@ -108,20 +108,20 @@ export const Services: React.FC = () => {
             placeholder={t("searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full ps-14 pe-14 py-4 rounded-2xl bg-white dark:bg-medium-gray border border-gray-200 dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm sm:text-base shadow-xs"
+            className="w-full ps-14 pe-14 py-4 rounded-2xl bg-white dark:bg-medium-gray border border-purple-100 dark:border-border-dark text-[#260E44] dark:text-gray-100 placeholder:text-purple-300 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold text-sm sm:text-base shadow-xs"
           />
           {searchTerm ? (
             <button
               type="button"
               onClick={() => setSearchTerm("")}
-              className="absolute inset-y-0 end-0 flex items-center pe-7 text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 end-0 flex items-center pe-7 text-gray-400 hover:text-gray-600 cursor-pointer"
             >
               <Icons.X size={18} />
             </button>
           ) : (
             <button
               type="submit"
-              className="absolute inset-y-0 end-0 flex items-center pe-6 text-primary dark:text-primary-light hover:text-primary-dark font-black text-sm"
+              className="absolute inset-y-0 end-0 flex items-center pe-6 text-primary dark:text-primary-light hover:text-primary-dark font-black text-sm cursor-pointer"
             >
               {locale === "ar" ? "بحث" : "Search"}
             </button>
@@ -145,23 +145,23 @@ export const Services: React.FC = () => {
                   key={category.id}
                   onClick={() => handleCategoryClick(category.id)}
                   whileHover={{ y: -4 }}
-                  className="group p-8 rounded-3xl glass-card border border-gray-200/80 dark:border-white/5 hover:border-primary/30 dark:hover:border-primary/30 shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer text-start flex flex-col justify-between h-64"
+                  className="group p-8 rounded-3xl glass-card border border-purple-100 dark:border-white/5 hover:border-primary/40 dark:hover:border-primary/30 shadow-xs hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer text-start flex flex-col justify-between h-64"
                 >
                   <div>
                     <div className="flex justify-between items-start mb-6">
-                      <div className="w-14 h-14 rounded-2xl bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
+                      <div className="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-primary/20 text-primary dark:text-primary-light flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white border border-purple-100/50 dark:border-transparent">
                         <ServiceIcon name={category.icon} />
                       </div>
                       
-                      <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-medium-gray text-gray-600 dark:text-gray-400 text-xs font-bold">
+                      <span className="px-3 py-1 rounded-full bg-purple-50 dark:bg-medium-gray text-primary dark:text-gray-400 text-xs font-black border border-purple-100/50 dark:border-transparent">
                         {catServicesCount} {locale === "ar" ? "خدمة" : "Services"}
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
+                    <h3 className="text-xl font-black text-[#260E44] dark:text-white mb-2 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
                       {name}
                     </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2 font-medium">
+                    <p className="text-xs text-[#524560] dark:text-gray-400 leading-relaxed line-clamp-2 font-bold">
                       {desc}
                     </p>
                   </div>

@@ -85,13 +85,13 @@ export const Reviews: React.FC = () => {
         
         {/* Header Section */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-primary dark:text-primary-light font-extrabold text-sm uppercase tracking-wider mb-3 block">
+          <span className="text-primary dark:text-primary-light font-black text-sm uppercase tracking-wider mb-3 block">
             {t("navReviews")}
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-black text-[#260E44] dark:text-white mb-4">
             {t("reviewsTitle")}
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-[#524560] dark:text-gray-400 font-bold">
             {t("reviewsSub")}
           </p>
         </div>
@@ -100,7 +100,7 @@ export const Reviews: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Side: Google Trust Box */}
-          <div className="lg:col-span-4 glass p-8 rounded-3xl border border-primary/10 shadow-lg text-center flex flex-col items-center justify-center">
+          <div className="lg:col-span-4 glass p-8 rounded-3xl border border-purple-100 dark:border-white/5 shadow-xl shadow-primary/5 text-center flex flex-col items-center justify-center">
             {/* Google Logo */}
             <div className="flex items-center gap-1.5 mb-4 text-2xl font-black tracking-tight select-none">
               <span className="text-blue-500 font-bold">G</span>
@@ -112,7 +112,7 @@ export const Reviews: React.FC = () => {
             </div>
 
             {/* Score */}
-            <h3 className="text-5xl font-black text-gray-900 dark:text-white mb-3">4.9</h3>
+            <h3 className="text-5xl font-black text-[#260E44] dark:text-white mb-3">4.9</h3>
 
             {/* Rating Stars (Five stars) */}
             <div className="flex items-center gap-1 text-amber-500 mb-3" aria-label="5 stars rating">
@@ -122,7 +122,7 @@ export const Reviews: React.FC = () => {
             </div>
 
             {/* Sub-label */}
-            <p className="text-sm font-bold text-gray-600 dark:text-gray-400">
+            <p className="text-sm font-bold text-[#524560] dark:text-gray-400">
               {locale === "ar" ? "بناءً على 18+ تقييم حقيقي" : "Based on 18+ real reviews"}
             </p>
 
@@ -153,10 +153,10 @@ export const Reviews: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: locale === "ar" ? 30 : -30 }}
                   transition={{ duration: 0.4 }}
-                  className="w-full glass p-8 sm:p-10 rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm hover:shadow-md flex flex-col justify-between transition-all"
+                  className="w-full glass p-8 sm:p-10 rounded-3xl border border-purple-100 dark:border-white/5 shadow-xs hover:shadow-xl hover:shadow-primary/5 flex flex-col justify-between transition-all"
                 >
                   {/* Quote */}
-                  <p className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 italic mb-8 text-center sm:text-start leading-relaxed">
+                  <p className="text-xl sm:text-2xl font-bold text-[#260E44] dark:text-gray-100 italic mb-8 text-center sm:text-start leading-relaxed">
                     &ldquo;{reviewsList[activeIndex].text}&rdquo;
                   </p>
 
@@ -168,10 +168,10 @@ export const Reviews: React.FC = () => {
                         {reviewsList[activeIndex].initial}
                       </div>
                       <div className="text-start">
-                        <h4 className="font-extrabold text-gray-900 dark:text-white text-base">
+                        <h4 className="font-black text-[#260E44] dark:text-white text-base">
                           {reviewsList[activeIndex].name}
                         </h4>
-                        <span className="text-xs text-gray-600 dark:text-gray-400 font-semibold">
+                        <span className="text-xs text-[#6B5E7B] dark:text-gray-400 font-bold">
                           {reviewsList[activeIndex].date}
                         </span>
                       </div>
@@ -198,7 +198,7 @@ export const Reviews: React.FC = () => {
                     key={i}
                     onClick={() => selectIndex(i)}
                     className={`h-2.5 rounded-full transition-all cursor-pointer ${
-                      activeIndex === i ? "w-7 bg-primary" : "w-2.5 bg-gray-300 dark:bg-medium-gray"
+                      activeIndex === i ? "w-7 bg-primary" : "w-2.5 bg-purple-200 dark:bg-medium-gray"
                     }`}
                     aria-label={`Go to slide ${i + 1}`}
                   />
@@ -209,7 +209,7 @@ export const Reviews: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={clickPrev}
-                  className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray dark:hover:bg-primary/20 text-gray-700 dark:text-gray-200 transition-colors shadow-sm cursor-pointer"
+                  className="p-3 rounded-full bg-purple-50 hover:bg-purple-100 dark:bg-medium-gray dark:hover:bg-primary/20 text-primary dark:text-gray-200 transition-colors shadow-xs cursor-pointer border border-purple-100/60 dark:border-transparent"
                   aria-label="Previous review"
                 >
                   {locale === "ar" ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
@@ -217,7 +217,7 @@ export const Reviews: React.FC = () => {
                 
                 <button
                   onClick={clickNext}
-                  className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-medium-gray dark:hover:bg-primary/20 text-gray-700 dark:text-gray-200 transition-colors shadow-sm cursor-pointer"
+                  className="p-3 rounded-full bg-purple-50 hover:bg-purple-100 dark:bg-medium-gray dark:hover:bg-primary/20 text-primary dark:text-gray-200 transition-colors shadow-xs cursor-pointer border border-purple-100/60 dark:border-transparent"
                   aria-label="Next review"
                 >
                   {locale === "ar" ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
