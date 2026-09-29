@@ -243,7 +243,18 @@ export default function ServiceDetails() {
             
             {/* Visual Hero */}
             <div className={`w-full h-64 sm:h-80 rounded-3xl bg-gradient-to-br ${getServiceGradient(service.categoryId)} p-8 flex flex-col justify-between text-white relative overflow-hidden shadow-lg`}>
-              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center">
+              {service.image ? (
+                <>
+                  <img
+                    src={service.image}
+                    alt={isAr ? service.titleAr : service.titleEn}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/30 backdrop-blur-[0.5px]" />
+                </>
+              ) : null}
+
+              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center relative z-10">
                 {category?.icon ? (
                   <ServiceIcon name={category.icon} className="text-white" />
                 ) : (
@@ -251,8 +262,8 @@ export default function ServiceDetails() {
                 )}
               </div>
 
-              <div className="text-start">
-                <span className="px-2.5 py-1 bg-white/20 text-white rounded-md text-[10px] font-black uppercase tracking-wider mb-3.5 inline-block">
+              <div className="text-start relative z-10">
+                <span className="px-2.5 py-1 bg-white/20 text-white rounded-md text-[10px] font-black uppercase tracking-wider mb-3.5 inline-block backdrop-blur-xs">
                   {category?.[isAr ? "nameAr" : "nameEn"]}
                 </span>
                 <h1 className="text-xl sm:text-3xl font-black">{isAr ? service.titleAr : service.titleEn}</h1>

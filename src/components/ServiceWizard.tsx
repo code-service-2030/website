@@ -134,14 +134,14 @@ export const ServiceWizard: React.FC = () => {
     if (!userType) return categories;
 
     if (userType === "individual") {
-      const allowed = ["absher-passports", "mofa-visas", "najiz-justice", "gosi", "contracts-ops"];
+      const allowed = ["absher-passports", "social-security", "government-grants", "reef-feasibility", "freelance-licenses", "financing-loans", "remote-jobs", "mofa-visas", "najiz-justice", "gosi", "traffic-vehicles", "health-insurance", "appeals-complaints"];
       return categories.filter(c => allowed.includes(c.id));
     } else if (userType === "business") {
-      const allowed = ["commerce-business", "hr-qiwa", "municipality-balady", "civil-defense", "zatca", "gosi", "contracts-ops", "chamber"];
+      const allowed = ["commerce-business", "hr-qiwa", "municipality-balady", "civil-defense", "zatca", "gosi", "contracts-ops", "chamber", "financing-loans", "freelance-licenses", "investment-biz", "appeals-complaints"];
       return categories.filter(c => allowed.includes(c.id));
     } else {
       // logistics / industrial
-      const allowed = ["modon", "transportation", "civil-defense", "chamber", "contracts-ops", "zatca"];
+      const allowed = ["modon", "transportation", "civil-defense", "contracts-ops", "chamber", "zatca", "reef-feasibility", "financing-loans"];
       return categories.filter(c => allowed.includes(c.id));
     }
   }, [userType, categories]);

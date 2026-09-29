@@ -652,18 +652,35 @@ export default function ServicesMarketplace() {
 
                           <div>
                             {/* Themed Visual Card Top */}
-                            <div className={`w-full h-32 rounded-2xl bg-gradient-to-br ${getServiceGradient(service.categoryId)} p-4 flex flex-col justify-between relative overflow-hidden mb-4 shadow-inner`}>
-                              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white transform group-hover:scale-110 transition-transform duration-300">
-                                {catInfo?.icon ? (
-                                  <ServiceIcon name={catInfo.icon} className="text-white" />
-                                ) : (
-                                  <Briefcase size={20} />
-                                )}
-                              </div>
-                              
-                              <span className="text-[10px] font-black text-white/80 uppercase tracking-widest block bg-black/10 self-start px-2 py-0.5 rounded">
-                                {catInfo?.[isAr ? "nameAr" : "nameEn"]}
-                              </span>
+                            <div className={`w-full h-32 rounded-2xl bg-gradient-to-br ${getServiceGradient(service.categoryId)} relative overflow-hidden mb-4 shadow-inner`}>
+                              {service.image ? (
+                                <>
+                                  <img
+                                    src={service.image}
+                                    alt={isAr ? service.titleAr : service.titleEn}
+                                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                                    loading="lazy"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                                  <span className="absolute bottom-3 start-3 text-[10px] font-black text-white uppercase tracking-widest bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded">
+                                    {catInfo?.[isAr ? "nameAr" : "nameEn"]}
+                                  </span>
+                                </>
+                              ) : (
+                                <div className="p-4 flex flex-col justify-between h-full">
+                                  <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white transform group-hover:scale-110 transition-transform duration-300">
+                                    {catInfo?.icon ? (
+                                      <ServiceIcon name={catInfo.icon} className="text-white" />
+                                    ) : (
+                                      <Briefcase size={20} />
+                                    )}
+                                  </div>
+                                  
+                                  <span className="text-[10px] font-black text-white/80 uppercase tracking-widest block bg-black/10 self-start px-2 py-0.5 rounded">
+                                    {catInfo?.[isAr ? "nameAr" : "nameEn"]}
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             {/* Title & Desc */}
