@@ -5100,7 +5100,7 @@ export const defaultServices: ServiceItem[] = [
     "titleEn": "بكج الوثائق الشهائد و السجلات إلكترونية",
     "descAr": "إنجاز معاملة بكج الوثائق الشهائد و السجلات إلكترونية رسمياً وبأعلى دقة ومتابعة مستمرة حتى الانتهاء.",
     "descEn": "Official processing and dedicated follow-up for بكج الوثائق الشهائد و السجلات إلكترونية via Code Services.",
-    "categoryId": "general",
+    "categoryId": "freelance-licenses",
     "price": "حسب الاتفاق",
     "docsAr": "الهوية الوطنية وبيانات الحساب الرسمي للتنفيذ",
     "docsEn": "National ID and necessary account credentials",
@@ -5122,7 +5122,7 @@ export const defaultServices: ServiceItem[] = [
     "titleEn": "اصدار وثيقة العمل الحر",
     "descAr": "بدون اي شهادة او دورات. تقديم ومتابعة رسمية عبر كود خدمات.",
     "descEn": "Official processing and dedicated follow-up for اصدار وثيقة العمل الحر via Code Services.",
-    "categoryId": "general",
+    "categoryId": "freelance-licenses",
     "price": "56.34 ريال",
     "docsAr": "الهوية الوطنية وبيانات الحساب الرسمي للتنفيذ",
     "docsEn": "National ID and necessary account credentials",
@@ -5148,7 +5148,7 @@ export const defaultServices: ServiceItem[] = [
     "titleEn": "تقديم شكوى في الهيئة الملكية الفكرية",
     "descAr": "إنجاز معاملة تقديم شكوى في الهيئة الملكية الفكرية رسمياً وبأعلى دقة ومتابعة مستمرة حتى الانتهاء.",
     "descEn": "Official processing and dedicated follow-up for تقديم شكوى في الهيئة الملكية الفكرية via Code Services.",
-    "categoryId": "general",
+    "categoryId": "appeals-complaints",
     "price": "450.71 ريال",
     "docsAr": "الهوية الوطنية وبيانات الحساب الرسمي للتنفيذ",
     "docsEn": "National ID and necessary account credentials",
@@ -5171,7 +5171,7 @@ export const defaultServices: ServiceItem[] = [
     "titleEn": "تقديم أعتراض في هيئة الزكاة والضريبة والجمارك",
     "descAr": "إنجاز معاملة تقديم أعتراض في هيئة الزكاة والضريبة والجمارك رسمياً وبأعلى دقة ومتابعة مستمرة حتى الانتهاء.",
     "descEn": "Official processing and dedicated follow-up for تقديم أعتراض في هيئة الزكاة والضريبة والجمارك via Code Services.",
-    "categoryId": "general",
+    "categoryId": "zatca",
     "price": "149.22 ريال",
     "docsAr": "الهوية الوطنية وبيانات الحساب الرسمي للتنفيذ",
     "docsEn": "National ID and necessary account credentials",
@@ -7332,52 +7332,11 @@ export const getMigratedServices = (): ServiceItem[] => {
 
   try {
     const list = JSON.parse(saved);
-    if (!Array.isArray(list)) {
+    if (!Array.isArray(list) || list.length < defaultServices.length) {
       localStorage.setItem("code_services_catalog", JSON.stringify(defaultServices));
       return defaultServices;
     }
-
-    let needsMigration = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const migrated = list.map((item: any, index: number) => {
-      if (item.titleAr && item.titleEn) {
-        return item as ServiceItem;
-      }
-      
-      needsMigration = true;
-      const parts = (item.title || "").split(" / ");
-      const titleAr = parts[0] || item.title || "";
-      const titleEn = parts[1] || titleAr;
-      const descAr = item.description || "";
-      const descEn = item.description || "";
-      
-      let categoryId = item.categoryId || item.category || "business";
-      if (categoryId === "design") categoryId = "printing";
-      else if (categoryId === "visa") categoryId = "absher";
-
-      return {
-        id: item.id || `service-${Date.now()}-${index}`,
-        titleAr,
-        titleEn,
-        descAr,
-        descEn,
-        categoryId,
-        price: item.price || "",
-        docsAr: "",
-        docsEn: "",
-        completionTimeAr: "",
-        completionTimeEn: "",
-        keywords: [],
-        featured: false,
-        visible: true,
-        order: item.order || index + 1
-      };
-    });
-
-    if (needsMigration) {
-      localStorage.setItem("code_services_catalog", JSON.stringify(migrated));
-    }
-    return migrated;
+    return list as ServiceItem[];
   } catch (e) {
     localStorage.setItem("code_services_catalog", JSON.stringify(defaultServices));
     return defaultServices;

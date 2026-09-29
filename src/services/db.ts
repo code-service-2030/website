@@ -1,4 +1,4 @@
-import { Category, ServiceItem, FAQItem, Announcement } from "@/data/translations";
+import { Category, ServiceItem, FAQItem, Announcement, defaultCategories, defaultServices } from "@/data/translations";
 import { supabase } from "./supabaseClient";
 
 // Helper to generate unique request ID matching format: KD-2026-123456
@@ -1716,9 +1716,15 @@ export class LocalOrderHistoryRepository implements IOrderHistoryRepository {
 
 export class LocalCategoryRepository implements ICategoryRepository {
   async getCategories(): Promise<Category[]> {
-    if (typeof window === "undefined") return [];
+    if (typeof window === "undefined") return defaultCategories;
     const saved = localStorage.getItem("code_services_categories");
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return defaultCategories;
+    try {
+      const list = JSON.parse(saved);
+      return Array.isArray(list) && list.length >= defaultCategories.length ? list : defaultCategories;
+    } catch {
+      return defaultCategories;
+    }
   }
 
   async saveCategories(categories: Category[]): Promise<void> {
@@ -1731,9 +1737,15 @@ export class LocalCategoryRepository implements ICategoryRepository {
 
 export class LocalServiceRepository implements IServiceRepository {
   async getServices(): Promise<ServiceItem[]> {
-    if (typeof window === "undefined") return [];
+    if (typeof window === "undefined") return defaultServices;
     const saved = localStorage.getItem("code_services_catalog");
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return defaultServices;
+    try {
+      const list = JSON.parse(saved);
+      return Array.isArray(list) && list.length >= defaultServices.length ? list : defaultServices;
+    } catch {
+      return defaultServices;
+    }
   }
 
   async saveServices(services: ServiceItem[]): Promise<void> {

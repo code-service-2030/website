@@ -183,7 +183,11 @@ const translationDict = {
   'التقديم في تمويل الأسر المنتجة .': { en: 'Productive Families Development Financing', descEn: 'Low-cost funding for home-based craft and catering micro-businesses.', cat: 'financing-loans' },
   'التقديم في تمويل سلفة .': { en: 'Sulfah Fast Digital Microloan', descEn: 'Instant micro-financing up to 20,000 SAR approved within minutes.', cat: 'financing-loans' },
   'التقديم في تمويل تمام .': { en: 'Tamam Instant Fintech Microloan', descEn: 'Fast digital microloan compliant with Sharia without salary transfer.', cat: 'financing-loans' },
-  'التقديم في تمويل تسهيل .': { en: 'Tasheel Personal & Consumer Financing', descEn: 'Flexible consumer finance solutions up to 100,000 SAR.', cat: 'financing-loans' }
+  'التقديم في تمويل تسهيل .': { en: 'Tasheel Personal & Consumer Financing', descEn: 'Flexible consumer finance solutions up to 100,000 SAR.', cat: 'financing-loans' },
+  'بكج الوثائق الشهائد و السجلات إلكترونية': { en: 'Electronic Documents & Certificates Package', descEn: 'All-inclusive bundle for business setup and official e-certificates.', cat: 'freelance-licenses' },
+  'اصدار وثيقة العمل الحر': { en: 'Issue Freelance License Document', descEn: 'Official Ministry of Human Resources freelance accreditation issuance.', cat: 'freelance-licenses' },
+  'تقديم شكوى في الهيئة الملكية الفكرية': { en: 'Intellectual Property (SAIP) Dispute & Complaint', descEn: 'Filing trademark and copyright infringement dispute with SAIP.', cat: 'appeals-complaints' },
+  'تقديم أعتراض في هيئة الزكاة والضريبة والجمارك': { en: 'ZATCA Tax Assessment Objection & Appeal', descEn: 'Formal objection filing against tax assessments and customs duties with ZATCA.', cat: 'zatca' }
 };
 
 // New Categories to add to defaultCategories
