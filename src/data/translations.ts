@@ -667,12 +667,12 @@ export const defaultServices: ServiceItem[] = [
   },
   {
     "id": "commerce-issue-cr",
-    "titleAr": "إصدار سجل تجاري",
-    "titleEn": "Issue Commercial Register (CR)",
+    "titleAr": "إصدار واستخراج سجل تجاري",
+    "titleEn": "Commercial Registration Issuance",
     "descAr": "تأسيس وإصدار السجل التجاري الفوري للمؤسسات والشركات.",
     "descEn": "Establish and issue instant Commercial Register for companies.",
     "categoryId": "commerce-business",
-    "price": "حسب الاتفاق",
+    "price": "99.16 ريال",
     "docsAr": "رقم الهوية للمالك، حجز الاسم التجاري",
     "docsEn": "Owner ID number, reserved trade name",
     "completionTimeAr": "يوم عمل واحد",
@@ -684,7 +684,9 @@ export const defaultServices: ServiceItem[] = [
     ],
     "featured": false,
     "visible": true,
-    "order": 28
+    "order": 28,
+    "regularPrice": "99.16 ريال",
+    "image": "https://cdn.salla.sa/yWlvO/c3c02959-3795-45ed-b721-047b77795919-500x500-bgC1loo2uvaaw8GaNOW6n1l97yM2hNlxzpAp7V9W.jpg"
   },
   {
     "id": "commerce-edit-cr",
@@ -751,8 +753,8 @@ export const defaultServices: ServiceItem[] = [
   },
   {
     "id": "commerce-add-activities",
-    "titleAr": "إضافة الأنشطة",
-    "titleEn": "Add Business Activities",
+    "titleAr": "إضافة أنشطة السجل التجاري",
+    "titleEn": "Add Commercial Register Activities",
     "descAr": "إضافة أنشطة تجارية جديدة للسجل التجاري القائم.",
     "descEn": "Add new business activities to the existing Commercial Register.",
     "categoryId": "commerce-business",
@@ -1276,8 +1278,8 @@ export const defaultServices: ServiceItem[] = [
   },
   {
     "id": "muni-resolve-notes",
-    "titleAr": "معالجة الملاحظات والطلبات",
-    "titleEn": "Resolve Municipal Inquiries & Demands",
+    "titleAr": "معالجة ملاحظات وطلبات بلدي",
+    "titleEn": "Balady Notes & Requests Resolution",
     "descAr": "معالجة ومتابعة الطلبات الموقوفة أو الملاحظات الفنية في بلدي.",
     "descEn": "Address and process suspended municipal requests and technical feedback.",
     "categoryId": "municipality-balady",
@@ -1507,8 +1509,8 @@ export const defaultServices: ServiceItem[] = [
   },
   {
     "id": "zatca-update-profile",
-    "titleAr": "تعديل بيانات المنشأة",
-    "titleEn": "Modify ZATCA Profile Data",
+    "titleAr": "تعديل بيانات المنشأة بالزكاة والضريبة",
+    "titleEn": "Update Facility Data in ZATCA",
     "descAr": "تحديث وتعديل البيانات القانونية للمنشأة في هيئة الزكاة.",
     "descEn": "Update and modify legal profile details of the facility at ZATCA.",
     "categoryId": "zatca",
@@ -1906,8 +1908,8 @@ export const defaultServices: ServiceItem[] = [
   },
   {
     "id": "gosi-resolve-requests",
-    "titleAr": "معالجة الملاحظات والطلبات",
-    "titleEn": "Resolve GOSI Remarks & Queries",
+    "titleAr": "معالجة ملاحظات التأمينات الاجتماعية",
+    "titleEn": "GOSI Notes & Requests Resolution",
     "descAr": "حل ومتابعة الاعتراضات والملاحظات المتعلقة بنسب الاشتراك والقرارات.",
     "descEn": "Resolve GOSI remarks, audits, and objections on subscription rates.",
     "categoryId": "gosi",
@@ -2788,8 +2790,8 @@ export const defaultServices: ServiceItem[] = [
   },
   {
     "id": "modon-modify-profile",
-    "titleAr": "تعديل بيانات المنشأة",
-    "titleEn": "Modify MODON Profile",
+    "titleAr": "تعديل بيانات المنشأة في مدن",
+    "titleEn": "Update Facility Data in MODON",
     "descAr": "تحديث وتعديل البيانات القانونية للمستثمر الصناعي في منصة مدن.",
     "descEn": "Update and modify industrial investor profile data in MODON.",
     "categoryId": "modon",
@@ -3565,8 +3567,8 @@ export const defaultServices: ServiceItem[] = [
   },
   {
     "id": "invest-add-activities",
-    "titleAr": "إضافة الأنشطة",
-    "titleEn": "Add Business Activities",
+    "titleAr": "إضافة أنشطة الاستثمار",
+    "titleEn": "Add Investment Activities",
     "descAr": "إضافة تراخيص فرعية أو أنشطة إضافية للمستثمرين.",
     "descEn": "Add branch licenses or additional activities for business investors.",
     "categoryId": "investment-biz",
@@ -4980,29 +4982,6 @@ export const defaultServices: ServiceItem[] = [
     "regularPrice": "59.08 ريال"
   },
   {
-    "id": "serv-1206607412",
-    "titleAr": "أستخراج سجل تجاري",
-    "titleEn": "Issue New Commercial Registration (CR)",
-    "descAr": "إنجاز معاملة أستخراج سجل تجاري رسمياً وبأعلى دقة ومتابعة مستمرة حتى الانتهاء.",
-    "descEn": "Instant electronic company & establishment CR registration via Ministry of Commerce.",
-    "categoryId": "commerce-business",
-    "price": "99.16 ريال",
-    "docsAr": "الهوية الوطنية وبيانات الحساب الرسمي للتنفيذ",
-    "docsEn": "National ID and necessary account credentials",
-    "completionTimeAr": "خلال 24-48 ساعة عمل",
-    "completionTimeEn": "Within 24-48 business hours",
-    "keywords": [
-      "أستخراج سجل تجاري",
-      "Issue New Commercial Registration (CR)",
-      "commerce-business"
-    ],
-    "featured": false,
-    "visible": true,
-    "order": 721,
-    "image": "https://cdn.salla.sa/yWlvO/c3c02959-3795-45ed-b721-047b77795919-500x500-bgC1loo2uvaaw8GaNOW6n1l97yM2hNlxzpAp7V9W.jpg",
-    "regularPrice": "99.16 ريال"
-  },
-  {
     "id": "serv-404820010",
     "titleAr": "أستخراج وثيقة رقمن",
     "titleEn": "Reqman Digital Translation / Transcription License",
@@ -5101,7 +5080,7 @@ export const defaultServices: ServiceItem[] = [
     "descAr": "إنجاز معاملة بكج الوثائق الشهائد و السجلات إلكترونية رسمياً وبأعلى دقة ومتابعة مستمرة حتى الانتهاء.",
     "descEn": "Official processing and dedicated follow-up for بكج الوثائق الشهائد و السجلات إلكترونية via Code Services.",
     "categoryId": "freelance-licenses",
-    "price": "حسب الاتفاق",
+    "price": "مجاناً",
     "docsAr": "الهوية الوطنية وبيانات الحساب الرسمي للتنفيذ",
     "docsEn": "National ID and necessary account credentials",
     "completionTimeAr": "خلال 24-48 ساعة عمل",
@@ -5887,7 +5866,7 @@ export const defaultServices: ServiceItem[] = [
     "descAr": "إنجاز معاملة بكج الوظائف رسمياً وبأعلى دقة ومتابعة مستمرة حتى الانتهاء.",
     "descEn": "Full package: Professional CV, LinkedIn revamp, and submission to 10+ Saudi job portals.",
     "categoryId": "remote-jobs",
-    "price": "حسب الاتفاق",
+    "price": "مجاناً",
     "docsAr": "الهوية الوطنية وبيانات الحساب الرسمي للتنفيذ",
     "docsEn": "National ID and necessary account credentials",
     "completionTimeAr": "خلال 24-48 ساعة عمل",
@@ -7324,21 +7303,26 @@ export const translations = {
 
 export const getMigratedServices = (): ServiceItem[] => {
   if (typeof window === "undefined") return defaultServices;
+  const CATALOG_VER = "v2026_09_dedup";
+  const savedVer = localStorage.getItem("code_services_catalog_ver");
   const saved = localStorage.getItem("code_services_catalog");
-  if (!saved) {
+  if (!saved || savedVer !== CATALOG_VER) {
     localStorage.setItem("code_services_catalog", JSON.stringify(defaultServices));
+    localStorage.setItem("code_services_catalog_ver", CATALOG_VER);
     return defaultServices;
   }
 
   try {
     const list = JSON.parse(saved);
-    if (!Array.isArray(list) || list.length < defaultServices.length) {
+    if (!Array.isArray(list) || list.length !== defaultServices.length) {
       localStorage.setItem("code_services_catalog", JSON.stringify(defaultServices));
+      localStorage.setItem("code_services_catalog_ver", CATALOG_VER);
       return defaultServices;
     }
     return list as ServiceItem[];
   } catch (e) {
     localStorage.setItem("code_services_catalog", JSON.stringify(defaultServices));
+    localStorage.setItem("code_services_catalog_ver", CATALOG_VER);
     return defaultServices;
   }
 };

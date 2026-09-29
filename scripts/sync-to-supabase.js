@@ -93,17 +93,30 @@ async function sync() {
       }
     }
 
+    // Remove any services from Supabase that no longer exist in defaultServices
+    const currentValidIds = new Set(defaultServices.map(s => s.id));
+    const { data: allSupabaseServices } = await supabase.from('services').select('id');
+    if (allSupabaseServices && allSupabaseServices.length > 0) {
+      const idsToDelete = allSupabaseServices.filter(s => !currentValidIds.has(s.id)).map(s => s.id);
+      if (idsToDelete.length > 0) {
+        console.log(`Deleting ${idsToDelete.length} obsolete/duplicate services from Supabase:`, idsToDelete);
+        const { error: delErr } = await supabase.from('services').delete().in('id', idsToDelete);
+        if (delErr) console.error('Error deleting obsolete services:', delErr);
+        else console.log('Successfully deleted obsolete services from Supabase.');
+      }
+    }
+
     // Verify counts in Supabase
     const { count: finalServCount } = await supabase.from('services').select('*', { count: 'exact', head: true });
     const { count: finalCatCount } = await supabase.from('categories').select('*', { count: 'exact', head: true });
 
     console.log(`\n=== SYNC COMPLETE ===`);
     console.log(`Supabase Categories: ${finalCatCount}`);
-    console.log(`Supabase Services: ${finalServCount}`);
-
+    console.log(`Supabase Services:   ${finalServCount}`);
   } catch (err) {
     console.error('Fatal sync error:', err);
   }
 }
 
 sync();
+

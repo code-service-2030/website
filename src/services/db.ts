@@ -1738,11 +1738,22 @@ export class LocalCategoryRepository implements ICategoryRepository {
 export class LocalServiceRepository implements IServiceRepository {
   async getServices(): Promise<ServiceItem[]> {
     if (typeof window === "undefined") return defaultServices;
+    const CATALOG_VER = "v2026_09_dedup";
+    const savedVer = localStorage.getItem("code_services_catalog_ver");
     const saved = localStorage.getItem("code_services_catalog");
-    if (!saved) return defaultServices;
+    if (!saved || savedVer !== CATALOG_VER) {
+      localStorage.setItem("code_services_catalog", JSON.stringify(defaultServices));
+      localStorage.setItem("code_services_catalog_ver", CATALOG_VER);
+      return defaultServices;
+    }
     try {
       const list = JSON.parse(saved);
-      return Array.isArray(list) && list.length >= defaultServices.length ? list : defaultServices;
+      if (Array.isArray(list) && list.length === defaultServices.length) {
+        return list;
+      }
+      localStorage.setItem("code_services_catalog", JSON.stringify(defaultServices));
+      localStorage.setItem("code_services_catalog_ver", CATALOG_VER);
+      return defaultServices;
     } catch {
       return defaultServices;
     }
