@@ -124,22 +124,14 @@ export const CartDrawer: React.FC = () => {
       return null;
     };
 
-    // 2. Validate Contact Method and fields
-    if (customerInfo.contactMethod === "whatsapp") {
-      // Phone is required and must be valid
-      const phoneError = validatePhone(customerInfo.localPhone, customerInfo.countryCode);
-      if (phoneError) {
-        newErrors.phone = phoneError;
-      }
+    // 2. Validate Phone (Always Required)
+    const phoneError = validatePhone(customerInfo.localPhone, customerInfo.countryCode);
+    if (phoneError) {
+      newErrors.phone = phoneError;
+    }
 
-      // Email is optional (if provided, must be valid)
-      if (customerInfo.email.trim()) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(customerInfo.email.trim())) {
-          newErrors.email = isAr ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid email address";
-        }
-      }
-    } else if (customerInfo.contactMethod === "email") {
+    // 3. Validate Email
+    if (customerInfo.contactMethod === "email") {
       // Email is required and must be valid
       if (!customerInfo.email.trim()) {
         newErrors.email = isAr ? "البريد الإلكتروني مطلوب" : "Email address is required";
@@ -149,12 +141,12 @@ export const CartDrawer: React.FC = () => {
           newErrors.email = isAr ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid email address";
         }
       }
-
-      // Phone is optional (if provided, must be valid)
-      if (customerInfo.localPhone.trim()) {
-        const phoneError = validatePhone(customerInfo.localPhone, customerInfo.countryCode);
-        if (phoneError) {
-          newErrors.phone = phoneError;
+    } else {
+      // Email is optional for WhatsApp (if provided, must be valid)
+      if (customerInfo.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(customerInfo.email.trim())) {
+          newErrors.email = isAr ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid email address";
         }
       }
     }
@@ -471,14 +463,12 @@ export const CartDrawer: React.FC = () => {
                     {/* Mobile Number */}
                     <div>
                       <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1">
-                        {locale === "ar" 
-                          ? `رقم الجوال ${customerInfo.contactMethod === "whatsapp" ? "*" : "(اختياري)"}` 
-                          : `Mobile Number ${customerInfo.contactMethod === "whatsapp" ? "*" : "(Optional)"}`}
+                        {locale === "ar" ? "رقم الجوال *" : "Mobile Number *"}
                       </label>
                       <CountryPhoneInput
                         value={customerInfo.phone}
                         onChange={handlePhoneChange}
-                        required={customerInfo.contactMethod === "whatsapp"}
+                        required={true}
                         error={!!errors.phone}
                         placeholder={locale === "ar" ? "5XXXXXXXX" : "5XXXXXXXX"}
                       />
