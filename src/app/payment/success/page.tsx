@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, MessageSquare, Loader2, ArrowRight, X } from "lucide-react";
+import { CheckCircle, MessageSquare, Loader2, ArrowRight, X, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db, defaultSystemSettings } from "@/services/db";
 import { buildLocalizedMessage } from "@/services/communication";
@@ -15,6 +15,7 @@ function SuccessPageContent() {
   const [order, setOrder] = useState<any>(null);
   const [locale, setLocale] = useState("ar");
   const [waLink, setWaLink] = useState("");
+  const [emailLink, setEmailLink] = useState("");
   const [isOpen, setIsOpen] = useState(true);
 
   const modalRef = useRef<HTMLDivElement>(null);
@@ -141,7 +142,8 @@ function SuccessPageContent() {
           .map((item: any) => item.categoryId || "general")
           .filter((v: any, i: any, a: any) => a.indexOf(v) === i)
           .join(", ");
-        const contactMethodLabel = locale === "ar" ? "واتساب" : "WhatsApp";
+        const isEmail = foundOrder.contactMethod === "email";
+        const contactMethodLabel = isEmail ? (locale === "ar" ? "البريد الإلكتروني" : "Email") : (locale === "ar" ? "واتساب" : "WhatsApp");
         const preferredTimeLabel = foundOrder.preferredTime === "morning" ? (locale === "ar" ? "صباحاً" : "Morning") 
           : foundOrder.preferredTime === "afternoon" ? (locale === "ar" ? "بعد الظهر" : "Afternoon") 
           : (locale === "ar" ? "مساءً" : "Evening");
@@ -168,11 +170,14 @@ function SuccessPageContent() {
           language: locale
         };
 
-        const { body } = buildLocalizedMessage(payloadData, locale, settings);
+        const { subject, body } = buildLocalizedMessage(payloadData, locale, settings);
 
         const cleanPhone = settings.whatsappNumber.replace(/[\s+]/g, "");
         const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(body)}`;
         setWaLink(url);
+
+        const companyEmail = (settings.companyEmail || "eyadk0444@gmail.com").trim();
+        setEmailLink(`mailto:${encodeURIComponent(companyEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
         setLoading(false);
       } catch (err) {
         console.error("Verification error:", err);
@@ -307,15 +312,51 @@ function SuccessPageContent() {
               </div>
             </div>
 
-            {/* Action Button to Continue to WhatsApp */}
-            <button
-              onClick={handleContinue}
-              className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 relative group"
-            >
-              <span className="absolute -inset-1 rounded-2xl bg-emerald-500/30 animate-ping group-hover:hidden pointer-events-none" />
-              <MessageSquare size={16} fill="currentColor" />
-              <span>{isAr ? "الاستمرار إلى واتساب للمتابعة" : "Continue to WhatsApp to Follow Up"}</span>
-            </button>
+            {/* Action Button: Email or WhatsApp */}
+            {order.contactMethod === "email" ? (
+              <div className="space-y-2.5">
+                <button
+                  onClick={() => {
+                    if (emailLink) window.location.href = emailLink;
+                  }}
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-500/20"
+                >
+                  <Mail size={16} />
+                  <span>{isAr ? "الاستمرار عبر البريد الإلكتروني" : "Continue via Email to Follow Up"}</span>
+                </button>
+                {waLink && (
+                  <button
+                    onClick={handleContinue}
+                    className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-medium-gray/30 dark:hover:bg-medium-gray/50 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xxs transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-gray-200 dark:border-border-dark"
+                  >
+                    <MessageSquare size={13} />
+                    <span>{isAr ? "أو المتابعة عبر واتساب" : "Or Continue via WhatsApp"}</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <button
+                  onClick={handleContinue}
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 relative group"
+                >
+                  <span className="absolute -inset-1 rounded-2xl bg-emerald-500/30 animate-ping group-hover:hidden pointer-events-none" />
+                  <MessageSquare size={16} fill="currentColor" />
+                  <span>{isAr ? "الاستمرار إلى واتساب للمتابعة" : "Continue to WhatsApp to Follow Up"}</span>
+                </button>
+                {emailLink && (
+                  <button
+                    onClick={() => {
+                      if (emailLink) window.location.href = emailLink;
+                    }}
+                    className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-medium-gray/30 dark:hover:bg-medium-gray/50 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xxs transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-gray-200 dark:border-border-dark"
+                  >
+                    <Mail size={13} />
+                    <span>{isAr ? "أو المتابعة عبر البريد الإلكتروني" : "Or Continue via Email"}</span>
+                  </button>
+                )}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

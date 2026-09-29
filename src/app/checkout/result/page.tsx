@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, XCircle, MessageSquare, Loader2, ArrowRight, X, RefreshCw, Home, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle, XCircle, MessageSquare, Loader2, ArrowRight, X, RefreshCw, Home, ChevronDown, ChevronUp, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db, defaultSystemSettings } from "@/services/db";
 import { buildLocalizedMessage } from "@/services/communication";
@@ -16,6 +16,7 @@ function CheckoutResultContent() {
   const [order, setOrder] = useState<any>(null);
   const [locale, setLocale] = useState("ar");
   const [waLink, setWaLink] = useState("");
+  const [emailLink, setEmailLink] = useState("");
   const [supportLink, setSupportLink] = useState("");
   
   // Failure technical logs
@@ -144,7 +145,8 @@ function CheckoutResultContent() {
             .map((item: any) => item.categoryId || "general")
             .filter((v: any, i: any, a: any) => a.indexOf(v) === i)
             .join(", ");
-          const contactMethodLabel = locale === "ar" ? "واتساب" : "WhatsApp";
+          const isEmail = foundOrder.contactMethod === "email";
+          const contactMethodLabel = isEmail ? (locale === "ar" ? "البريد الإلكتروني" : "Email") : (locale === "ar" ? "واتساب" : "WhatsApp");
           const preferredTimeLabel = foundOrder.preferredTime === "morning" ? (locale === "ar" ? "صباحاً" : "Morning") 
             : foundOrder.preferredTime === "afternoon" ? (locale === "ar" ? "بعد الظهر" : "Afternoon") 
             : (locale === "ar" ? "مساءً" : "Evening");
@@ -171,9 +173,12 @@ function CheckoutResultContent() {
             language: locale
           };
 
-          const { body } = buildLocalizedMessage(payloadData, locale, settings);
+          const { subject, body } = buildLocalizedMessage(payloadData, locale, settings);
           const cleanPhone = settings.whatsappNumber.replace(/[\s+]/g, "");
           setWaLink(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(body)}`);
+
+          const companyEmail = (settings.companyEmail || "eyadk0444@gmail.com").trim();
+          setEmailLink(`mailto:${encodeURIComponent(companyEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
         } else {
           // If status is failed or cancelled
           const cancelRes = await fetch("/api/cancel", {
@@ -386,14 +391,50 @@ function CheckoutResultContent() {
                 </div>
               </div>
 
-              {/* Confirm to WhatsApp Callout */}
-              <button
-                onClick={handleContinueToWhatsApp}
-                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-2xl font-black text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/10"
-              >
-                <MessageSquare size={16} fill="currentColor" />
-                <span>{isAr ? "المتابعة عبر واتساب" : "Continue to WhatsApp"}</span>
-              </button>
+              {/* Contact Method Action CTA */}
+              {order.contactMethod === "email" ? (
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => {
+                      if (emailLink) window.location.href = emailLink;
+                    }}
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-2xl font-black text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/10"
+                  >
+                    <Mail size={16} />
+                    <span>{isAr ? "المتابعة عبر البريد الإلكتروني" : "Continue via Email"}</span>
+                  </button>
+                  {waLink && (
+                    <button
+                      onClick={handleContinueToWhatsApp}
+                      className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-medium-gray/30 dark:hover:bg-medium-gray/50 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xxs transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-gray-200 dark:border-border-dark"
+                    >
+                      <MessageSquare size={13} />
+                      <span>{isAr ? "أو المتابعة عبر واتساب" : "Or Continue via WhatsApp"}</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <button
+                    onClick={handleContinueToWhatsApp}
+                    className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-2xl font-black text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/10"
+                  >
+                    <MessageSquare size={16} fill="currentColor" />
+                    <span>{isAr ? "المتابعة عبر واتساب" : "Continue to WhatsApp"}</span>
+                  </button>
+                  {emailLink && (
+                    <button
+                      onClick={() => {
+                        if (emailLink) window.location.href = emailLink;
+                      }}
+                      className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-medium-gray/30 dark:hover:bg-medium-gray/50 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xxs transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-gray-200 dark:border-border-dark"
+                    >
+                      <Mail size={13} />
+                      <span>{isAr ? "أو المتابعة عبر البريد الإلكتروني" : "Or Continue via Email"}</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

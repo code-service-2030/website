@@ -207,18 +207,12 @@ export const CartDrawer: React.FC = () => {
     if (estimatedTotalPrice === 0) {
       try {
         const settings = systemSettings || defaultSystemSettings;
-        const whatsappPhone = (settings.whatsappNumber || "966537073161").replace(/[\s+]/g, "");
+        const isAr = locale === "ar";
         
         const servicesSummary = cartItems
-          .map((item, idx) => `${idx + 1}- ${locale === "ar" ? item.service.titleAr : item.service.titleEn} (x${item.quantity}) ${item.notes ? `[${item.notes}]` : ""}`)
+          .map((item, idx) => `${idx + 1}- ${isAr ? item.service.titleAr : item.service.titleEn} (x${item.quantity}) ${item.notes ? `[${item.notes}]` : ""}`)
           .join("\n");
-        
-        const text = locale === "ar"
-          ? `السلام عليكم، تم تسجيل طلبي برقم #${requestId} بانتظار المراجعة والاتفاق على التكلفة للخدمات التالية:\n\n${servicesSummary}\n\nالاسم: ${customerInfo.name}\nالجوال: ${customerInfo.countryCode}${customerInfo.localPhone}`
-          : `Hello, my order #${requestId} is registered and awaiting review/cost agreement for the following services:\n\n${servicesSummary}\n\nName: ${customerInfo.name}\nPhone: ${customerInfo.countryCode}${customerInfo.localPhone}`;
-          
-        const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(text)}`;
-        
+
         // Dynamically update status to pending in Supabase
         try {
           await db.orders.updateOrderStatus(requestId, "pending");
@@ -230,11 +224,37 @@ export const CartDrawer: React.FC = () => {
         clearCart();
         setStep(1);
         closeCart();
-        
-        window.location.href = waUrl;
-        return;
+
+        if (customerInfo.contactMethod === "email") {
+          const companyEmail = (settings.companyEmail || "eyadk0444@gmail.com").trim();
+          const contactMethodLabel = isAr ? "البريد الإلكتروني" : "Email";
+          const preferredTimeLabel = customerInfo.preferredTime === "morning" ? (isAr ? "صباحاً (9 - 12)" : "Morning (9 AM - 12 PM)") 
+            : customerInfo.preferredTime === "afternoon" ? (isAr ? "بعد الظهر (1 - 5)" : "Afternoon (1 PM - 5 PM)") 
+            : (isAr ? "مساءً (6 - 11)" : "Evening (6 PM - 11 PM)");
+
+          const emailSubject = isAr
+            ? `طلب خدمة جديد - رقم الطلب #${requestId}`
+            : `New Service Request - Order #${requestId}`;
+
+          const emailBody = isAr
+            ? `السلام عليكم ورحمة الله وبركاته،\n\nتم تسجيل طلب خدمة جديد من مكتب كود خدمات.\n\nرقم الطلب:\n#${requestId}\n\nبيانات العميل:\n- الاسم: ${customerInfo.name}\n- البريد الإلكتروني: ${customerInfo.email || "-"}\n- رقم الجوال: ${customerInfo.countryCode}${customerInfo.localPhone || "-"}\n- طريقة التواصل المفضلة: ${contactMethodLabel}\n- وقت التواصل المفضل: ${preferredTimeLabel}\n\nالخدمات المطلوبة:\n${servicesSummary}\n${customerInfo.generalNotes ? `\nملاحظات إضافية:\n${customerInfo.generalNotes}\n` : ""}\n\nشكراً لاختياركم كود خدمات.`
+            : `Hello,\n\nA new service request has been registered with Code Services.\n\nOrder ID:\n#${requestId}\n\nCustomer Information:\n- Name: ${customerInfo.name}\n- Email: ${customerInfo.email || "-"}\n- Phone: ${customerInfo.countryCode}${customerInfo.localPhone || "-"}\n- Preferred Contact: ${contactMethodLabel}\n- Preferred Time: ${preferredTimeLabel}\n\nRequested Services:\n${servicesSummary}\n${customerInfo.generalNotes ? `\nAdditional Notes:\n${customerInfo.generalNotes}\n` : ""}\n\nThank you for choosing Code Services.`;
+
+          const mailtoUrl = `mailto:${encodeURIComponent(companyEmail)}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+          window.location.href = mailtoUrl;
+          return;
+        } else {
+          const whatsappPhone = (settings.whatsappNumber || "966537073161").replace(/[\s+]/g, "");
+          const text = isAr
+            ? `السلام عليكم، تم تسجيل طلبي برقم #${requestId} بانتظار المراجعة والاتفاق على التكلفة للخدمات التالية:\n\n${servicesSummary}\n\nالاسم: ${customerInfo.name}\nالجوال: ${customerInfo.countryCode}${customerInfo.localPhone}`
+            : `Hello, my order #${requestId} is registered and awaiting review/cost agreement for the following services:\n\n${servicesSummary}\n\nName: ${customerInfo.name}\nPhone: ${customerInfo.countryCode}${customerInfo.localPhone}`;
+            
+          const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(text)}`;
+          window.location.href = waUrl;
+          return;
+        }
       } catch (err: any) {
-        console.error("WhatsApp Redirect Failed:", err);
+        console.error("Redirect Failed:", err);
       }
     }
 
@@ -593,7 +613,11 @@ export const CartDrawer: React.FC = () => {
                         )}
                         <span>
                           {isSubmitting ? (
-                            locale === "ar" ? "جاري الإرسال..." : "Submitting..."
+                            locale === "ar" ? "جاري المعالجة..." : "Processing..."
+                          ) : estimatedTotalPrice === 0 ? (
+                            customerInfo.contactMethod === "email"
+                              ? (locale === "ar" ? "إرسال الطلب عبر البريد الإلكتروني" : "Send Request via Email")
+                              : (locale === "ar" ? "إرسال الطلب عبر واتساب" : "Send Request via WhatsApp")
                           ) : (
                             locale === "ar" ? "الانتقال إلى الدفع" : "Proceed to Payment"
                           )}
